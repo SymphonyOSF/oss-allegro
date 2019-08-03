@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <!--
+   * Copyright 2019 Symphony Communication Services, LLC.
+   *
+   * Licensed under the Apache License, Version 2.0 (the "License");
+   * you may not use this file except in compliance with the License.
+   * You may obtain a copy of the License at
+   *
+   *     http://www.apache.org/licenses/LICENSE-2.0
+   *
+   * Unless required by applicable law or agreed to in writing, software
+   * distributed under the License is distributed on an "AS IS" BASIS,
+   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   * See the License for the specific language governing permissions and
+   * limitations under the License.
+   *
+  -->
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.symphony.oss</groupId>
+    <artifactId>oss-parent-pom</artifactId>
+    <version>0.0.5</version>
+  </parent>
+
+  <groupId>com.symphony.oss.allegro</groupId>
+  <artifactId>oss-allegro</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <url>https://github.com/SymphonyOSF/oss-allegro</url>
+  <description>Allegro Java API for Symphony</description>
+
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git://github.com/SymphonyOSF/oss-allegro.git</connection>
+    <developerConnection>scm:git:git@github.com:SymphonyOSF/oss-allegro.git</developerConnection>
+    <url>https://github.com/SymphonyOSF/oss-allegro</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <developers>
+    <developer>
+      <id>bruceskingle</id>
+      <name>Bruce Skingle</name>
+      <email>bruce.skingle@symphony.com</email>
+      <url>http://github.com/bruceskingle</url>
+      <organization>Symphony Communication Services LLC</organization>
+      <organizationUrl>http://symphony.com</organizationUrl>
+      <roles>
+        <role>Chief Architect</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>  
+    
+    <s2.common.version>0.2.1</s2.common.version>
+    <canon.version>0.2.7</canon.version>
+    <fugue.version>0.2.19</fugue.version>
+    <symphony.security.version>1.55.0</symphony.security.version>
+    <messageml.version>0.9.39</messageml.version>
+    <oss.models.version>0.0.2</oss.models.version>
+  </properties>
+  
+  <modules>
+    <module>allegro-api</module>
+  </modules>
+
+  <repositories>
+    <repository>
+      <id>sonatype-oss-public</id>
+      <url>https://oss.sonatype.org/content/groups/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  
+  <pluginRepositories>
+    <pluginRepository>
+      <id>sonatype-oss-public</id>
+      <url>https://oss.sonatype.org/content/groups/public/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+  
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-core</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-config-manager</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-resources</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-config</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-pubsub</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>aws-fugue</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>fugue-launch</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.fugue</groupId>
+        <artifactId>google-fugue</artifactId>
+        <version>${fugue.version}</version>
+      </dependency>
+      
+      <dependency>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-runtime-java</artifactId>
+        <version>${canon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-jjwt</artifactId>
+        <version>${canon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-model-gcp</artifactId>
+        <version>${canon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-parser</artifactId>
+        <version>${canon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-template-java</artifactId>
+        <version>${canon.version}</version>
+      </dependency>
+      
+			<dependency>
+		    <groupId>org.symphonyoss.symphony</groupId>
+		    <artifactId>messageml</artifactId>
+		    <version>${messageml.version}</version>
+			</dependency>
+    </dependencies>
+  </dependencyManagement>
+  
+  <dependencies>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+     </dependency>
+     
+      
+    
+     <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  
+</project>
