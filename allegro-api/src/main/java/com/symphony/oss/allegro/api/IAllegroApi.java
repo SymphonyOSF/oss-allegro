@@ -82,12 +82,25 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
   /**
    * Fetch recent messages from a thread (conversation).
    * 
-   * @param request   A request object containing the threadId and other parmeters.
+   * This implementation retrieves messages from the object store.
+   * 
+   * @param request   A request object containing the threadId and other parameters.
    * @param consumer  A consumer of decrypted messages. 
    * 
    */
   void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
 
+  /**
+   * Fetch recent messages from a thread (conversation).
+   * 
+   * This implementation retrieves messages from the pod.
+   * 
+   * @param request   A request object containing the threadId and other parameters.
+   * @param consumer  A consumer of decrypted messages. 
+   * 
+   */
+  void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
+  
   /**
    * Decrypt the given SocialMessage.
    * 

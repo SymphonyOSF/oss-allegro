@@ -58,6 +58,8 @@ import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.IJsonDomNode;
+import org.symphonyoss.s2.common.dom.json.IJsonObject;
+import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.MutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
 import org.symphonyoss.s2.common.fault.CodingFault;
@@ -80,6 +82,7 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
@@ -87,18 +90,22 @@ import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.chat.canon.ChatModel;
+import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.IThreadIdObject;
+import com.symphony.oss.models.chat.canon.MaestroMessage;
 import com.symphony.oss.models.chat.canon.ThreadIdObject;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.SocialMessage;
 import com.symphony.oss.models.chat.canon.facade.Stream;
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
 import com.symphony.oss.models.fundamental.FundamentalModelRegistry;
+import com.symphony.oss.models.fundamental.canon.facade.Clob;
 import com.symphony.oss.models.fundamental.canon.facade.DistinguishedValue;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject.AbstractFundamentalObjectApplicationObjectBuilder;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IBlob;
+import com.symphony.oss.models.fundamental.canon.facade.IClob;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalPayload;
@@ -756,53 +763,8 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
-  public void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
+  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
   {
-//    try
-//    {
-//      IThreadIdObject id = new ThreadIdObject.Builder()
-//          .withThreadId(request.getThreadId())
-//          .withPodId(podId_)
-//          .build();
-//      
-//      Hash securityContextHash = id
-//          .getAbsoluteHash();
-//      
-//      System.err.println("securityContextHash=" + securityContextHash);
-//      
-//      RotationId rotationId = cryptoClient_.getRotationForThread(request.getThreadId());
-//      
-//      ISecurityContextRotationId  securityContextRotationId = new SecurityContextRotationId.Builder()
-//          .withType(SecurityContextRotationIdType.SECURITY_CONTEXT)
-//          .withSecurityContextBaseHash(securityContextHash)
-//          .withRotationId(rotationId)
-//          .build();
-//      
-//     
-//      
-//      
-////      try
-////      {
-////        ISimpleSecurityContext sc = tsc.fetch(rotationId, fundamentalDatabase_);
-////        
-////        sc.open(secretKey)
-////      }
-////      catch (NoSuchObjectException e)
-////      {
-////        // TODO Auto-generated catch block
-////        e.printStackTrace();
-////      }
-//      
-//      IOpenSimpleSecurityContext securityContext = cryptoClient_.getSecurityContext(securityContextRotationId.getAbsoluteHash(), request.getThreadId());
-//      
-//      
-//      System.err.println(securityContext);
-//    }
-//    catch(NotFoundException e)
-//    {
-//      e.printStackTrace();
-//    }
-    
     IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
         .withId(request.getThreadId().toBase64UrlSafeString())
         .withFrom(0L)
@@ -813,22 +775,13 @@ public class AllegroApi implements IAllegroApi
       
     for(IMessageEnvelope envelope : thread.getEnvelopes())
     {
-      switch(envelope.getMessage().getVersion())
-      {
-        case SOCIALMESSAGE:
-          consumer.accept(decrypt(envelope.getMessage()));
-          
-          
-          break;
-          
-        default:
-          consumer.accept(maestroMessage(envelope.getMessage()));
-          break;
-      }
-      
+      handleFetchedMessage(consumer, LiveCurrentMessageFactory.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_));
     }
-    
-    
+  }
+
+  @Override
+  public void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
+  {
     IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
       .withPodId(podId_)
       .withThreadId(request.getThreadId())
@@ -846,8 +799,6 @@ public class AllegroApi implements IAllegroApi
     
     for(IFundamentalObject item : page.getData())
     {
-      System.err.println(item);
-      
       if(item.getPayload() instanceof IBlob)
       {
         Hash securityContextHash = ((IBlob)item.getPayload()).getSecurityContextHash();
@@ -859,22 +810,37 @@ public class AllegroApi implements IAllegroApi
         
         IEntity entity = modelRegistry_.open(item, podSecurityContext); 
         
-        System.err.println(entity);
+        handleFetchedMessage(consumer, entity);
+      }
+      else if(item.getPayload() instanceof Clob)
+      {
+        IJsonObject<?> j = ((Clob)item.getPayload()).getJsonObject().getObject("payload");
         
-        switch(entity.getCanonType())
-        {
-          case SocialMessage.TYPE_ID:
-            consumer.accept(decrypt((ISocialMessage) entity));
-            break;
-            
-          default:
-            //consumer.accept(maestroMessage(envelope.getMessage()));
-            break;
-        }
+        IEntity entity = modelRegistry_.newInstance((ImmutableJsonObject) j);
+        
+        handleFetchedMessage(consumer, entity);
       }
     }
   }
   
+  private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
+  {
+    switch(entity.getCanonType())
+    {
+      case SocialMessage.TYPE_ID:
+        consumer.accept(decrypt((ISocialMessage) entity));
+        break;
+        
+      case MaestroMessage.TYPE_ID:
+        consumer.accept(maestroMessage((IMaestroMessage) entity));
+        break;
+        
+      default:
+        //
+        break;
+    }
+  }
+
   private IOpenSecurityContext getPodSecurityContext(Hash securityContextHash)
   {
     IOpenSecurityContextInfo securityContextInfo = podPrivateApiClient_.newSecurityContextsObjectHashGetHttpRequestBuilder()
@@ -885,12 +851,12 @@ public class AllegroApi implements IAllegroApi
     return new OpenSecurityContext(securityContextInfo, modelRegistry_);
   }
 
-  private IChatMessage maestroMessage(ISocialMessage message)
+  private IChatMessage maestroMessage(IMaestroMessage message)
   {
     ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
         .withMessageId(message.getMessageId())
         .withThreadId(message.getThreadId())
-        .withPresentationML(message.getVersion() + " message");
+        .withPresentationML(message.getEvent() + " " + message.getVersion() + " message");
         ;
         
     return builder.build();
