@@ -31,7 +31,7 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.chat.canon.ISocialMessage;
+import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
