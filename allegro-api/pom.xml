@@ -157,9 +157,13 @@
           </execution>
         </executions>
         <configuration>
+          <appendAssemblyId>false</appendAssemblyId>
           <descriptors>
-            <descriptor>src/assembly/repository.xml</descriptor>
+            <descriptor>src/assembly/dependencies.xml</descriptor>
           </descriptors>
+          <!-- <descriptors>
+            <descriptor>src/assembly/repository.xml</descriptor>
+          </descriptors> -->
         </configuration>
       </plugin>
 		</plugins>

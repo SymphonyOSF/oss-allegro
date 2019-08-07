@@ -13,6 +13,7 @@
   </repositories>
   <dependencySets>
     <dependencySet>
+    <useTransitiveDependencies>false</useTransitiveDependencies>
       <includes>
         <include>com.symphony:crypto</include>
       </includes>
