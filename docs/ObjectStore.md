@@ -1,6 +1,5 @@
 ---
 nav_order: 10
-title: Home
 ---
 # The Symphony 2.0 Object Store
 The Symphony Object Store is an encrypted key/value store which leverages the Symphony Key Manager and provides
