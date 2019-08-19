@@ -105,7 +105,6 @@ import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject.AbstractFundamentalObjectApplicationObjectBuilder;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IBlob;
-import com.symphony.oss.models.fundamental.canon.facade.IClob;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalPayload;
