@@ -67,7 +67,7 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>  
     
-    <s2.common.version>0.2.1</s2.common.version>
+    <s2.common.version>0.2.3</s2.common.version>
     <canon.version>0.2.8</canon.version>
     <fugue.version>0.2.22</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
