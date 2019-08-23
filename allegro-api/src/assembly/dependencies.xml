@@ -11,7 +11,7 @@
       <outputDirectory>/</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
       <unpack>true</unpack>
-      <scope>runtime</scope>
+      <scope>provided</scope>
       <includes>
         <include>com.symphony:crypto</include>
         <include>com.symphony.oss.allegro:allegro-api</include>
