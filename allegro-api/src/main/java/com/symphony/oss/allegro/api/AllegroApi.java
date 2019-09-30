@@ -105,6 +105,7 @@ import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject.AbstractFundamentalObjectApplicationObjectBuilder;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IBlob;
+import com.symphony.oss.models.fundamental.canon.facade.IClob;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalPayload;
@@ -884,9 +885,13 @@ public class AllegroApi implements IAllegroApi
 //      blob = ((IIdPayloadContainer) payload).getPayload();
 //    }
 //    else 
-      if(payload instanceof IBlob)
+    if(payload instanceof IBlob)
     {
       blob = (IBlob)payload;
+    }
+    else if(payload instanceof IClob)
+    {
+      return ((IClob)payload).getPayload();
     }
     else
     {
@@ -1001,8 +1006,12 @@ public class AllegroApi implements IAllegroApi
     {
       super(ApplicationObjectUpdater.class);
       
-      super.withSecurityContext(cryptoClient_.getSecurityContext(existingObject.getBlob().getSecurityContextHash(), null));
-      withSequences(existingObject.getBlob().getSequences());
+      if(existingObject.getContainer() instanceof IBlob)
+      {
+        IBlob blob = (IBlob) existingObject.getContainer();
+        super.withSecurityContext(cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), null));
+      }
+      withSequences(existingObject.getContainer().getSequences());
 
       withBaseHash(existingObject.getBaseHash());
       withPrevHash(existingObject.getAbsoluteHash());
