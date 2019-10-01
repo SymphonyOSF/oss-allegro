@@ -17,6 +17,7 @@
 package com.symphony.oss.allegro.api;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -36,6 +37,7 @@ import com.symphony.oss.models.chat.canon.facade.ThreadId;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
+import com.symphony.oss.models.fundamental.canon.facade.INotification;
 import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
 import com.symphony.oss.models.fundamental.canon.facade.PodId;
 import com.symphony.oss.models.fundmental.canon.DeletionType;
@@ -43,6 +45,7 @@ import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
 import com.symphony.oss.models.fundmental.canon.ISequence;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.system.canon.IFeed;
+import com.symphony.oss.models.system.canon.facade.IFeedMessage;
 
 /**
  * The public interface of the Allegro API.
@@ -336,6 +339,8 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
   IFeed upsertFeed(UpsertSmsGatewayRequest request);
 
   IFeed upsertFeed(UpsertFeedRequest request);
+
+  List<IFeedMessage> fetchFeedMessages(FetchFeedMessagesRequest request);
 
   /**
    * Delete the given object.

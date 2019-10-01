@@ -25,6 +25,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -149,6 +150,7 @@ import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
 import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
 import com.symphony.oss.models.sbe.id.SbeIdFactory;
+import com.symphony.oss.models.system.canon.FeedRequest;
 import com.symphony.oss.models.system.canon.IFeed;
 import com.symphony.oss.models.system.canon.ISmsGatewayMetadata;
 import com.symphony.oss.models.system.canon.ISubscriptionMetadataRequest;
@@ -159,6 +161,7 @@ import com.symphony.oss.models.system.canon.SubscriptionMetadataRequest;
 import com.symphony.oss.models.system.canon.SubscriptionRequest;
 import com.symphony.oss.models.system.canon.SystemHttpModelClient;
 import com.symphony.oss.models.system.canon.SystemModel;
+import com.symphony.oss.models.system.canon.facade.IFeedMessage;
 import com.symphony.oss.models.system.canon.facade.Principal;
 
 /**
@@ -502,6 +505,30 @@ public class AllegroApi implements IAllegroApi
         .build()
         .execute(httpClient_)
         ;
+  }
+  
+  @Override
+  public List<IFeedMessage> fetchFeedMessages(FetchFeedMessagesRequest request)
+  {
+    try
+    {
+      List<IFeedMessage> messages = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
+          .withName(request.getName())
+          .withCanonPayload(new FeedRequest.Builder()
+              .withMaxMessages(request.getMaxMessages())
+              .withAck(request.getAckSet())
+              .withNak(request.getNakSet())
+              .build()
+              )
+          .build()
+          .execute(httpClient_);
+      
+      return messages;
+    }
+    catch(NotFoundException e)
+    {
+      return new ArrayList<IFeedMessage>();
+    }
   }
 
   @Override
