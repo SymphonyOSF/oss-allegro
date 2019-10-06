@@ -18,16 +18,41 @@ package com.symphony.oss.allegro.api;
 
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
 
-public class FetchRecentMessagesRequest
+/**
+ * A request object for the FetchRecentMessages method.
+ * 
+ * @author Bruce Skingle
+ *
+ */
+public class FetchRecentMessagesRequest extends ConsumerRequest<FetchRecentMessagesRequest>
 {
   private ThreadId  threadId_;
   private Integer   maxMessages_ = 51;
-  
+
+  /**
+   * Constructor.
+   */
+  public FetchRecentMessagesRequest()
+  {
+    super(FetchRecentMessagesRequest.class);
+  }
+
+  /**
+   * 
+   * @return The id of the thread (conversation) from which messages are to be returned.
+   */
   public ThreadId getThreadId()
   {
     return threadId_;
   }
   
+  /**
+   * Set the id of the thread (conversation) from which messages are to be returned.
+   * 
+   * @param threadId The id of the thread (conversation) from which messages are to be returned.
+   * 
+   * @return This (fluent method)
+   */
   public FetchRecentMessagesRequest withThreadId(ThreadId threadId)
   {
     threadId_ = threadId;
@@ -35,11 +60,22 @@ public class FetchRecentMessagesRequest
     return this;
   }
   
+  /**
+   * 
+   * @return The maximum number of messages to be returned.
+   */
   public Integer getMaxMessages()
   {
     return maxMessages_;
   }
   
+  /**
+   * Set the maximum number of messages to be returned.
+   * 
+   * @param maxMessages The maximum number of messages to be returned.
+   * 
+   * @return This (fluent method)
+   */
   public FetchRecentMessagesRequest withMaxMessages(Integer maxMessages)
   {
     maxMessages_ = maxMessages;

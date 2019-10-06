@@ -18,11 +18,22 @@ package com.symphony.oss.allegro.api;
 
 import org.symphonyoss.s2.common.hash.Hash;
 
-public class FetchSequenceRequest
+/**
+ * A request object for the FetchRecentMessages method.
+ * 
+ * @author Bruce Skingle
+ *
+ */
+public class FetchSequenceRequest extends ConsumerRequest<FetchSequenceRequest>
 {
   private Hash    sequenceHash_;
   private Integer maxItems_;
   private String  after_;
+  
+  public FetchSequenceRequest()
+  {
+    super(FetchSequenceRequest.class);
+  }
   
   public Hash getSequenceHash()
   {

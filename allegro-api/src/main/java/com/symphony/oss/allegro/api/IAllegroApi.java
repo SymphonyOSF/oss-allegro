@@ -17,7 +17,6 @@
 package com.symphony.oss.allegro.api;
 
 import java.security.cert.X509Certificate;
-import java.util.List;
 import java.util.function.Consumer;
 
 import javax.annotation.Nullable;
@@ -26,18 +25,16 @@ import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.common.hash.Hash;
+import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
-import com.symphony.oss.models.fundamental.canon.facade.INotification;
 import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
 import com.symphony.oss.models.fundamental.canon.facade.PodId;
 import com.symphony.oss.models.fundmental.canon.DeletionType;
@@ -45,7 +42,6 @@ import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
 import com.symphony.oss.models.fundmental.canon.ISequence;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.system.canon.IFeed;
-import com.symphony.oss.models.system.canon.facade.IFeedMessage;
 
 /**
  * The public interface of the Allegro API.
@@ -53,7 +49,7 @@ import com.symphony.oss.models.system.canon.facade.IFeedMessage;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IFluent<IAllegroApi>
+public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 {
   public static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
   public static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
@@ -90,6 +86,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
    * @param request   A request object containing the threadId and other parameters.
    * @param consumer  A consumer of decrypted messages. 
    * 
+   * @deprecated Use <code>fetchRecentMessages(request.withConsumer(type, consumer)</code> instead.
    */
   void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
 
@@ -101,17 +98,30 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
    * @param request   A request object containing the threadId and other parameters.
    * @param consumer  A consumer of decrypted messages. 
    * 
+   * @deprecated Use <code>fetchRecentMessagesFromPod(request.withConsumer(type, consumer)</code> instead.
    */
   void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
-  
+ 
+
   /**
-   * Decrypt the given SocialMessage.
+   * Fetch recent messages from a thread (conversation).
    * 
-   * @param message A SocialMessage including encrypted fields.
+   * This implementation retrieves messages from the object store.
    * 
-   * @return The decrypted payload of the given message.
+   * @param request   A request object containing the threadId and other parameters.
+   * 
    */
-  IReceivedChatMessage decrypt(ISocialMessage message);
+  void fetchRecentMessages(FetchRecentMessagesRequest request);
+
+  /**
+   * Fetch recent messages from a thread (conversation).
+   * 
+   * This implementation retrieves messages from the pod.
+   * 
+   * @param request   A request object containing the threadId and other parameters.
+   * 
+   */
+  void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request);
 
   /**
    * Send the given chat message.
@@ -209,15 +219,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
   IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, @Nullable Integer limit, String after);
 
   /**
-   * Open (deserialize and decrypt if necessary) the given object.
-   * 
-   * @param item A FundamentalObject.
-   * 
-   * @return The typed contents of the given object.
-   */
-  IEntity open(IFundamentalObject item);
-
-  /**
    * Open (deserialize and decrypt if necessary) the given object, storing wrapped keys from the key manager if necessary.
    * 
    * @param item A FundamentalObject.
@@ -238,8 +239,18 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
    * 
    * @param request   The request parameters.
    * @param consumer  A consumer to receive returned objects.
+   * 
+   * @deprecated Use <code>fetchSequence(request.withConsumer(type, consumer)</code> instead.
    */
+  @Deprecated
   void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer);
+
+  /**
+   * Fetch objects from a sequence.
+   * 
+   * @param request   The request parameters.
+   */
+  void fetchSequence(FetchSequenceRequest request);
 
   /**
    * 
@@ -340,7 +351,9 @@ public interface IAllegroApi extends IFluent<IAllegroApi>
 
   IFeed upsertFeed(UpsertFeedRequest request);
 
-  List<IFeedMessage> fetchFeedMessages(FetchFeedMessagesRequest request);
+  void fetchFeedMessages(FetchFeedMessagesRequest request);
+  
+  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
 
   /**
    * Delete the given object.
