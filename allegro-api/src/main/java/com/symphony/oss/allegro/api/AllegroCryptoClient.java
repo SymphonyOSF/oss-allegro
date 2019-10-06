@@ -169,8 +169,6 @@ class AllegroCryptoClient implements IAllegroCryptoClient
       {
         IMemberIdObject keysId = SecurityContextMember.getMemberKeysIdFor(securityContext.getAbsoluteHash(), principalHash_);
   
-        System.err.println("fetch keysId = " + keysId.getAbsoluteHash() + " " + keysId);
-        
         IFundamentalObject keysObject = fundamentalApiClient_.newObjectsIdIdObjectHashGetHttpRequestBuilder()
           .withIdObjectHash(keysId.getAbsoluteHash())
           .build()
