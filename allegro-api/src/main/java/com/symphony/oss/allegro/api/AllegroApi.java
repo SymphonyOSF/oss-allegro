@@ -89,6 +89,9 @@ import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
+import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
+import com.symphony.oss.models.allegro.canon.ReceivedMaestroMessage;
+import com.symphony.oss.models.allegro.canon.ReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
@@ -98,6 +101,7 @@ import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.IThreadIdObject;
+import com.symphony.oss.models.chat.canon.IUser;
 import com.symphony.oss.models.chat.canon.MaestroMessage;
 import com.symphony.oss.models.chat.canon.ThreadIdObject;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
@@ -931,6 +935,17 @@ public class AllegroApi implements IAllegroApi
   @Override
   public void fetchRecentMessages(FetchRecentMessagesRequest request)
   {
+    fetchMessages(request, false);
+  }
+
+  @Override
+  public void fetchMessages(FetchMessagesRequest request)
+  {
+    fetchMessages(request, request.isScanForwards());
+  }
+
+  private void fetchMessages(AbstractFetchRecentMessagesRequest<?> request, boolean scanForwards)
+  {
     try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
     {
       ITraceContext trace = traceTransaction.open();
@@ -949,6 +964,7 @@ public class AllegroApi implements IAllegroApi
       {
         IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
           .withSequenceHash(sequence.getAbsoluteHash())
+          .withScanForwards(scanForwards)
           .withLimit(request.getMaxMessages())
           .withAfter(after)
           .build()
@@ -980,6 +996,7 @@ public class AllegroApi implements IAllegroApi
     return c.getAfter();
   }
 
+  @Deprecated
   private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
   {
     switch(entity.getCanonType())
@@ -1369,6 +1386,11 @@ public class AllegroApi implements IAllegroApi
     if(message instanceof ISocialMessage)
       return decryptSocialMessage((ISocialMessage) message);
     
+    if(message instanceof IMaestroMessage)
+    {
+      return buildMaestroMessage((IMaestroMessage) message);
+    }
+    
     ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
         .withMessageId(message.getMessageId())
         .withThreadId(message.getThreadId())
@@ -1376,15 +1398,70 @@ public class AllegroApi implements IAllegroApi
     
     String text = message.getVersion() + " message";
     
-    if(message instanceof IMaestroMessage)
-      text = ((IMaestroMessage)message).getEvent() + " " + message.getVersion() + " message";
-       
     return builder.withPresentationML(text)
         .withText(text)
+        .withMarkDown(text)
         .build();
   }
   
-  private IReceivedChatMessage decryptSocialMessage(ISocialMessage message)
+  private IReceivedChatMessage buildMaestroMessage(IMaestroMessage message)
+  {
+    ReceivedMaestroMessage.Builder builder = new ReceivedMaestroMessage.Builder()
+        .withMessageId(message.getMessageId())
+        .withThreadId(message.getThreadId())
+        ;
+    
+    String text = "";
+    
+    switch(message.getEvent())
+    {
+      case JOIN_ROOM:
+        text = getUsers(message) + " joined the chat.";
+        break;
+        
+      case LEAVE_ROOM:
+        text = getUsers(message) + " left the chat.";
+        break;
+        
+      default:
+        text = message.getVersion() + " " + message.getEvent() + " message";
+    }
+    
+    return builder.withPresentationML(text)
+        .withText(text)
+        .withMarkDown(text)
+        .withMaestroMessage(message)
+        .build();
+  }
+
+  private String getUsers(IMaestroMessage message)
+  {
+    int cnt = message.getAffectedUsers().size();
+    
+    if(cnt == 0)
+      return "An unknown user";
+    
+    if(cnt == 1)
+      return  message.getAffectedUsers().get(0).getPrettyName();
+    
+    StringBuilder b = new StringBuilder();
+    int i=0;
+    
+    while(i<cnt - 1)
+    {
+      if(i>0)
+        b.append(", ");
+      
+      b.append(message.getAffectedUsers().get(i++).getPrettyName());
+    }
+    
+    b.append(" and ");
+    b.append(message.getAffectedUsers().get(i).getPrettyName());
+    
+    return b.toString();
+  }
+
+  private IReceivedSocialMessage decryptSocialMessage(ISocialMessage message)
   {
     if(FORMAT_MESSAGEMLV2.equals(message.getFormat()))
     {
@@ -1443,7 +1520,7 @@ public class AllegroApi implements IAllegroApi
       if(text == null)
         text = markDown;
       
-      ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
+      ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
           .withMessageId(message.getMessageId())
           .withThreadId(message.getThreadId())
           .withPresentationML(presentationML)
@@ -1451,6 +1528,7 @@ public class AllegroApi implements IAllegroApi
           .withMarkDown(markDown)
           .withEntityJson(new EntityJson(parseOneJsonObject(entityJsonString), modelRegistry_))
           .withMessageML(messageML)
+          .withSocialMessage(message)
           ;
       
       return builder
@@ -1561,13 +1639,14 @@ public class AllegroApi implements IAllegroApi
 
         //return new ChatMessage(message.getThreadId(), context.getPresentationML(), context.getEntityJson().asText());
         
-        ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
+        ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
             .withMessageId(message.getMessageId())
             .withThreadId(message.getThreadId())
             .withPresentationML(context.getPresentationML())
             .withMessageML(messageML)
             .withText(text)
             .withMarkDown(clearText)
+            .withSocialMessage(message)
             ;
             
             String      encryptedEntityJson = context.getEntityJson().asText();

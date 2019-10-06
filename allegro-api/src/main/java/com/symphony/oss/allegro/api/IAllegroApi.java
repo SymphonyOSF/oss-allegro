@@ -114,6 +114,16 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   void fetchRecentMessages(FetchRecentMessagesRequest request);
 
   /**
+   * Fetch messages from a thread (conversation) in either forwards or reverse sequence.
+   * 
+   * This implementation retrieves messages from the object store.
+   * 
+   * @param request   A request object containing the threadId and other parameters.
+   * 
+   */
+  void fetchMessages(FetchMessagesRequest request);
+
+  /**
    * Fetch recent messages from a thread (conversation).
    * 
    * This implementation retrieves messages from the pod.
@@ -129,50 +139,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @param chatMessage A message to be sent.
    */
   void sendMessage(IChatMessage chatMessage);
-
-//  /**
-//   * Encrypt the given ApplicationObject with the content key for the given thread.
-//   * 
-//   * Note that this is a client only operation, the encrypted object is NOT stored as a result of calling this method.
-//   * 
-//   * @param threadId            The threadId of the thread (conversation) whose content key should be used for the encryption
-//   * @param applicationPayload  The payload to be encrypted.
-//   * @param baseHash            An optional hash being the ID of the initial version of a versioned object.
-//   * @param prevHash            An optional hash being the ID of the previous version from which this object was created.
-//   * @param sequenceHashes      An optional list of sequences to which this object should be added.
-//   * 
-//   * @return  An encrypted FundamentalObject containing the given payload.
-//   */
-//  IFundamentalObject encrypt(ThreadId threadId, IApplicationObject applicationPayload, @Nullable Hash baseHash, @Nullable Hash prevHash, @Nullable List<Hash> sequenceHashes);
-//
-//
-//
-//  /**
-//   * Encrypt and store the given ApplicationObject with the content key for the given thread.
-//   * 
-//   * @param threadId            The threadId of the thread (conversation) whose content key should be used for the encryption
-//   * @param applicationPayload  The payload to be encrypted.
-//   * @param baseHash            An optional hash being the ID of the initial version of a versioned object.
-//   * @param prevHash            An optional hash being the ID of the previous version from which this object was created.
-//   * @param sequenceHashes      An optional list of sequences to which this object should be added.
-//   * 
-//   * @return  An encrypted FundamentalObject containing the given payload.
-//   */
-//  IFundamentalObject store(ThreadId threadId, IApplicationObject applicationPayload, @Nullable Hash baseHash, @Nullable Hash prevHash, @Nullable List<Hash> sequenceHashes);
-//
-//  /**
-//   * Encrypt and store the given ApplicationObject with the content key for the given thread.
-//   * 
-//   * @param threadId            The threadId of the thread (conversation) whose content key should be used for the encryption
-//   * @param applicationPayload  The payload to be encrypted.
-//   * @param baseHash            An optional hash being the ID of the initial version of a versioned object.
-//   * @param prevHash            An optional hash being the ID of the previous version from which this object was created.
-//   * @param sequenceId          An optional list of sequences to which this object should be added.
-//   * 
-//   * @return  An encrypted FundamentalObject containing the given payload.
-//   */
-//  IFundamentalObject store(ThreadId threadId, IApplicationObject applicationPayload, Hash baseHash, Hash prevHash,
-//      IFundamentalId ...sequenceId);
   
   /**
    * 

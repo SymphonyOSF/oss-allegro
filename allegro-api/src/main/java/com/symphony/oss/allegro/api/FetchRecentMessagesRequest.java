@@ -24,17 +24,30 @@ import com.symphony.oss.models.chat.canon.facade.ThreadId;
  * @author Bruce Skingle
  *
  */
-public class FetchRecentMessagesRequest extends ConsumerRequest<FetchRecentMessagesRequest>
+public class FetchRecentMessagesRequest extends AbstractFetchRecentMessagesRequest<FetchRecentMessagesRequest>
 {
-  private ThreadId  threadId_;
-  private Integer   maxMessages_ = 51;
-
   /**
    * Constructor.
    */
   public FetchRecentMessagesRequest()
   {
     super(FetchRecentMessagesRequest.class);
+  }
+}
+
+class AbstractFetchRecentMessagesRequest<T extends AbstractFetchRecentMessagesRequest<T>> extends ConsumerRequest<T>
+{
+  private ThreadId  threadId_;
+  private Integer   maxMessages_ = 51;
+
+  /**
+   * Constructor.
+   * 
+   * @param type Concrete type for fluent methods.
+   */
+  public AbstractFetchRecentMessagesRequest(Class<T> type)
+  {
+    super(type);
   }
 
   /**
@@ -53,11 +66,11 @@ public class FetchRecentMessagesRequest extends ConsumerRequest<FetchRecentMessa
    * 
    * @return This (fluent method)
    */
-  public FetchRecentMessagesRequest withThreadId(ThreadId threadId)
+  public T withThreadId(ThreadId threadId)
   {
     threadId_ = threadId;
     
-    return this;
+    return self();
   }
   
   /**
@@ -76,10 +89,10 @@ public class FetchRecentMessagesRequest extends ConsumerRequest<FetchRecentMessa
    * 
    * @return This (fluent method)
    */
-  public FetchRecentMessagesRequest withMaxMessages(Integer maxMessages)
+  public T withMaxMessages(Integer maxMessages)
   {
     maxMessages_ = maxMessages;
     
-    return this;
+    return self();
   }
 }

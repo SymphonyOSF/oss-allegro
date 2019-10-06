@@ -77,6 +77,14 @@ class ConsumerManager
     return this;
   }
   
+  @SuppressWarnings("unchecked")
+  public ConsumerManager withConsumer(AbstractAdaptor<?> adaptor)
+  {
+    adaptor.setDefaultConsumer(defaultConsumer_);
+    
+    return withConsumer(adaptor.getPayloadType(), adaptor);
+  }
+  
   public <T> ConsumerManager withConsumer(Class<T> type, ISimpleConsumer<T> consumer)
   {
     return withConsumer(type, new IConsumer<T>()

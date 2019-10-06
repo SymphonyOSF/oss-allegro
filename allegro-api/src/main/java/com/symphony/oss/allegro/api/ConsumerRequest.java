@@ -115,6 +115,25 @@ public class ConsumerRequest<T extends ConsumerRequest<T>> extends AllegroReques
   }
 
   /**
+   * Add the given adaptor as a consumer.
+   * 
+   * In general, an adaptor will be a consumer for a super-class of some set of types for which it
+   * adapts. It is possible to provide an Adaptor as well as specific Consumers, in this case the
+   * Consumers will normally be called in preference to the adaptor since they register for more
+   * specific types.
+   * 
+   * @param adaptor An adaptor.
+   * 
+   * @return This (fluent method).
+   */
+  public T withConsumer(AbstractAdaptor<?> adaptor)
+  {
+    consumerManager_.withConsumer(adaptor);
+    
+    return self();
+  }
+
+  /**
    * Set the consumer to be called with objects for which there is no match with any other consumer.
    * 
    * @param defaultConsumer  The consumer to be called with objects for which there is no match with any other consumer.
