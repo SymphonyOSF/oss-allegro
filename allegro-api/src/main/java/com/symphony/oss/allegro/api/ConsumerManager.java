@@ -78,7 +78,7 @@ class ConsumerManager
   }
   
   @SuppressWarnings("unchecked")
-  public ConsumerManager withConsumer(AbstractAdaptor<?> adaptor)
+  public ConsumerManager withConsumer(@SuppressWarnings("rawtypes") AbstractAdaptor adaptor)
   {
     adaptor.setDefaultConsumer(defaultConsumer_);
     

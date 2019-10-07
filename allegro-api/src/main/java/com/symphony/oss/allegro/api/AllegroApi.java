@@ -101,7 +101,6 @@ import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.IThreadIdObject;
-import com.symphony.oss.models.chat.canon.IUser;
 import com.symphony.oss.models.chat.canon.MaestroMessage;
 import com.symphony.oss.models.chat.canon.ThreadIdObject;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
@@ -189,8 +188,6 @@ public class AllegroApi implements IAllegroApi
   private static final ObjectMapper        OBJECT_MAPPER = new ObjectMapper(); // TODO: get rid of this
   private static final int ENCRYPTION_ORDINAL = 0;
   private static final int MEIDA_ENCRYPTION_ORDINAL = 2;
-
-  private static final int FEED_BATCH_MAX_MESSAGES = 10;
   
   private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
   
@@ -532,6 +529,8 @@ public class AllegroApi implements IAllegroApi
         .withTraceContextTransactionFactory(traceContextFactory_)
         .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
         .withSubscription(new AllegroSubscription(request, this))
+        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
+        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
       .build();
     
     return subscriberManager;
@@ -592,9 +591,11 @@ public class AllegroApi implements IAllegroApi
   @Override
   public IFeed upsertFeed(UpsertFeedRequest request)
   {
+    request.validate();
+    
     ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
         .withType(request.getType())
-        .withSequences(DistinguishedValue.USER_CONTENT_SEQUENCE)
+        .withSequences(request.getSequences())
         .build()
         ;
     

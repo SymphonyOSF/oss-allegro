@@ -102,6 +102,20 @@ import com.symphony.oss.models.system.canon.SystemHttpModelClient;
       return self();
     }
 
+    public Builder withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
+    {
+      subscriberThreadPoolSize_ = subscriberThreadPoolSize;
+      
+      return self();
+    }
+
+    public Builder withHandlerThreadPoolSize(int handlerThreadPoolSize)
+    {
+      handlerThreadPoolSize_ = handlerThreadPoolSize;
+      
+      return self();
+    }
+
     @Override
     public void validate(FaultAccumulator faultAccumulator)
     {

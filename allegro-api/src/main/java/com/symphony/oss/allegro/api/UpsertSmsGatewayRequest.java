@@ -17,12 +17,12 @@
 package com.symphony.oss.allegro.api;
 
 /**
- * Request object for FetchOrCreateFeed.
+ * Request object for UpsertSmsGateway.
  * 
  * @author Bruce Skingle
  *
  */
-public class UpsertSmsGatewayRequest extends AbstractFetchOrCreateSmsGatewayRequest<UpsertSmsGatewayRequest>
+public class UpsertSmsGatewayRequest extends AbstractUpsertSmsGatewayRequest<UpsertSmsGatewayRequest>
 {
   /**
    * Constructor.
@@ -33,11 +33,11 @@ public class UpsertSmsGatewayRequest extends AbstractFetchOrCreateSmsGatewayRequ
   }
 }
 
-class AbstractFetchOrCreateSmsGatewayRequest<T extends AbstractFetchOrCreateSmsGatewayRequest<T>> extends AbstractFetchOrCreateFeedRequest<T>
+class AbstractUpsertSmsGatewayRequest<T extends AbstractUpsertSmsGatewayRequest<T>> extends AbstractUpsertFeedRequest<T>
 {
   private String   phoneNumber_;
   
-  public AbstractFetchOrCreateSmsGatewayRequest(Class<T> type)
+  public AbstractUpsertSmsGatewayRequest(Class<T> type)
   {
     super(type);
   }

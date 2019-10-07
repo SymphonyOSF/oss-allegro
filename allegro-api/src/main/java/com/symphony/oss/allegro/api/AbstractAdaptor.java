@@ -46,7 +46,7 @@ abstract class AbstractAdaptor<T> implements IConsumer<T>
     payloadType_ = payloadType;
   }
 
-  public Class getPayloadType()
+  public Class<T> getPayloadType()
   {
     return payloadType_;
   }

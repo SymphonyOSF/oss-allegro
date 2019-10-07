@@ -36,6 +36,8 @@ public class CreateFeedSubscriberRequest  extends ThreadSafeConsumerRequest<Crea
 {
   private String                                  name_;
   private IThreadSafeErrorConsumer<INotification> unprocessableMessageConsumer_;
+  private int                                     subscriberThreadPoolSize_ = 1;
+  private int                                     handlerThreadPoolSize_    = 1;
   
   /**
    * Constructor.
@@ -66,6 +68,59 @@ public class CreateFeedSubscriberRequest  extends ThreadSafeConsumerRequest<Crea
     name_ = name;
     
     return self();
+  }
+
+  /**
+   * Set the size of the thread pool for subscriber requests.
+   * 
+   * @param subscriberThreadPoolSize The size of the thread pool for subscriber requests.
+   * 
+   * The subscriber thread pool is used to make connections over the network to request a batch
+   * of messages. Once a batch is received, all but one of the messages in the batch are passed
+   * individually to the handler thread pool and the final one is processed in the subscriber thread.
+   * 
+   * @return This (fluent method)
+   */
+  public CreateFeedSubscriberRequest withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
+  {
+    subscriberThreadPoolSize_ = subscriberThreadPoolSize;
+    
+    return self();
+  }
+
+  /**
+   * Set the size of the thread pool for handler requests.
+   * 
+   * @param handlerThreadPoolSize The size of the thread pool for handler requests.
+   * 
+   * The handler thread pool is used to process messages received in a batch in parallel.
+   * The optimum size of the handler thread pool is 9 * subscriberThreadPoolSize.
+   * 
+   * @return This (fluent method)
+   */
+  public CreateFeedSubscriberRequest withHandlerThreadPoolSize(int handlerThreadPoolSize)
+  {
+    handlerThreadPoolSize_ = handlerThreadPoolSize;
+    
+    return self();
+  }
+
+  /**
+   * 
+   * @return The size of the subscriber thread pool.
+   */
+  public int getSubscriberThreadPoolSize()
+  {
+    return subscriberThreadPoolSize_;
+  }
+
+  /**
+   * 
+   * @return The size of the handler thread pool.
+   */
+  public int getHandlerThreadPoolSize()
+  {
+    return handlerThreadPoolSize_;
   }
 
   /**
