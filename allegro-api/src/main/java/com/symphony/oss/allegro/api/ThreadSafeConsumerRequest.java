@@ -35,27 +35,27 @@ import org.symphonyoss.s2.fugue.pipeline.IThreadSafeConsumer;
  * specific type to match with a consumer.
  * 
  * Sub types of the following types are considered more specific than the ones which follow:
- * <ul>
- * <li/>IChatMessage
- * <li/>IApplicationObject
- * <li/>IFundamentalPayload
- * <li/>IFundamentalObject
- * </ul>
+ * <pre>
+ * IChatMessage
+ * IApplicationObject
+ * IFundamentalPayload
+ * IFundamentalObject
+ * </pre>
  * 
  * For example, if a FundamentalObject containing a SocialMessage was consumed, then consumers
  * would be selected in the following order of precedence:
  *
- * <ul>
- * <li/>IReceivedChatMessage
- * <li/>IChatMessage
- * <li/>ISocialMessage
- * <li/>ILiveCurrentMessage
- * <li/>IApplicationObject
- * <li/>IClob
- * <li/>IFundamentalPayload
- * <li/>IFundamentalObject
- * <li/>Object
- * </ul>
+ * <pre>
+ * IReceivedChatMessage
+ * IChatMessage
+ * ISocialMessage
+ * ILiveCurrentMessage
+ * IApplicationObject
+ * IClob
+ * IFundamentalPayload
+ * IFundamentalObject
+ * Object
+ * </pre>
  * 
  * In fact, when reading from the object store, the object being consumed will always be an instance of
  * IFundamentalObject and when reading from a feed the object will always be an instance of INotification
