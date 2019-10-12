@@ -67,12 +67,12 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>  
     
-    <s2.common.version>0.2.3</s2.common.version>
-    <canon.version>0.2.10</canon.version>
-    <fugue.version>0.2.27</fugue.version>
+    <s2.common.version>0.2.4</s2.common.version>
+    <canon.version>0.2.11</canon.version>
+    <fugue.version>0.2.29</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.0.11</oss.models.version>
+    <oss.models.version>0.0.12</oss.models.version>
   </properties>
   
   <modules>

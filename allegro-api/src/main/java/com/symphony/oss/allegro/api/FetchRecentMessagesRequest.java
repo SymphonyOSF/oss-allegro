@@ -18,32 +18,81 @@ package com.symphony.oss.allegro.api;
 
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
 
-public class FetchRecentMessagesRequest
+/**
+ * A request object for the FetchRecentMessages method.
+ * 
+ * @author Bruce Skingle
+ *
+ */
+public class FetchRecentMessagesRequest extends AbstractFetchRecentMessagesRequest<FetchRecentMessagesRequest>
+{
+  /**
+   * Constructor.
+   */
+  public FetchRecentMessagesRequest()
+  {
+    super(FetchRecentMessagesRequest.class);
+  }
+}
+
+class AbstractFetchRecentMessagesRequest<T extends AbstractFetchRecentMessagesRequest<T>> extends ConsumerRequest<T>
 {
   private ThreadId  threadId_;
   private Integer   maxMessages_ = 51;
-  
+
+  /**
+   * Constructor.
+   * 
+   * @param type Concrete type for fluent methods.
+   */
+  public AbstractFetchRecentMessagesRequest(Class<T> type)
+  {
+    super(type);
+  }
+
+  /**
+   * 
+   * @return The id of the thread (conversation) from which messages are to be returned.
+   */
   public ThreadId getThreadId()
   {
     return threadId_;
   }
   
-  public FetchRecentMessagesRequest withThreadId(ThreadId threadId)
+  /**
+   * Set the id of the thread (conversation) from which messages are to be returned.
+   * 
+   * @param threadId The id of the thread (conversation) from which messages are to be returned.
+   * 
+   * @return This (fluent method)
+   */
+  public T withThreadId(ThreadId threadId)
   {
     threadId_ = threadId;
     
-    return this;
+    return self();
   }
   
+  /**
+   * 
+   * @return The maximum number of messages to be returned.
+   */
   public Integer getMaxMessages()
   {
     return maxMessages_;
   }
   
-  public FetchRecentMessagesRequest withMaxMessages(Integer maxMessages)
+  /**
+   * Set the maximum number of messages to be returned.
+   * 
+   * @param maxMessages The maximum number of messages to be returned.
+   * 
+   * @return This (fluent method)
+   */
+  public T withMaxMessages(Integer maxMessages)
   {
     maxMessages_ = maxMessages;
     
-    return this;
+    return self();
   }
 }

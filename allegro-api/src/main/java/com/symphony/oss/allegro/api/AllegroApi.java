@@ -66,6 +66,11 @@ import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
+import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
+import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
+import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
+import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
+import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.Chime;
 import org.symphonyoss.symphony.messageml.elements.FormatEnum;
@@ -84,12 +89,16 @@ import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
+import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
+import com.symphony.oss.models.allegro.canon.ReceivedMaestroMessage;
+import com.symphony.oss.models.allegro.canon.ReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.chat.canon.ChatModel;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.IThreadIdObject;
 import com.symphony.oss.models.chat.canon.MaestroMessage;
@@ -149,6 +158,7 @@ import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
 import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
 import com.symphony.oss.models.sbe.id.SbeIdFactory;
+import com.symphony.oss.models.system.canon.FeedRequest;
 import com.symphony.oss.models.system.canon.IFeed;
 import com.symphony.oss.models.system.canon.ISmsGatewayMetadata;
 import com.symphony.oss.models.system.canon.ISubscriptionMetadataRequest;
@@ -159,6 +169,8 @@ import com.symphony.oss.models.system.canon.SubscriptionMetadataRequest;
 import com.symphony.oss.models.system.canon.SubscriptionRequest;
 import com.symphony.oss.models.system.canon.SystemHttpModelClient;
 import com.symphony.oss.models.system.canon.SystemModel;
+import com.symphony.oss.models.system.canon.facade.FeedMessageDelete;
+import com.symphony.oss.models.system.canon.facade.IFeedMessage;
 import com.symphony.oss.models.system.canon.facade.Principal;
 
 /**
@@ -208,6 +220,8 @@ public class AllegroApi implements IAllegroApi
 
   private final Supplier<IAccountInfo>     accountInfoProvider_;
   private final Supplier<X509Certificate>  podCertProvider_;
+
+  private final ITraceContextTransactionFactory traceContextFactory_;
   
   /**
    * Constructor.
@@ -217,6 +231,8 @@ public class AllegroApi implements IAllegroApi
   public AllegroApi(AbstractBuilder<?,?> builder)
   {
     log_.info("AllegroApi constructor start");
+    
+    traceContextFactory_ = new NoOpContextFactory();
     
     userName_ = builder.userName_;
     
@@ -503,13 +519,83 @@ public class AllegroApi implements IAllegroApi
         .execute(httpClient_)
         ;
   }
+  
+  @Override
+  public IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request)
+  {
+    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
+        .withHttpClient(httpClient_)
+        .withSystemApiClient(systemApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
+        .withSubscription(new AllegroSubscription(request, this))
+        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
+        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
+      .build();
+    
+    return subscriberManager;
+  }
+  
+  @Override
+  public void fetchFeedMessages(FetchFeedMessagesRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+      List<IFeedMessage> messages  = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
+          .withName(request.getName())
+          .withCanonPayload(new FeedRequest.Builder()
+              .withMaxMessages(request.getMaxMessages() != null ? request.getMaxMessages() : 1)
+              .build())
+          .build()
+          .execute(httpClient_);
+      
+      FeedRequest.Builder builder = new FeedRequest.Builder()
+          .withMaxMessages(0)
+          .withWaitTimeSeconds(0);
+      
+      System.out.println("Received " + messages.size() + " messages.");
+      for(IFeedMessage message : messages)
+      {
+        request.consume(message.getPayload(), trace, this);
+          
+        builder.withDelete(new FeedMessageDelete.Builder()
+            .withReceiptHandle(message.getReceiptHandle())
+            .build()
+            );
+      }
+      
+      try
+      {
+        // Delete (ACK) the consumed messages
+        messages = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
+            .withName(request.getName())
+            .withCanonPayload(builder.build())
+            .build()
+            .execute(httpClient_);
+      }
+      catch(NotFoundException e)
+      {
+        messages.clear();
+      }
+    }
+    catch(NotFoundException e)
+    {
+      // No messages
+    }
+    
+    request.closeConsumers();
+  }
 
   @Override
   public IFeed upsertFeed(UpsertFeedRequest request)
   {
+    request.validate();
+    
     ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
         .withType(request.getType())
-        .withSequences(DistinguishedValue.USER_CONTENT_SEQUENCE)
+        .withSequences(request.getSequences())
         .build()
         ;
     
@@ -763,6 +849,7 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
+  @Deprecated
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
   {
     IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
@@ -780,6 +867,7 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
+  @Deprecated
   public void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
   {
     IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
@@ -822,13 +910,100 @@ public class AllegroApi implements IAllegroApi
       }
     }
   }
+
+  @Override
+  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+      IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
+          .withId(request.getThreadId().toBase64UrlSafeString())
+          .withFrom(0L)
+          .withLimit(request.getMaxMessages())
+          .withExcludeFields("tokenIds")
+          .build()
+          .execute(httpClient_);
+        
+      for(IMessageEnvelope envelope : thread.getEnvelopes())
+      {
+        request.consume(LiveCurrentMessageFactory.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
+      }
+    }
+  }
+
+  @Override
+  public void fetchRecentMessages(FetchRecentMessagesRequest request)
+  {
+    fetchMessages(request, false);
+  }
+
+  @Override
+  public void fetchMessages(FetchMessagesRequest request)
+  {
+    fetchMessages(request, request.isScanForwards());
+  }
+
+  private void fetchMessages(AbstractFetchRecentMessagesRequest<?> request, boolean scanForwards)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+      IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
+        .withPodId(podId_)
+        .withThreadId(request.getThreadId())
+        .build();
+      
+      IFundamentalId sequence = Stream.getStreamContentSequenceId(threadIdObject);
+      
+      int maxMessages = request.getMaxMessages() == null ? 5 : request.getMaxMessages();
+      String after = null;
+      
+      do
+      {
+        IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+          .withSequenceHash(sequence.getAbsoluteHash())
+          .withScanForwards(scanForwards)
+          .withLimit(request.getMaxMessages())
+          .withAfter(after)
+          .build()
+          .execute(httpClient_);
+        
+        after = getAfter(page);
+        
+        for(IFundamentalObject item : page.getData())
+        {
+          request.consume(item, trace, this);
+          maxMessages--;
+        }
+      } while(after != null && maxMessages>0);
+    }
+  }
   
+  private String getAfter(IPageOfFundamentalObject page)
+  {
+    IPagination p = page.getPagination();
+    
+    if(p == null)
+      return null;
+    
+    ICursors c = p.getCursors();
+    
+    if(c == null)
+      return null;
+    
+    return c.getAfter();
+  }
+
+  @Deprecated
   private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
   {
     switch(entity.getCanonType())
     {
       case SocialMessage.TYPE_ID:
-        consumer.accept(decrypt((ISocialMessage) entity));
+        consumer.accept(decryptChatMessage((ISocialMessage) entity));
         break;
         
       case MaestroMessage.TYPE_ID:
@@ -1049,6 +1224,7 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
+  @Deprecated
   public void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer)
   {
      String after = request.getAfter();
@@ -1090,6 +1266,55 @@ public class AllegroApi implements IAllegroApi
            after = cursors.getAfter();
        }
      } while(after != null && (limit==null || remainingItems>0));
+  }
+  
+  @Override
+  public void fetchSequence(FetchSequenceRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getSequenceHash().toString()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+       String after = request.getAfter();
+       Integer limit = request.getMaxItems();
+       
+       if(limit != null && limit < 1)
+         throw new BadRequestException("Limit must be at least 1 or not specified");
+       
+       int remainingItems = limit == null ? 0 : limit;
+       
+       do
+       {
+         SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+             .withSequenceHash(request.getSequenceHash())
+             .withAfter(after)
+             ;
+         
+         if(limit != null)
+           pageRequest.withLimit(remainingItems);
+         
+         IPageOfFundamentalObject page = pageRequest
+             .build()
+             .execute(httpClient_);
+         
+         for(IFundamentalObject item : page.getData())
+         {
+           request.consume(item, trace, this);
+           remainingItems--;
+         }
+         
+         after = null;
+         IPagination pagination = page.getPagination();
+         
+         if(pagination != null)
+         {
+           ICursors cursors = pagination.getCursors();
+           
+           if(cursors != null)
+             after = cursors.getAfter();
+         }
+       } while(after != null && (limit==null || remainingItems>0));
+    }
   }
   
   @Override
@@ -1157,7 +1382,87 @@ public class AllegroApi implements IAllegroApi
    * the Markdown content and JSON entities and returns their PresentationML representation.
    */
   @Override
-  public IReceivedChatMessage decrypt(ISocialMessage message)
+  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  {
+    if(message instanceof ISocialMessage)
+      return decryptSocialMessage((ISocialMessage) message);
+    
+    if(message instanceof IMaestroMessage)
+    {
+      return buildMaestroMessage((IMaestroMessage) message);
+    }
+    
+    ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
+        .withMessageId(message.getMessageId())
+        .withThreadId(message.getThreadId())
+        ;
+    
+    String text = message.getVersion() + " message";
+    
+    return builder.withPresentationML(text)
+        .withText(text)
+        .withMarkDown(text)
+        .build();
+  }
+  
+  private IReceivedChatMessage buildMaestroMessage(IMaestroMessage message)
+  {
+    ReceivedMaestroMessage.Builder builder = new ReceivedMaestroMessage.Builder()
+        .withMessageId(message.getMessageId())
+        .withThreadId(message.getThreadId())
+        ;
+    
+    String text = "";
+    
+    switch(message.getEvent())
+    {
+      case JOIN_ROOM:
+        text = getUsers(message) + " joined the chat.";
+        break;
+        
+      case LEAVE_ROOM:
+        text = getUsers(message) + " left the chat.";
+        break;
+        
+      default:
+        text = message.getVersion() + " " + message.getEvent() + " message";
+    }
+    
+    return builder.withPresentationML(text)
+        .withText(text)
+        .withMarkDown(text)
+        .withMaestroMessage(message)
+        .build();
+  }
+
+  private String getUsers(IMaestroMessage message)
+  {
+    int cnt = message.getAffectedUsers().size();
+    
+    if(cnt == 0)
+      return "An unknown user";
+    
+    if(cnt == 1)
+      return  message.getAffectedUsers().get(0).getPrettyName();
+    
+    StringBuilder b = new StringBuilder();
+    int i=0;
+    
+    while(i<cnt - 1)
+    {
+      if(i>0)
+        b.append(", ");
+      
+      b.append(message.getAffectedUsers().get(i++).getPrettyName());
+    }
+    
+    b.append(" and ");
+    b.append(message.getAffectedUsers().get(i).getPrettyName());
+    
+    return b.toString();
+  }
+
+  private IReceivedSocialMessage decryptSocialMessage(ISocialMessage message)
   {
     if(FORMAT_MESSAGEMLV2.equals(message.getFormat()))
     {
@@ -1216,7 +1521,7 @@ public class AllegroApi implements IAllegroApi
       if(text == null)
         text = markDown;
       
-      ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
+      ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
           .withMessageId(message.getMessageId())
           .withThreadId(message.getThreadId())
           .withPresentationML(presentationML)
@@ -1224,6 +1529,7 @@ public class AllegroApi implements IAllegroApi
           .withMarkDown(markDown)
           .withEntityJson(new EntityJson(parseOneJsonObject(entityJsonString), modelRegistry_))
           .withMessageML(messageML)
+          .withSocialMessage(message)
           ;
       
       return builder
@@ -1334,13 +1640,14 @@ public class AllegroApi implements IAllegroApi
 
         //return new ChatMessage(message.getThreadId(), context.getPresentationML(), context.getEntityJson().asText());
         
-        ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
+        ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
             .withMessageId(message.getMessageId())
             .withThreadId(message.getThreadId())
             .withPresentationML(context.getPresentationML())
             .withMessageML(messageML)
             .withText(text)
             .withMarkDown(clearText)
+            .withSocialMessage(message)
             ;
             
             String      encryptedEntityJson = context.getEntityJson().asText();

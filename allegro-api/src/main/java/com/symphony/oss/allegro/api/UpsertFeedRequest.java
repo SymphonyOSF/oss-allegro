@@ -16,15 +16,21 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.symphonyoss.s2.common.hash.Hash;
+
+import com.symphony.oss.models.fundmental.canon.ISequence;
 import com.symphony.oss.models.system.canon.FeedType;
 
 /**
- * Request object for FetchOrCreateFeed.
+ * Request object for UpsertFeed.
  * 
  * @author Bruce Skingle
  *
  */
-public class UpsertFeedRequest extends AbstractFetchOrCreateFeedRequest<UpsertFeedRequest>
+public class UpsertFeedRequest extends AbstractUpsertFeedRequest<UpsertFeedRequest>
 {
   private String   name_;
   
@@ -36,6 +42,13 @@ public class UpsertFeedRequest extends AbstractFetchOrCreateFeedRequest<UpsertFe
     super(UpsertFeedRequest.class);
   }
 
+  /**
+   * Set the name of the feed to upsert.
+   * 
+   * @param name The name of the feed to upsert.
+   * 
+   * @return This (fluent method).
+   */
   public UpsertFeedRequest withName(String name)
   {
     name_ = name;
@@ -43,21 +56,47 @@ public class UpsertFeedRequest extends AbstractFetchOrCreateFeedRequest<UpsertFe
     return self();
   }
 
+  /**
+   * 
+   * @return The name of the feed to upsert.
+   */
   public String getName()
   {
     return name_;
   }
 }
 
-class AbstractFetchOrCreateFeedRequest<T extends AbstractFetchOrCreateFeedRequest<T>> extends AllegroRequest<T>
+class AbstractUpsertFeedRequest<T extends AbstractUpsertFeedRequest<T>> extends AllegroRequest<T>
 {
-  private FeedType type_;
+  private FeedType    type_;
+  private Set<Hash>   sequences_ = new HashSet<>();
   
-  public AbstractFetchOrCreateFeedRequest(Class<T> type)
+  public AbstractUpsertFeedRequest(Class<T> type)
   {
     super(type);
   }
   
+  public T withSequences(Hash ...sequences)
+  {
+    for(Hash sequence : sequences)
+      sequences_.add(sequence);
+    
+    return self();
+  }
+
+  public T withSequences(ISequence ...sequences)
+  {
+    for(ISequence sequence : sequences)
+      sequences_.add(sequence.getBaseHash());
+    
+    return self();
+  }
+  
+  protected Set<Hash> getSequences()
+  {
+    return sequences_;
+  }
+
   public T withType(FeedType type)
   {
     type_ = type;
@@ -68,5 +107,14 @@ class AbstractFetchOrCreateFeedRequest<T extends AbstractFetchOrCreateFeedReques
   public FeedType getType()
   {
     return type_;
+  }
+
+  @Override
+  public void validate()
+  {
+    super.validate();
+    
+    if(sequences_.isEmpty())
+      throw new IllegalArgumentException("At least one sequence is required.");
   }
 }

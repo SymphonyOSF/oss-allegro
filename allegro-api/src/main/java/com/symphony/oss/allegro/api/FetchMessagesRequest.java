@@ -1,4 +1,6 @@
 /*
+ *
+ *
  * Copyright 2019 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,40 +19,43 @@
 package com.symphony.oss.allegro.api;
 
 /**
- * Request object for UpsertSmsGateway.
+ * A request object for the FetchMessages method.
  * 
  * @author Bruce Skingle
  *
  */
-public class UpsertSmsGatewayRequest extends AbstractUpsertSmsGatewayRequest<UpsertSmsGatewayRequest>
+public class FetchMessagesRequest extends AbstractFetchRecentMessagesRequest<FetchMessagesRequest>
 {
+  private boolean scanForwards_ = true;
+
   /**
    * Constructor.
    */
-  public UpsertSmsGatewayRequest()
+  public FetchMessagesRequest()
   {
-    super(UpsertSmsGatewayRequest.class);
+    super(FetchMessagesRequest.class);
   }
-}
-
-class AbstractUpsertSmsGatewayRequest<T extends AbstractUpsertSmsGatewayRequest<T>> extends AbstractUpsertFeedRequest<T>
-{
-  private String   phoneNumber_;
   
-  public AbstractUpsertSmsGatewayRequest(Class<T> type)
+  /**
+   * 
+   * @return true if the request should scan the sequence in chronological order.
+   */
+  public boolean isScanForwards()
   {
-    super(type);
+    return scanForwards_;
   }
 
-  public T withPhoneNumber(String phoneNumber)
+  /**
+   * Set whether the request should scan the sequence in chronological order.
+   * 
+   * @param scanForwards Whether the request should scan the sequence in chronological order.
+   * 
+   * @return This (fluent method)
+   */
+  public FetchMessagesRequest withScanForwards(boolean scanForwards)
   {
-    phoneNumber_ = phoneNumber;
+    scanForwards_ = scanForwards;
     
     return self();
-  }
-
-  public String getPhoneNumber()
-  {
-    return phoneNumber_;
   }
 }
