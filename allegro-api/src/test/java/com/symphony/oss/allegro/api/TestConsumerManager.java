@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContextTransaction;
+import org.symphonyoss.s2.fugue.pipeline.ISimpleConsumer;
 
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.IBaseSocialMaestroMessage;
@@ -184,15 +185,31 @@ public class TestConsumerManager
     assertEquals(SOCIAL_MESSAGE, consumedObject_);
   }
   
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void testInvalid()
   {
-    ConsumerManager consumerManager = createConsumerManager(APPLICATION_TYPES);
+    DC dc = new DC();
+    
+    ConsumerManager consumerManager = createConsumerManager(APPLICATION_TYPES)
+        .withDefaultConsumer(dc);
     
     consumerManager.consume(SOCIAL_MESSAGE, trace, OPENER);
     
-    fail();
+    assertEquals(null, consumedType_);
+    assertEquals(null, consumedObject_);
+    assertEquals(SOCIAL_MESSAGE, dc.obj);
   }
+  
+  class DC implements ISimpleConsumer<Object>
+  {
+    Object obj;
+    
+    @Override
+    public void consume(Object item, ITraceContext trace)
+    {
+      obj = item;
+    }
+  };
   
   @Test
   public void testEntity()
