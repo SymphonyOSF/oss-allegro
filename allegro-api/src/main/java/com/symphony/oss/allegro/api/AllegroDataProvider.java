@@ -26,8 +26,8 @@ import org.symphonyoss.symphony.messageml.util.IDataProvider;
 import org.symphonyoss.symphony.messageml.util.IUserPresentation;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
-import com.symphony.oss.models.fundamental.canon.facade.UserId;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.internal.pod.canon.IPodInfo;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.PodHttpModelClient;

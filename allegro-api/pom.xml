@@ -40,6 +40,18 @@
       <artifactId>S2-common-core</artifactId>
     </dependency>
     
+    
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <version>${oss.models.version}</version>
+      <artifactId>core-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <version>${oss.models.version}</version>
+      <artifactId>crypto-model</artifactId>
+    </dependency>
+    
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>

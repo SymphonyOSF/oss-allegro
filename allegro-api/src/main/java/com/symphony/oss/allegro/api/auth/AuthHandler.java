@@ -38,7 +38,7 @@ import com.symphony.oss.models.auth.canon.IToken;
 import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequest;
 import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequestBuilder;
 import com.symphony.oss.models.auth.canon.Token;
-import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwsHeader;

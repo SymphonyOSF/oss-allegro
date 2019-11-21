@@ -20,11 +20,11 @@ import javax.crypto.SecretKey;
 
 import org.apache.commons.codec.binary.Base64;
 
-import com.symphony.oss.models.fundamental.canon.facade.WrappedKey;
-import com.symphony.oss.models.fundamental.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.fundamental.crypto.cipher.ICipherSuite;
-import com.symphony.oss.models.fundmental.canon.Base64SecretKey;
-import com.symphony.oss.models.fundmental.canon.CipherSuiteId;
+import com.symphony.oss.models.crypto.canon.Base64SecretKey;
+import com.symphony.oss.models.crypto.canon.CipherSuiteId;
+import com.symphony.oss.models.crypto.canon.facade.WrappedKey;
+import com.symphony.oss.models.crypto.cipher.CipherSuite;
+import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.security.exceptions.CiphertextTransportIsEmptyException;
 import com.symphony.security.exceptions.CiphertextTransportVersionException;
 import com.symphony.security.exceptions.InvalidDataException;

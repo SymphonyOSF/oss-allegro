@@ -19,7 +19,6 @@
 package com.symphony.oss.allegro.api;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 import java.time.temporal.ChronoUnit;
 
@@ -42,11 +41,11 @@ import com.symphony.oss.models.chat.canon.MaestroMessage;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.MessageId;
 import com.symphony.oss.models.chat.canon.facade.SocialMessage;
+import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.IClob;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalPayload;
-import com.symphony.oss.models.fundamental.canon.facade.PodId;
 import com.symphony.oss.models.system.canon.IFeed;
 import com.symphony.oss.models.system.canon.facade.IEnvironment;
 import com.symphony.oss.models.system.canon.facade.IPod;

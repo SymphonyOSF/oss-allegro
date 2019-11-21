@@ -107,9 +107,14 @@ import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.SocialMessage;
 import com.symphony.oss.models.chat.canon.facade.Stream;
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.crypto.canon.CipherSuiteId;
+import com.symphony.oss.models.crypto.canon.PemPrivateKey;
+import com.symphony.oss.models.crypto.cipher.CipherSuite;
+import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.fundamental.FundamentalModelRegistry;
 import com.symphony.oss.models.fundamental.canon.facade.Clob;
-import com.symphony.oss.models.fundamental.canon.facade.DistinguishedValue;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
 import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject.AbstractFundamentalObjectApplicationObjectBuilder;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
@@ -123,12 +128,7 @@ import com.symphony.oss.models.fundamental.canon.facade.IOpenSimpleSecurityConte
 import com.symphony.oss.models.fundamental.canon.facade.ISignedApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IVersionedObject;
 import com.symphony.oss.models.fundamental.canon.facade.OpenSecurityContext;
-import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
-import com.symphony.oss.models.fundamental.canon.facade.PodId;
 import com.symphony.oss.models.fundamental.canon.facade.SignedApplicationObject;
-import com.symphony.oss.models.fundamental.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.fundamental.crypto.cipher.ICipherSuite;
-import com.symphony.oss.models.fundmental.canon.CipherSuiteId;
 import com.symphony.oss.models.fundmental.canon.ContentIdObject;
 import com.symphony.oss.models.fundmental.canon.ContentIdType;
 import com.symphony.oss.models.fundmental.canon.DeletionType;
@@ -140,7 +140,6 @@ import com.symphony.oss.models.fundmental.canon.IOpenSecurityContextInfo;
 import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
 import com.symphony.oss.models.fundmental.canon.IPagination;
 import com.symphony.oss.models.fundmental.canon.ISequence;
-import com.symphony.oss.models.fundmental.canon.PemPrivateKey;
 import com.symphony.oss.models.fundmental.canon.Sequence;
 import com.symphony.oss.models.fundmental.canon.SequenceType;
 import com.symphony.oss.models.fundmental.canon.SequencesSequenceHashPageGetHttpRequestBuilder;
@@ -159,6 +158,7 @@ import com.symphony.oss.models.pod.canon.PodModel;
 import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
 import com.symphony.oss.models.sbe.id.SbeIdFactory;
 import com.symphony.oss.models.system.canon.FeedRequest;
+import com.symphony.oss.models.system.canon.FeedType;
 import com.symphony.oss.models.system.canon.IFeed;
 import com.symphony.oss.models.system.canon.ISmsGatewayMetadata;
 import com.symphony.oss.models.system.canon.ISubscriptionMetadataRequest;
@@ -222,6 +222,8 @@ public class AllegroApi implements IAllegroApi
   private final Supplier<X509Certificate>  podCertProvider_;
 
   private final ITraceContextTransactionFactory traceContextFactory_;
+
+  private LiveCurrentMessageFactory liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
   
   /**
    * Constructor.
@@ -334,7 +336,7 @@ public class AllegroApi implements IAllegroApi
       internalUserId_ = userId_ = authHandler_.getUserId();
     }
     
-    principalHash_ = legacyIdFactory_.userId(userId_).getAbsoluteHash();
+    principalHash_ = legacyIdFactory_.principalId(userId_).getAbsoluteHash();
     
     kmInternalClient_ = new KmInternalHttpModelClient(
         modelRegistry_,
@@ -610,26 +612,26 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
-  public IFeed upsertFeed(UpsertSmsGatewayRequest request)
+  public void upsertGatewaySubscription(UpsertSmsGatewayRequest request)
   {
-    String name = SmsGatewayMetadata.TYPE_ID + ":" + request.getType();
-    
-    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
-        .withType(request.getType())
-        .withSequences(DistinguishedValue.USER_CONTENT_SEQUENCE)
-        .build()
-        ;
-
-    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
-        .withName(name)
-        .withCanonPayload(subscriptionRequest)
-        .build()
-        .execute(httpClient_)
-        ;
+//    String name = SmsGatewayMetadata.TYPE_ID + ":" + request.getType();
+//    
+//    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
+//        .withType(request.getType())
+//        .withSequences(request.getSequences())
+//        .build()
+//        ;
+//
+//    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
+//        .withName(name)
+//        .withCanonPayload(subscriptionRequest)
+//        .build()
+//        .execute(httpClient_)
+//        ;
     
     ISmsGatewayMetadata metaData = new SmsGatewayMetadata.Builder()
-        .withType(request.getType())
-        .withSequences(DistinguishedValue.USER_CONTENT_SEQUENCE)
+        .withType(FeedType.EXTERNAL_GATEWAY)
+        .withSequences(request.getSequences())
         .withCipherSuiteId(cipherSuite_.getId())
         .withEncodedPrivateKey(rsaPemCredential_)
         .withUserName(userName_)
@@ -644,19 +646,16 @@ public class AllegroApi implements IAllegroApi
     
     ISubscriptionMetadataRequest subscriptionMetadataRequest = new SubscriptionMetadataRequest.Builder()
         .withMetadata(metaDataObject)
-        .withSequences(DistinguishedValue.USER_CONTENT_SEQUENCE)
+        .withSequences(request.getSequences())
         .build()
         ;
     
     
-    systemApiClient_.newFeedsNameMetadataPostHttpRequestBuilder()
-        .withName(name)
+    systemApiClient_.newGatewaysMetadataPostHttpRequestBuilder()
         .withCanonPayload(subscriptionMetadataRequest)
         .build()
         .execute(httpClient_)
         ;
-    
-    return feed;
   }
 
   @Override
@@ -862,7 +861,7 @@ public class AllegroApi implements IAllegroApi
       
     for(IMessageEnvelope envelope : thread.getEnvelopes())
     {
-      handleFetchedMessage(consumer, LiveCurrentMessageFactory.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_));
+      handleFetchedMessage(consumer, liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_));
     }
   }
 
@@ -928,7 +927,7 @@ public class AllegroApi implements IAllegroApi
         
       for(IMessageEnvelope envelope : thread.getEnvelopes())
       {
-        request.consume(LiveCurrentMessageFactory.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
+        request.consume(liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
       }
     }
   }

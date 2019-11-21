@@ -32,11 +32,11 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.chat.canon.facade.ThreadId;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
 import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
-import com.symphony.oss.models.fundamental.canon.facade.PodAndUserId;
-import com.symphony.oss.models.fundamental.canon.facade.PodId;
 import com.symphony.oss.models.fundmental.canon.DeletionType;
 import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
 import com.symphony.oss.models.fundmental.canon.ISequence;
@@ -313,7 +313,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   void storeCredential();
 
-  IFeed upsertFeed(UpsertSmsGatewayRequest request);
+  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
 
   IFeed upsertFeed(UpsertFeedRequest request);
 
