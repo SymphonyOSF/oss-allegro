@@ -18,11 +18,8 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.symphonyoss.s2.canon.runtime.IEntity;
-
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
 
 /**
  * An object capable of unwrapping and decrypting FundamentalObjects and SocialMessages.
@@ -32,14 +29,14 @@ import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
  */
 public interface IFundamentalOpener
 {
-  /**
-   * Open (deserialize and decrypt if necessary) the given object.
-   * 
-   * @param item A FundamentalObject.
-   * 
-   * @return The typed contents of the given object.
-   */
-  IEntity open(IFundamentalObject item);
+//  /**
+//   * Open (deserialize and decrypt if necessary) the given object.
+//   * 
+//   * @param item A FundamentalObject.
+//   * 
+//   * @return The typed contents of the given object.
+//   */
+//  IEntity open(IFundamentalObject item);
   
   /**
    * Create and IChatMessage from the given ILiveCurrentMessage, if the message

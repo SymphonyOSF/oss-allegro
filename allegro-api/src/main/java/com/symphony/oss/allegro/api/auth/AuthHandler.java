@@ -83,7 +83,6 @@ public class AuthHandler
         .withTTL(300000)  // 5 minutes, this is the max allowed by Symphony RSA authentication.
         ;
     
-    String a = podUrl.getAuthority();
     domain_ = podUrl.getHost();
     
     podClient_ = new AuthHttpModelClient(

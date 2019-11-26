@@ -132,41 +132,41 @@ class ConsumerManager
     if(consumeChatTypes(object, traceContext, opener))
       return;
     
-    IFundamentalObject fundamentalObject = null;
-    
-    if(object instanceof IFundamentalObject)
-    {
-      fundamentalObject = (IFundamentalObject) object;
-    }
-    else if(object instanceof INotification)
-    {
-      fundamentalObject = ((INotification)object).getPayload();
-    }
-    
-    if(fundamentalObject != null)
-    {
-      if(hasChatTypes_ || hasApplicationTypes_)
-      {
-        IEntity entity = opener.open(fundamentalObject);
-        
-        if(consumeChatTypes(entity, traceContext, opener))
-          return;
-        
-        if(hasApplicationTypes_)
-        {
-          if(consume(entity, traceContext))
-            return;
-        }
-      }
-      
-      if(hasPayloadTypes_)
-      {
-        IFundamentalPayload payload = ((IFundamentalObject)object).getPayload();
-        
-        if(consume(payload, traceContext))
-          return;
-      }
-    }
+//    IFundamentalObject fundamentalObject = null;
+//    
+//    if(object instanceof IFundamentalObject)
+//    {
+//      fundamentalObject = (IFundamentalObject) object;
+//    }
+//    else if(object instanceof INotification)
+//    {
+//      fundamentalObject = ((INotification)object).getPayload();
+//    }
+//    
+//    if(fundamentalObject != null)
+//    {
+//      if(hasChatTypes_ || hasApplicationTypes_)
+//      {
+//        IEntity entity = opener.open(fundamentalObject);
+//        
+//        if(consumeChatTypes(entity, traceContext, opener))
+//          return;
+//        
+//        if(hasApplicationTypes_)
+//        {
+//          if(consume(entity, traceContext))
+//            return;
+//        }
+//      }
+//      
+//      if(hasPayloadTypes_)
+//      {
+//        IFundamentalPayload payload = ((IFundamentalObject)object).getPayload();
+//        
+//        if(consume(payload, traceContext))
+//          return;
+//      }
+//    }
     
     if(!consume(object, traceContext))
       defaultConsumer_.consume(object, traceContext);

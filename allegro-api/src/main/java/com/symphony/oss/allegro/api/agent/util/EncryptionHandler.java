@@ -32,7 +32,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.symphony.oss.allegro.api.IAllegroCryptoClient;
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 
 /**
  * This class provides helper methods for encrypting binary data and JSON payloads of Symphony messages.

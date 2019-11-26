@@ -19,14 +19,9 @@ package com.symphony.oss.allegro.api;
 import java.util.List;
 import java.util.Set;
 
-import javax.annotation.Nullable;
-
-import org.symphonyoss.s2.common.hash.Hash;
-
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
-import com.symphony.oss.models.fundamental.canon.facade.IOpenSigningKey;
-import com.symphony.oss.models.fundamental.canon.facade.IOpenSimpleSecurityContext;
-import com.symphony.oss.models.fundamental.canon.facade.RotationId;
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 
 /**
  * Interface for all cryptographic capabilities used by Allegro.
@@ -56,10 +51,12 @@ public interface IAllegroCryptoClient
 
   List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens);
 
-  IOpenSimpleSecurityContext getOrCreateThreadSecurityContext(ThreadId threadId);
+  void encrypt(ApplicationObjectBuilder applicationObjectBuilder);
 
-  IOpenSigningKey getSigningKey();
-
-  IOpenSimpleSecurityContext getSecurityContext(Hash securityContextHash, @Nullable ThreadId threadId);
+//  IOpenSimpleSecurityContext getOrCreateThreadSecurityContext(ThreadId threadId);
+//
+//  IOpenSigningKey getSigningKey();
+//
+//  IOpenSimpleSecurityContext getSecurityContext(Hash securityContextHash, @Nullable ThreadId threadId);
 
 }

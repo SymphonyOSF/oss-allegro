@@ -24,8 +24,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
-import com.symphony.oss.models.fundamental.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.internal.pod.canon.ICryptoRotationInfoResponse;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 

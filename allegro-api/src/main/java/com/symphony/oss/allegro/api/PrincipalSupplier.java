@@ -35,6 +35,7 @@ import com.symphony.oss.models.system.canon.IEstablishPrincipalRequest;
 import com.symphony.oss.models.system.canon.IEstablishPrincipalResponse;
 import com.symphony.oss.models.system.canon.SystemHttpModelClient;
 
+@Deprecated
 class PrincipalSupplier
 {
   private final FundamentalModelRegistry modelRegistry_;

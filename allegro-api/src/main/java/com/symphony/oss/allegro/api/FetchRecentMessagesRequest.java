@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 
 /**
  * A request object for the FetchRecentMessages method.

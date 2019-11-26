@@ -29,10 +29,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
@@ -50,27 +48,24 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
-import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
-import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
+import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.IJsonDomNode;
-import org.symphonyoss.s2.common.dom.json.IJsonObject;
-import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.MutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
 import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
-import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
+import org.symphonyoss.s2.common.immutable.ImmutableByteArray;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
+import org.symphonyoss.s2.fugue.kv.IKvItem;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.Chime;
 import org.symphonyoss.symphony.messageml.elements.FormatEnum;
@@ -100,49 +95,19 @@ import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
-import com.symphony.oss.models.chat.canon.IThreadIdObject;
-import com.symphony.oss.models.chat.canon.MaestroMessage;
-import com.symphony.oss.models.chat.canon.ThreadIdObject;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
-import com.symphony.oss.models.chat.canon.facade.SocialMessage;
-import com.symphony.oss.models.chat.canon.facade.Stream;
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
+import com.symphony.oss.models.core.canon.CoreHttpModelClient;
+import com.symphony.oss.models.core.canon.CoreModel;
+import com.symphony.oss.models.core.canon.HashType;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
-import com.symphony.oss.models.fundamental.FundamentalModelRegistry;
-import com.symphony.oss.models.fundamental.canon.facade.Clob;
-import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject;
-import com.symphony.oss.models.fundamental.canon.facade.FundamentalObject.AbstractFundamentalObjectApplicationObjectBuilder;
-import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
-import com.symphony.oss.models.fundamental.canon.facade.IBlob;
-import com.symphony.oss.models.fundamental.canon.facade.IClob;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalPayload;
-import com.symphony.oss.models.fundamental.canon.facade.IOpenSecurityContext;
-import com.symphony.oss.models.fundamental.canon.facade.IOpenSimpleSecurityContext;
-import com.symphony.oss.models.fundamental.canon.facade.ISignedApplicationObject;
-import com.symphony.oss.models.fundamental.canon.facade.IVersionedObject;
-import com.symphony.oss.models.fundamental.canon.facade.OpenSecurityContext;
-import com.symphony.oss.models.fundamental.canon.facade.SignedApplicationObject;
-import com.symphony.oss.models.fundmental.canon.ContentIdObject;
-import com.symphony.oss.models.fundmental.canon.ContentIdType;
-import com.symphony.oss.models.fundmental.canon.DeletionType;
-import com.symphony.oss.models.fundmental.canon.FundamentalHttpModelClient;
-import com.symphony.oss.models.fundmental.canon.FundamentalModel;
-import com.symphony.oss.models.fundmental.canon.IContentIdObject;
-import com.symphony.oss.models.fundmental.canon.ICursors;
-import com.symphony.oss.models.fundmental.canon.IOpenSecurityContextInfo;
-import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
-import com.symphony.oss.models.fundmental.canon.IPagination;
-import com.symphony.oss.models.fundmental.canon.ISequence;
-import com.symphony.oss.models.fundmental.canon.Sequence;
-import com.symphony.oss.models.fundmental.canon.SequenceType;
-import com.symphony.oss.models.fundmental.canon.SequencesSequenceHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
 import com.symphony.oss.models.internal.km.canon.KmInternalModel;
 import com.symphony.oss.models.internal.pod.canon.IMessageEnvelope;
@@ -151,27 +116,17 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
+import com.symphony.oss.models.object.canon.KvItemEntity.AbstractKvItemBuilder;
+import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
+import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.facade.IPartition;
+import com.symphony.oss.models.object.canon.facade.KvItem;
+import com.symphony.oss.models.object.canon.facade.NamedUserIdObject;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
 import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
-import com.symphony.oss.models.sbe.id.SbeIdFactory;
-import com.symphony.oss.models.system.canon.FeedRequest;
-import com.symphony.oss.models.system.canon.FeedType;
-import com.symphony.oss.models.system.canon.IFeed;
-import com.symphony.oss.models.system.canon.ISmsGatewayMetadata;
-import com.symphony.oss.models.system.canon.ISubscriptionMetadataRequest;
-import com.symphony.oss.models.system.canon.ISubscriptionRequest;
-import com.symphony.oss.models.system.canon.SaveCredentialRequest;
-import com.symphony.oss.models.system.canon.SmsGatewayMetadata;
-import com.symphony.oss.models.system.canon.SubscriptionMetadataRequest;
-import com.symphony.oss.models.system.canon.SubscriptionRequest;
-import com.symphony.oss.models.system.canon.SystemHttpModelClient;
-import com.symphony.oss.models.system.canon.SystemModel;
-import com.symphony.oss.models.system.canon.facade.FeedMessageDelete;
-import com.symphony.oss.models.system.canon.facade.IFeedMessage;
-import com.symphony.oss.models.system.canon.facade.Principal;
 
 /**
  * Implementation of IAllegroApi, the main Allegro API class.
@@ -192,7 +147,7 @@ public class AllegroApi implements IAllegroApi
   private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
   
   private final String                     userName_;
-  private final FundamentalModelRegistry   modelRegistry_;
+  private final ModelRegistry              modelRegistry_;
   private final String                     clientType_;
   private final ICipherSuite               cipherSuite_;
   private final CloseableHttpClient        httpClient_;
@@ -202,18 +157,15 @@ public class AllegroApi implements IAllegroApi
   private final KmInternalHttpModelClient  kmInternalClient_;
   private final IAllegroCryptoClient       cryptoClient_;
   private final IPodInfo                   podInfo_;
-  private final SbeIdFactory               legacyIdFactory_;
   private final AllegroDataProvider        dataProvider_;
   private final V4MessageTransformer       messageTramnsformer_;
   private final EncryptionHandler          agentEncryptionHandler_;
-  private final FundamentalHttpModelClient fundamentalApiClient_;
+  private final CoreHttpModelClient        coreApiClient_;
   private final PodPrivateHttpModelClient  podPrivateApiClient_;
-  private final SystemHttpModelClient      systemApiClient_;
   private final ChatHttpModelClient        chatApiClient_;
+  private final ObjectHttpModelClient      objectApiClient_;
   private final PodAndUserId               userId_;
   private final PemPrivateKey              rsaPemCredential_;
-
-  private final Hash                       principalHash_;
 
   private PodAndUserId                     internalUserId_;
   private PodId                            podId_;
@@ -238,9 +190,9 @@ public class AllegroApi implements IAllegroApi
     
     userName_ = builder.userName_;
     
-    modelRegistry_ = new FundamentalModelRegistry()
-        .withFactories(FundamentalModel.FACTORIES)
-        .withFactories(SystemModel.FACTORIES)
+    modelRegistry_ = new ModelRegistry()
+        .withFactories(ObjectModel.FACTORIES)
+        .withFactories(CoreModel.FACTORIES)
         .withFactories(ChatModel.FACTORIES)
         .withFactories(PodModel.FACTORIES)
         .withFactories(PodInternalModel.FACTORIES)
@@ -258,8 +210,6 @@ public class AllegroApi implements IAllegroApi
     podApiClient_ = new PodHttpModelClient(
         modelRegistry_,
         builder.podUrl_, "/pod", null);
-    
-    
     
     authHandler_    = new AuthHandler(httpClient_, builder.cookieStore_,
         builder.podUrl_, builder.rsaCredential_, userName_);
@@ -315,7 +265,6 @@ public class AllegroApi implements IAllegroApi
     log_.info("fetch podInfo_...." + podInfo_);
     
     log_.info("keymanager auth....");
-    legacyIdFactory_ = new SbeIdFactory(podInfo_.getPodId(), podInfo_.getExternalPodId());
     podId_ = PodId.newBuilder().build(podInfo_.getExternalPodId());
     authHandler_.setKeyManagerUrl(podInfo_.getKeyManagerUrl());
     authHandler_.authenticate(false, true);
@@ -329,14 +278,12 @@ public class AllegroApi implements IAllegroApi
       log_.info("getAccountInfo...." + accountInfo);
       
       internalUserId_ = PodAndUserId.newBuilder().build(accountInfo.getUserName());
-      userId_ = legacyIdFactory_.toExternalUserId(internalUserId_);
+      userId_ = toExternalUserId(internalUserId_);
     }
     else
     {
       internalUserId_ = userId_ = authHandler_.getUserId();
     }
-    
-    principalHash_ = legacyIdFactory_.principalId(userId_).getAbsoluteHash();
     
     kmInternalClient_ = new KmInternalHttpModelClient(
         modelRegistry_,
@@ -357,11 +304,11 @@ public class AllegroApi implements IAllegroApi
         modelRegistry_,
         builder.objectStoreUrl_, null, jwtGenerator);
 
-    fundamentalApiClient_  = new FundamentalHttpModelClient(
+    coreApiClient_  = new CoreHttpModelClient(
         modelRegistry_,
         builder.objectStoreUrl_, null, jwtGenerator);
-    
-    systemApiClient_  = new SystemHttpModelClient(
+
+    objectApiClient_  = new ObjectHttpModelClient(
         modelRegistry_,
         builder.objectStoreUrl_, null, jwtGenerator);
     
@@ -369,9 +316,9 @@ public class AllegroApi implements IAllegroApi
         modelRegistry_,
         builder.objectStoreUrl_, null, jwtGenerator);
     
-    cryptoClient_ = new AllegroCryptoClient(httpClient_, podInternalApiClient_, kmInternalClient_, fundamentalApiClient_, systemApiClient_,
+    cryptoClient_ = new AllegroCryptoClient(httpClient_, podInternalApiClient_, kmInternalClient_, coreApiClient_,
         chatApiClient_,
-        podInfo_, internalUserId_, principalHash_, 
+        podInfo_, internalUserId_,
         accountInfoProvider_,
         modelRegistry_);
     
@@ -381,12 +328,23 @@ public class AllegroApi implements IAllegroApi
     
     rsaPemCredential_ = builder.rsaPemCredential_;
     
-    log_.info("principalHash_ = " + principalHash_);
     log_.info("userId_ = " + userId_);
     
     log_.info("allegroApi constructor done.");
   }
   
+  /**
+   * Convert the given internal or external user ID into an external user ID.
+   * 
+   * @param internalOrExternalUserId  An internal or external user ID
+   * 
+   * @return The external user ID for the given user ID.
+   */
+  public PodAndUserId toExternalUserId(PodAndUserId internalOrExternalUserId)
+  {
+    return PodAndUserId.newBuilder().build(UserId.replacePodId(internalOrExternalUserId.longValue(), podInfo_.getExternalPodId()));
+  }
+
   private String getClientVersion()
   {
     String osName = System.getProperty("os.name");
@@ -402,376 +360,334 @@ public class AllegroApi implements IAllegroApi
     return podId_;
   }
   
+//  @Override
+//  public IFundamentalObject fetchAbsolute(Hash absoluteHash)
+//  {
+//    return fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
+//        .withCurrentVersion(false)
+//        .withObjectHash(absoluteHash)
+//        .build()
+//        .execute(httpClient_);
+//  }
+//
+//  @Override
+//  public <T extends IEntity> T fetchAbsolute(Hash absoluteHash, Class<T> type)
+//  {
+//    IEntity openEntity = open(fetchAbsolute(absoluteHash));
+//    
+//    if(type.isInstance(openEntity))
+//      return type.cast(openEntity);
+//    
+//    throw new IllegalStateException("Received object is of type " + openEntity.getCanonType());
+//  }
+//
+//  @Override
+//  public <T extends IEntity> T fetchCurrent(Hash baseHash, Class<T> type)
+//  {
+//    IEntity openEntity = open(fetchCurrent(baseHash));
+//    
+//    if(type.isInstance(openEntity))
+//      return type.cast(openEntity);
+//    
+//    throw new IllegalStateException("Received object is of type " + openEntity.getCanonType());
+//  }
+//
+//  @Override
+//  public IFundamentalObject fetchCurrent(Hash baseHash)
+//  {
+//    return fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
+//        .withCurrentVersion(true)
+//        .withObjectHash(baseHash)
+//        .build()
+//        .execute(httpClient_);
+//  }
+//  
   @Override
-  public IFundamentalObject fetchAbsolute(Hash absoluteHash)
+  public void store(IKvItem object)
   {
-    return fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-        .withCurrentVersion(false)
-        .withObjectHash(absoluteHash)
-        .build()
-        .execute(httpClient_);
-  }
-
-  @Override
-  public <T extends IEntity> T fetchAbsolute(Hash absoluteHash, Class<T> type)
-  {
-    IEntity openEntity = open(fetchAbsolute(absoluteHash));
-    
-    if(type.isInstance(openEntity))
-      return type.cast(openEntity);
-    
-    throw new IllegalStateException("Received object is of type " + openEntity.getCanonType());
-  }
-
-  @Override
-  public <T extends IEntity> T fetchCurrent(Hash baseHash, Class<T> type)
-  {
-    IEntity openEntity = open(fetchCurrent(baseHash));
-    
-    if(type.isInstance(openEntity))
-      return type.cast(openEntity);
-    
-    throw new IllegalStateException("Received object is of type " + openEntity.getCanonType());
-  }
-
-  @Override
-  public IFundamentalObject fetchCurrent(Hash baseHash)
-  {
-    return fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-        .withCurrentVersion(true)
-        .withObjectHash(baseHash)
-        .build()
-        .execute(httpClient_);
-  }
-  
-  @Override
-  public void store(IFundamentalObject object)
-  {
-    fundamentalApiClient_.newObjectsObjectHashPutHttpRequestBuilder()
-      .withObjectHash(object.getAbsoluteHash())
-      .withCanonPayload(object)
+    objectApiClient_.newObjectsPartitionPartitionKeySortSortKeyGetHttpRequestBuilder()
+      .wi
+//      .withObjectHash(object.getAbsoluteHash())
+//      .withCanonPayload(object)
       .build()
       .execute(httpClient_);
   }
-
-  @Override
-  public IFundamentalObject store(IFundamentalId id)
-  {
-    IFundamentalObject fundamentalObject = new FundamentalObject.IdBuilder()
-        .withFundamentalId(id)
-        .build();
-    
-    store(fundamentalObject);
-    
-    return fundamentalObject;
-  }
-
-  @Override
-  public ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request)
-  {
-    request.validate();
-    
-    Hash subjectHash = request.getPrincipalBaseHash();
-    
-    if(subjectHash == null)
-      subjectHash = getPrincipalBaseHash();
-    
-    IContentIdObject id = new ContentIdObject.Builder()
-        .withSubjectHash(subjectHash)
-        .withSubjectType(Principal.CLIENT_TYPE_ID)
-        .withContentType(request.getContentType())
-        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
-        .build();
-    
-    return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
-
-//    IFundamentalObject result = fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-//        .withCurrentVersion(true)
-//        .withObjectHash(id.getAbsoluteHash())
-//        .build()
-//        .execute(httpClient_);
+//
+//  @Override
+//  public IFundamentalObject store(IFundamentalId id)
+//  {
+//    IFundamentalObject fundamentalObject = new FundamentalObject.IdBuilder()
+//        .withFundamentalId(id)
+//        .build();
 //    
-//    if(result.getPayload() instanceof IdPlainTextPayloadContainer)
+//    store(fundamentalObject);
+//    
+//    return fundamentalObject;
+//  }
+//
+//  @Override
+//  public ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request)
+//  {
+//    request.validate();
+//    
+//    Hash subjectHash = request.getPrincipalBaseHash();
+//    
+//    if(subjectHash == null)
+//      subjectHash = getPrincipalBaseHash();
+//    
+//    IContentIdObject id = new ContentIdObject.Builder()
+//        .withSubjectHash(subjectHash)
+//        .withSubjectType(Principal.CLIENT_TYPE_ID)
+//        .withContentType(request.getContentType())
+//        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
+//        .build();
+//    
+//    return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
+//
+////    IFundamentalObject result = fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
+////        .withCurrentVersion(true)
+////        .withObjectHash(id.getAbsoluteHash())
+////        .build()
+////        .execute(httpClient_);
+////    
+////    if(result.getPayload() instanceof IdPlainTextPayloadContainer)
+////    {
+////      IApplicationObject payload = ((IdPlainTextPayloadContainer)result.getPayload()).getPayload();
+////      
+////      if(!(payload instanceof ObjectPointer))
+////        throw new IllegalStateException("Unexpected return type " + payload.getCanonType() + ", expected ObjectPointer.");
+////      
+////      Hash sequenceHash = ((ObjectPointer)payload).getBaseHash();
+////      
+////      return fetchAbsolute(sequenceHash, ISequence.class);
+////    }
+////    
+////    throw new IllegalStateException("Unexpected return type " + result.getPayload().getCanonType() + ", expected IdPlainTextPayloadContainer.");
+//
+//  }
+//  
+//  @Override
+//  public void storeCredential()
+//  {
+//    systemApiClient_.newCredentialsPostHttpRequestBuilder()
+//        .withCanonPayload(new SaveCredentialRequest.Builder()
+//            .withCipherSuiteId(cipherSuite_.getId())
+//            .withEncodedPrivateKey(rsaPemCredential_)
+//            .withUserName(userName_)
+//            .build()
+//            )
+//        .build()
+//        .execute(httpClient_)
+//        ;
+//  }
+//  
+//  @Override
+//  public IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request)
+//  {
+//    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
+//        .withHttpClient(httpClient_)
+//        .withSystemApiClient(systemApiClient_)
+//        .withTraceContextTransactionFactory(traceContextFactory_)
+//        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
+//        .withSubscription(new AllegroSubscription(request, this))
+//        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
+//        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
+//      .build();
+//    
+//    return subscriberManager;
+//  }
+//  
+//  @Override
+//  public void fetchFeedMessages(FetchFeedMessagesRequest request)
+//  {
+//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
 //    {
-//      IApplicationObject payload = ((IdPlainTextPayloadContainer)result.getPayload()).getPayload();
+//      ITraceContext trace = traceTransaction.open();
 //      
-//      if(!(payload instanceof ObjectPointer))
-//        throw new IllegalStateException("Unexpected return type " + payload.getCanonType() + ", expected ObjectPointer.");
+//      List<IFeedMessage> messages  = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
+//          .withName(request.getName())
+//          .withCanonPayload(new FeedRequest.Builder()
+//              .withMaxMessages(request.getMaxMessages() != null ? request.getMaxMessages() : 1)
+//              .build())
+//          .build()
+//          .execute(httpClient_);
 //      
-//      Hash sequenceHash = ((ObjectPointer)payload).getBaseHash();
+//      FeedRequest.Builder builder = new FeedRequest.Builder()
+//          .withMaxMessages(0)
+//          .withWaitTimeSeconds(0);
 //      
-//      return fetchAbsolute(sequenceHash, ISequence.class);
+//      System.out.println("Received " + messages.size() + " messages.");
+//      for(IFeedMessage message : messages)
+//      {
+//        request.consume(message.getPayload(), trace, this);
+//          
+//        builder.withDelete(new FeedMessageDelete.Builder()
+//            .withReceiptHandle(message.getReceiptHandle())
+//            .build()
+//            );
+//      }
+//      
+//      try
+//      {
+//        // Delete (ACK) the consumed messages
+//        messages = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
+//            .withName(request.getName())
+//            .withCanonPayload(builder.build())
+//            .build()
+//            .execute(httpClient_);
+//      }
+//      catch(NotFoundException e)
+//      {
+//        messages.clear();
+//      }
+//    }
+//    catch(NotFoundException e)
+//    {
+//      // No messages
 //    }
 //    
-//    throw new IllegalStateException("Unexpected return type " + result.getPayload().getCanonType() + ", expected IdPlainTextPayloadContainer.");
-
-  }
-  
-  @Override
-  public void storeCredential()
-  {
-    systemApiClient_.newCredentialsPostHttpRequestBuilder()
-        .withCanonPayload(new SaveCredentialRequest.Builder()
-            .withCipherSuiteId(cipherSuite_.getId())
-            .withEncodedPrivateKey(rsaPemCredential_)
-            .withUserName(userName_)
-            .build()
-            )
-        .build()
-        .execute(httpClient_)
-        ;
-  }
-  
-  @Override
-  public IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request)
-  {
-    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
-        .withHttpClient(httpClient_)
-        .withSystemApiClient(systemApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
-        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
-        .withSubscription(new AllegroSubscription(request, this))
-        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
-        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
-      .build();
-    
-    return subscriberManager;
-  }
-  
-  @Override
-  public void fetchFeedMessages(FetchFeedMessagesRequest request)
-  {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-      List<IFeedMessage> messages  = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
-          .withName(request.getName())
-          .withCanonPayload(new FeedRequest.Builder()
-              .withMaxMessages(request.getMaxMessages() != null ? request.getMaxMessages() : 1)
-              .build())
-          .build()
-          .execute(httpClient_);
-      
-      FeedRequest.Builder builder = new FeedRequest.Builder()
-          .withMaxMessages(0)
-          .withWaitTimeSeconds(0);
-      
-      System.out.println("Received " + messages.size() + " messages.");
-      for(IFeedMessage message : messages)
-      {
-        request.consume(message.getPayload(), trace, this);
-          
-        builder.withDelete(new FeedMessageDelete.Builder()
-            .withReceiptHandle(message.getReceiptHandle())
-            .build()
-            );
-      }
-      
-      try
-      {
-        // Delete (ACK) the consumed messages
-        messages = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
-            .withName(request.getName())
-            .withCanonPayload(builder.build())
-            .build()
-            .execute(httpClient_);
-      }
-      catch(NotFoundException e)
-      {
-        messages.clear();
-      }
-    }
-    catch(NotFoundException e)
-    {
-      // No messages
-    }
-    
-    request.closeConsumers();
-  }
-
-  @Override
-  public IFeed upsertFeed(UpsertFeedRequest request)
-  {
-    request.validate();
-    
-    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
-        .withType(request.getType())
-        .withSequences(request.getSequences())
-        .build()
-        ;
-    
-    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
-        .withName(request.getName())
-        .withCanonPayload(subscriptionRequest)
-        .build()
-        .execute(httpClient_)
-        ;
-    
-    return feed;
-  }
-
-  @Override
-  public void upsertGatewaySubscription(UpsertSmsGatewayRequest request)
-  {
-//    String name = SmsGatewayMetadata.TYPE_ID + ":" + request.getType();
+//    request.closeConsumers();
+//  }
+//
+//  @Override
+//  public IFeed upsertFeed(UpsertFeedRequest request)
+//  {
+//    request.validate();
 //    
 //    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
 //        .withType(request.getType())
 //        .withSequences(request.getSequences())
 //        .build()
 //        ;
-//
+//    
 //    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
-//        .withName(name)
+//        .withName(request.getName())
 //        .withCanonPayload(subscriptionRequest)
 //        .build()
 //        .execute(httpClient_)
 //        ;
-    
-    ISmsGatewayMetadata metaData = new SmsGatewayMetadata.Builder()
-        .withType(FeedType.EXTERNAL_GATEWAY)
-        .withSequences(request.getSequences())
-        .withCipherSuiteId(cipherSuite_.getId())
-        .withEncodedPrivateKey(rsaPemCredential_)
-        .withUserName(userName_)
-        .withPhoneNumber(request.getPhoneNumber())
-        .build()
-        ;
-    
-    ISignedApplicationObject metaDataObject = new SignedApplicationObject.Builder()
-        .withPayload(metaData)
-        .withSigningKey(cryptoClient_.getSigningKey())
-        .build();
-    
-    ISubscriptionMetadataRequest subscriptionMetadataRequest = new SubscriptionMetadataRequest.Builder()
-        .withMetadata(metaDataObject)
-        .withSequences(request.getSequences())
-        .build()
-        ;
-    
-    
-    systemApiClient_.newGatewaysMetadataPostHttpRequestBuilder()
-        .withCanonPayload(subscriptionMetadataRequest)
-        .build()
-        .execute(httpClient_)
-        ;
-  }
-
-  @Override
-  public ISequence fetchOrCreateSequenceMetaData(FetchOrCreateSequenceMetaDataRequest request)
-  {
-    request.validate();
-    
-    Hash subjectHash = request.getPrincipalBaseHash();
-    
-    if(subjectHash == null)
-      subjectHash = getPrincipalBaseHash();
-    
-    IContentIdObject id = new ContentIdObject.Builder()
-        .withSubjectHash(subjectHash)
-        .withSubjectType(Principal.CLIENT_TYPE_ID)
-        .withContentType(request.getContentType())
-        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
-        .build();
-    
-    try
-    {
-      return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
-    }
-    catch(NotFoundException e)
-    {
-      IOpenSimpleSecurityContext securityContext = cryptoClient_.getOrCreateThreadSecurityContext(request.getThreadId());
-
-      ISequence sequence = new Sequence.Builder()
-          .withType(request.getSequenceType())
-          .withSecurityContextHash(securityContext.getParentHash())
-          .withSigningKeyHash(cryptoClient_.getSigningKey().getAbsoluteHash())
-          .withBaseHash(id.getAbsoluteHash())
-          .withPrevHash(id.getAbsoluteHash())
-          .build();
-      
-      IFundamentalObject sequenceObject = new FundamentalObject.ObjectBuilder()
-          .withPayload(sequence)
-          .withSigningKey(cryptoClient_.getSigningKey())
-          .build();
-      
-//      ITransaction transaction = new Transaction.Builder()
-//        .withId(id)
-//        .withAdditionalObjects(sequenceObject)
-//        .build();
-      
-      IFundamentalObject idObject =  new FundamentalObject.IdBuilder()
-      .withFundamentalId(id)
-      .build();
-      
-      fundamentalApiClient_.newObjectsTransactionPostHttpRequestBuilder()
-        .withCanonPayload(idObject)
-        .withCanonPayload(sequenceObject)
-        .build()
-        .execute(httpClient_);
-      
-//      store(id);
-//      store(sequenceObject); we need to make these two calls in one and validate the ID object for principal hash
-      
-      return sequence;
-    }
-    
-    
-    
-    
-//    IOpenSimpleSecurityContext securityContext = cryptoClient_.getOrCreateThreadSecurityContext(request.getThreadId());
 //    
-//    ISequence sequence = new Sequence.Builder()
-//        .withType(request.getSequenceType())
-//        .withSecurityContextHash(securityContext.getBaseHash())
-//        .withSigningKeyHash(cryptoClient_.getSigningKey().getAbsoluteHash())
-//        .build();
+//    return feed;
+//  }
+//
+//  @Override
+//  public void upsertGatewaySubscription(UpsertSmsGatewayRequest request)
+//  {
+////    String name = SmsGatewayMetadata.TYPE_ID + ":" + request.getType();
+////    
+////    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
+////        .withType(request.getType())
+////        .withSequences(request.getSequences())
+////        .build()
+////        ;
+////
+////    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
+////        .withName(name)
+////        .withCanonPayload(subscriptionRequest)
+////        .build()
+////        .execute(httpClient_)
+////        ;
 //    
-//    IFundamentalObject sequenceObject = new FundamentalObject.ObjectBuilder()
-//        .withPayload(sequence)
+//    ISmsGatewayMetadata metaData = new SmsGatewayMetadata.Builder()
+//        .withType(FeedType.EXTERNAL_GATEWAY)
+//        .withSequences(request.getSequences())
+//        .withCipherSuiteId(cipherSuite_.getId())
+//        .withEncodedPrivateKey(rsaPemCredential_)
+//        .withUserName(userName_)
+//        .withPhoneNumber(request.getPhoneNumber())
+//        .build()
+//        ;
+//    
+//    ISignedApplicationObject metaDataObject = new SignedApplicationObject.Builder()
+//        .withPayload(metaData)
 //        .withSigningKey(cryptoClient_.getSigningKey())
 //        .build();
 //    
-//    IObjectPointer    objectPointer = new ObjectPointer.Builder()
-//        .withBaseHash(sequenceObject.getAbsoluteHash())
-//        .build();
+//    ISubscriptionMetadataRequest subscriptionMetadataRequest = new SubscriptionMetadataRequest.Builder()
+//        .withMetadata(metaDataObject)
+//        .withSequences(request.getSequences())
+//        .build()
+//        ;
 //    
-//    IFundamentalObject idObject =  new FundamentalObject.IdBuilder()
-//        .withFundamentalId(id)
-//        .withApplicationObject(objectPointer)
-//        .build(); 
 //    
-//    ITransaction transaction = new Transaction.Builder()
-//        .withIdObject(idObject)
-//        .withAdditionalObjects(sequenceObject)
+//    systemApiClient_.newGatewaysMetadataPostHttpRequestBuilder()
+//        .withCanonPayload(subscriptionMetadataRequest)
+//        .build()
+//        .execute(httpClient_)
+//        ;
+//  }
+
+  @Override
+  public IPartition upsertPartition(UpsertPartitionRequest request)
+  {
+    request.validate();
+    
+    return objectApiClient_.newPartitionsUpsertPostHttpRequestBuilder()
+      .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertPartitionRequest.Builder()
+          .withPartitionId(new NamedUserIdObject.Builder()
+              .withUserId(getUserId())
+              .withName(request.getName())
+              .build())
+            .withThreadIds(request.getThreadIds())
+            .build())
+      .build()
+      .execute(httpClient_)
+      ;
+    
+//    Hash subjectHash = request.getO;
+//    
+//    if(subjectHash == null)
+//      subjectHash = getPrincipalBaseHash();
+//    
+//    IContentIdObject id = new ContentIdObject.Builder()
+//        .withSubjectHash(subjectHash)
+//        .withSubjectType(Principal.CLIENT_TYPE_ID)
+//        .withContentType(request.getContentType())
+//        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
 //        .build();
 //    
 //    try
 //    {
-//      IFundamentalObject result = fundamentalApiClient_.newObjectsTransactionPostHttpRequestBuilder()
-//          .withCanonPayload(transaction)
-//          .build()
-//          .execute(httpClient_);
-//      
-//      if(result.getPayload() instanceof IdPlainTextPayloadContainer)
-//      {
-//        IApplicationObject payload = ((IdPlainTextPayloadContainer)result.getPayload()).getPayload();
-//        
-//        if(!(payload instanceof ObjectPointer))
-//          throw new IllegalStateException("Unexpected return type " + payload.getCanonType() + ", expected ObjectPointer.");
-//        
-//        Hash sequenceHash = ((ObjectPointer)payload).getBaseHash();
-//        
-//        return fetchAbsolute(sequenceHash, ISequence.class);
-//      }
-//      
-//      throw new IllegalStateException("Unexpected return type " + result.getPayload().getCanonType() + ", expected IdPlainTextPayloadContainer.");
+//      return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
 //    }
 //    catch(NotFoundException e)
 //    {
+//      IOpenSimpleSecurityContext securityContext = cryptoClient_.getOrCreateThreadSecurityContext(request.getThreadId());
+//
+//      ISequence sequence = new Sequence.Builder()
+//          .withType(request.getSequenceType())
+//          .withSecurityContextHash(securityContext.getParentHash())
+//          .withSigningKeyHash(cryptoClient_.getSigningKey().getAbsoluteHash())
+//          .withBaseHash(id.getAbsoluteHash())
+//          .withPrevHash(id.getAbsoluteHash())
+//          .build();
+//      
+//      IFundamentalObject sequenceObject = new FundamentalObject.ObjectBuilder()
+//          .withPayload(sequence)
+//          .withSigningKey(cryptoClient_.getSigningKey())
+//          .build();
+//      
+////      ITransaction transaction = new Transaction.Builder()
+////        .withId(id)
+////        .withAdditionalObjects(sequenceObject)
+////        .build();
+//      
+//      IFundamentalObject idObject =  new FundamentalObject.IdBuilder()
+//      .withFundamentalId(id)
+//      .build();
+//      
+//      fundamentalApiClient_.newObjectsTransactionPostHttpRequestBuilder()
+//        .withCanonPayload(idObject)
+//        .withCanonPayload(sequenceObject)
+//        .build()
+//        .execute(httpClient_);
+//      
+////      store(id);
+////      store(sequenceObject); we need to make these two calls in one and validate the ID object for principal hash
+//      
 //      return sequence;
 //    }
+
   }
 
   private String getVersion()
@@ -781,12 +697,6 @@ public class AllegroApi implements IAllegroApi
       version = "Unknown";
     }
     return version;
-  }
-  
-  @Override
-  public Hash getPrincipalBaseHash()
-  {
-    return principalHash_;
   }
 
   @Override
@@ -848,69 +758,6 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
-  @Deprecated
-  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
-  {
-    IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
-        .withId(request.getThreadId().toBase64UrlSafeString())
-        .withFrom(0L)
-        .withLimit(request.getMaxMessages())
-        .withExcludeFields("tokenIds")
-        .build()
-        .execute(httpClient_);
-      
-    for(IMessageEnvelope envelope : thread.getEnvelopes())
-    {
-      handleFetchedMessage(consumer, liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_));
-    }
-  }
-
-  @Override
-  @Deprecated
-  public void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer)
-  {
-    IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
-      .withPodId(podId_)
-      .withThreadId(request.getThreadId())
-      .build();
-    
-    IFundamentalId sequence = Stream.getStreamContentSequenceId(threadIdObject);
-    
-    IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-      .withSequenceHash(sequence.getAbsoluteHash())
-      .withLimit(50 + request.getMaxMessages())
-      .build()
-      .execute(httpClient_);
-    
-    IOpenSecurityContext podSecurityContext = null;
-    
-    for(IFundamentalObject item : page.getData())
-    {
-      if(item.getPayload() instanceof IBlob)
-      {
-        Hash securityContextHash = ((IBlob)item.getPayload()).getSecurityContextHash();
-        
-        if(podSecurityContext == null || !securityContextHash.equals(podSecurityContext.getAbsoluteHash()))
-        {
-          podSecurityContext = getPodSecurityContext(securityContextHash);
-        }
-        
-        IEntity entity = modelRegistry_.open(item, podSecurityContext); 
-        
-        handleFetchedMessage(consumer, entity);
-      }
-      else if(item.getPayload() instanceof Clob)
-      {
-        IJsonObject<?> j = ((Clob)item.getPayload()).getJsonObject().getObject("payload");
-        
-        IEntity entity = modelRegistry_.newInstance((ImmutableJsonObject) j);
-        
-        handleFetchedMessage(consumer, entity);
-      }
-    }
-  }
-
-  @Override
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
   {
     try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
@@ -932,98 +779,98 @@ public class AllegroApi implements IAllegroApi
     }
   }
 
-  @Override
-  public void fetchRecentMessages(FetchRecentMessagesRequest request)
-  {
-    fetchMessages(request, false);
-  }
-
-  @Override
-  public void fetchMessages(FetchMessagesRequest request)
-  {
-    fetchMessages(request, request.isScanForwards());
-  }
-
-  private void fetchMessages(AbstractFetchRecentMessagesRequest<?> request, boolean scanForwards)
-  {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-      IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
-        .withPodId(podId_)
-        .withThreadId(request.getThreadId())
-        .build();
-      
-      IFundamentalId sequence = Stream.getStreamContentSequenceId(threadIdObject);
-      
-      int maxMessages = request.getMaxMessages() == null ? 5 : request.getMaxMessages();
-      String after = null;
-      
-      do
-      {
-        IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-          .withSequenceHash(sequence.getAbsoluteHash())
-          .withScanForwards(scanForwards)
-          .withLimit(request.getMaxMessages())
-          .withAfter(after)
-          .build()
-          .execute(httpClient_);
-        
-        after = getAfter(page);
-        
-        for(IFundamentalObject item : page.getData())
-        {
-          request.consume(item, trace, this);
-          maxMessages--;
-        }
-      } while(after != null && maxMessages>0);
-    }
-  }
-  
-  private String getAfter(IPageOfFundamentalObject page)
-  {
-    IPagination p = page.getPagination();
-    
-    if(p == null)
-      return null;
-    
-    ICursors c = p.getCursors();
-    
-    if(c == null)
-      return null;
-    
-    return c.getAfter();
-  }
-
-  @Deprecated
-  private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
-  {
-    switch(entity.getCanonType())
-    {
-      case SocialMessage.TYPE_ID:
-        consumer.accept(decryptChatMessage((ISocialMessage) entity));
-        break;
-        
-      case MaestroMessage.TYPE_ID:
-        consumer.accept(maestroMessage((IMaestroMessage) entity));
-        break;
-        
-      default:
-        //
-        break;
-    }
-  }
-
-  private IOpenSecurityContext getPodSecurityContext(Hash securityContextHash)
-  {
-    IOpenSecurityContextInfo securityContextInfo = podPrivateApiClient_.newSecurityContextsObjectHashGetHttpRequestBuilder()
-        .withObjectHash(securityContextHash)
-        .build()
-        .execute(httpClient_);
-    
-    return new OpenSecurityContext(securityContextInfo, modelRegistry_);
-  }
+//  @Override
+//  public void fetchRecentMessages(FetchRecentMessagesRequest request)
+//  {
+//    fetchMessages(request, false);
+//  }
+//
+//  @Override
+//  public void fetchMessages(FetchMessagesRequest request)
+//  {
+//    fetchMessages(request, request.isScanForwards());
+//  }
+//
+//  private void fetchMessages(AbstractFetchRecentMessagesRequest<?> request, boolean scanForwards)
+//  {
+//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
+//    {
+//      ITraceContext trace = traceTransaction.open();
+//      
+//      IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
+//        .withPodId(podId_)
+//        .withThreadId(request.getThreadId())
+//        .build();
+//      
+//      IFundamentalId sequence = Stream.getStreamContentSequenceId(threadIdObject);
+//      
+//      int maxMessages = request.getMaxMessages() == null ? 5 : request.getMaxMessages();
+//      String after = null;
+//      
+//      do
+//      {
+//        IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+//          .withSequenceHash(sequence.getAbsoluteHash())
+//          .withScanForwards(scanForwards)
+//          .withLimit(request.getMaxMessages())
+//          .withAfter(after)
+//          .build()
+//          .execute(httpClient_);
+//        
+//        after = getAfter(page);
+//        
+//        for(IFundamentalObject item : page.getData())
+//        {
+//          request.consume(item, trace, this);
+//          maxMessages--;
+//        }
+//      } while(after != null && maxMessages>0);
+//    }
+//  }
+//  
+//  private String getAfter(IPageOfFundamentalObject page)
+//  {
+//    IPagination p = page.getPagination();
+//    
+//    if(p == null)
+//      return null;
+//    
+//    ICursors c = p.getCursors();
+//    
+//    if(c == null)
+//      return null;
+//    
+//    return c.getAfter();
+//  }
+//
+//  @Deprecated
+//  private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
+//  {
+//    switch(entity.getCanonType())
+//    {
+//      case SocialMessage.TYPE_ID:
+//        consumer.accept(decryptChatMessage((ISocialMessage) entity));
+//        break;
+//        
+//      case MaestroMessage.TYPE_ID:
+//        consumer.accept(maestroMessage((IMaestroMessage) entity));
+//        break;
+//        
+//      default:
+//        //
+//        break;
+//    }
+//  }
+//
+//  private IOpenSecurityContext getPodSecurityContext(Hash securityContextHash)
+//  {
+//    IOpenSecurityContextInfo securityContextInfo = podPrivateApiClient_.newSecurityContextsObjectHashGetHttpRequestBuilder()
+//        .withObjectHash(securityContextHash)
+//        .build()
+//        .execute(httpClient_);
+//    
+//    return new OpenSecurityContext(securityContextInfo, modelRegistry_);
+//  }
 
   private IChatMessage maestroMessage(IMaestroMessage message)
   {
@@ -1036,46 +883,46 @@ public class AllegroApi implements IAllegroApi
     return builder.build();
   }
 
-  @Override
-  public IEntity open(IFundamentalObject item, ThreadId threadId)
-  {
-    return doOpen(item, threadId);
-  }
-
-  @Override
-  public IEntity open(IFundamentalObject item)
-  {
-    return doOpen(item, null);
-  }
-
-  private IEntity doOpen(IFundamentalObject item, @Nullable ThreadId threadId)
-  {
-    IFundamentalPayload payload = item.getPayload();
-    
-    IBlob blob;
-    
-//    if(payload instanceof IIdPayloadContainer)
+//  @Override
+//  public IEntity open(IFundamentalObject item, ThreadId threadId)
+//  {
+//    return doOpen(item, threadId);
+//  }
+//
+//  @Override
+//  public IEntity open(IFundamentalObject item)
+//  {
+//    return doOpen(item, null);
+//  }
+//
+//  private IEntity doOpen(IFundamentalObject item, @Nullable ThreadId threadId)
+//  {
+//    IFundamentalPayload payload = item.getPayload();
+//    
+//    IBlob blob;
+//    
+////    if(payload instanceof IIdPayloadContainer)
+////    {
+////      blob = ((IIdPayloadContainer) payload).getPayload();
+////    }
+////    else 
+//    if(payload instanceof IBlob)
 //    {
-//      blob = ((IIdPayloadContainer) payload).getPayload();
+//      blob = (IBlob)payload;
 //    }
-//    else 
-    if(payload instanceof IBlob)
-    {
-      blob = (IBlob)payload;
-    }
-    else if(payload instanceof IClob)
-    {
-      return ((IClob)payload).getPayload();
-    }
-    else
-    {
-      return payload;
-    }
-    
-    IOpenSimpleSecurityContext securityContext = cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), threadId);
-    
-    return modelRegistry_.open(item, securityContext);
-  }
+//    else if(payload instanceof IClob)
+//    {
+//      return ((IClob)payload).getPayload();
+//    }
+//    else
+//    {
+//      return payload;
+//    }
+//    
+//    IOpenSimpleSecurityContext securityContext = cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), threadId);
+//    
+//    return modelRegistry_.open(item, securityContext);
+//  }
   
   @Override
   public ApplicationObjectBuilder newApplicationObjectBuilder()
@@ -1089,9 +936,9 @@ public class AllegroApi implements IAllegroApi
    * @author Bruce Skingle
    *
    */
-  public class ApplicationObjectBuilder extends AbstractFundamentalObjectApplicationObjectBuilder<ApplicationObjectBuilder>
+  public class ApplicationObjectBuilder extends AbstractKvItemBuilder<ApplicationObjectBuilder, com.symphony.oss.models.object.canon.facade.IKvItem>
   {
-    private ThreadId                   threadId_;
+    private IApplicationPayload payload_;
 
     /**
      * Constructor.
@@ -1102,219 +949,263 @@ public class AllegroApi implements IAllegroApi
     }
     
     /**
-     * Set the ThreadId with which the object should be encrypted.
+     * Set the object payload (which is to be encrypted).
      * 
-     * @param threadId The ThreadId with which the object should be encrypted.
+     * @param payload The object payload (which is to be encrypted).
      * 
      * @return This (fluent method).
      */
-    public ApplicationObjectBuilder withThreadId(ThreadId threadId)
+    public ApplicationObjectBuilder withPayload(IApplicationPayload payload)
     {
-      threadId_ = threadId;
+      payload_ = payload;
       
       return self();
     }
 
-    @Override
-    public ApplicationObjectBuilder withSecurityContext(IOpenSimpleSecurityContext securityContext)
-    {
-      throw new IllegalArgumentException("Set ThreadId instead of SecurityContext.");
-    }
-
-    @Override
-    protected void validate()
-    {
-      if(securityContext_ != null)
-        throw new IllegalStateException("Set ThreadId instead of SecurityContext.");
-      
-      if(threadId_ == null)
-        throw new IllegalStateException("ThreadId is required.");
-        
-      securityContext_ = cryptoClient_.getOrCreateThreadSecurityContext(threadId_);
-      
-      if(signingKey_ == null)
-      {
-        withSigningKey(cryptoClient_.getSigningKey());
-      }
-      
-      withPodId(getPodId());
-      super.validate();
-    }
-
-  }
-  
-  @Override
-  public void delete(IFundamentalObject existingObject, DeletionType deletionType)
-  {
-    if(!(existingObject.getPayload() instanceof IVersionedObject))
-      throw new BadRequestException("Only versioned objects may be deleted.");
-    
-    IFundamentalObject toDoObject = new FundamentalObject.VersionedObjectDeleter((IVersionedObject) existingObject.getPayload())
-        .withDeletionType(deletionType)
-        .build();
-    
-    store(toDoObject);
-  }
-
-  @Override
-  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject)
-  {
-    return new ApplicationObjectUpdater(existingObject);
-  }
-  
-  /**
-   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
-   * version is to be created.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class ApplicationObjectUpdater extends AbstractFundamentalObjectApplicationObjectBuilder<ApplicationObjectUpdater>
-  {
     /**
-     * Constructor.
      * 
-     * @param existingObject An existing Application Object for which a new version is to be created. 
+     * @return the unencrypted payload.
      */
-    public ApplicationObjectUpdater(IApplicationObject existingObject)
+    public IApplicationPayload getPayload()
     {
-      super(ApplicationObjectUpdater.class);
-      
-      if(existingObject.getContainer() instanceof IBlob)
-      {
-        IBlob blob = (IBlob) existingObject.getContainer();
-        super.withSecurityContext(cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), null));
-      }
-      withSequences(existingObject.getContainer().getSequences());
-
-      withBaseHash(existingObject.getBaseHash());
-      withPrevHash(existingObject.getAbsoluteHash());
-    }
-
-    @Override
-    public ApplicationObjectUpdater withSecurityContext(IOpenSimpleSecurityContext securityContext)
-    {
-      throw new IllegalArgumentException("You can't change the SecurityContext of an existing object.");
+      return payload_;
     }
 
     @Override
     protected void validate()
     {
-      if(signingKey_ == null)
-      {
-        withSigningKey(cryptoClient_.getSigningKey());
-      }
+      if(getHashType() == null)
+        withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
       
-      withPodId(getPodId());
+      if(getThreadId() == null)
+        throw new IllegalStateException("ThreadId is required.");
+      
+      if(payload_ == null)
+        throw new IllegalStateException("Payload is required.");
+      
+      withOwner(getUserId());
+      
+      cryptoClient_.encrypt(this);
+      
       super.validate();
+    }
+
+    @Override
+    public ApplicationObjectBuilder withEncryptedPayload(EncryptedData value)
+    {
+      throw new IllegalArgumentException("Call withPayload() instead.");
+    }
+
+    @Override
+    public ApplicationObjectBuilder withEncryptedPayload(ImmutableByteArray value)
+    {
+      throw new IllegalArgumentException("Call withPayload() instead.");
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partition A partition object.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectBuilder withPartition(IPartition partition)
+    {
+      withPartitionKey(partition.getObjectKey());
+      
+      return this;
+    }
+
+    @Override
+    protected com.symphony.oss.models.object.canon.facade.IKvItem construct()
+    {
+      return new KvItem(this);
+    }
+
+    /**
+     * Package private access to set encryptedPayload from IAllegroCryptoClient.encrypt().
+     * 
+     * @param encryptedPayload The encrypted payload.
+     */
+    void setEncryptedPayload(EncryptedData encryptedPayload)
+    {
+      super.withEncryptedPayload(encryptedPayload);
     }
 
   }
   
-  @Override
-  public IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, Integer limit, String after)
-  {
-     return fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-      .withSequenceHash(sequenceId.getAbsoluteHash())
-      .withLimit(limit)
-      .withAfter(after)
-      .build()
-      .execute(httpClient_);
-  }
-  
-  @Override
-  @Deprecated
-  public void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer)
-  {
-     String after = request.getAfter();
-     Integer limit = request.getMaxItems();
-     
-     if(limit != null && limit < 1)
-       throw new BadRequestException("Limit must be at least 1 or not specified");
-     
-     int remainingItems = limit == null ? 0 : limit;
-     
-     do
-     {
-       SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-           .withSequenceHash(request.getSequenceHash())
-           .withAfter(after)
-           ;
-       
-       if(limit != null)
-         pageRequest.withLimit(remainingItems);
-       
-       IPageOfFundamentalObject page = pageRequest
-           .build()
-           .execute(httpClient_);
-       
-       for(IFundamentalObject item : page.getData())
-       {
-         consumer.accept(item);
-         remainingItems--;
-       }
-       
-       after = null;
-       IPagination pagination = page.getPagination();
-       
-       if(pagination != null)
-       {
-         ICursors cursors = pagination.getCursors();
-         
-         if(cursors != null)
-           after = cursors.getAfter();
-       }
-     } while(after != null && (limit==null || remainingItems>0));
-  }
-  
-  @Override
-  public void fetchSequence(FetchSequenceRequest request)
-  {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getSequenceHash().toString()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-       String after = request.getAfter();
-       Integer limit = request.getMaxItems();
-       
-       if(limit != null && limit < 1)
-         throw new BadRequestException("Limit must be at least 1 or not specified");
-       
-       int remainingItems = limit == null ? 0 : limit;
-       
-       do
-       {
-         SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-             .withSequenceHash(request.getSequenceHash())
-             .withAfter(after)
-             ;
-         
-         if(limit != null)
-           pageRequest.withLimit(remainingItems);
-         
-         IPageOfFundamentalObject page = pageRequest
-             .build()
-             .execute(httpClient_);
-         
-         for(IFundamentalObject item : page.getData())
-         {
-           request.consume(item, trace, this);
-           remainingItems--;
-         }
-         
-         after = null;
-         IPagination pagination = page.getPagination();
-         
-         if(pagination != null)
-         {
-           ICursors cursors = pagination.getCursors();
-           
-           if(cursors != null)
-             after = cursors.getAfter();
-         }
-       } while(after != null && (limit==null || remainingItems>0));
-    }
-  }
+//  @Override
+//  public void delete(IFundamentalObject existingObject, DeletionType deletionType)
+//  {
+//    if(!(existingObject.getPayload() instanceof IVersionedObject))
+//      throw new BadRequestException("Only versioned objects may be deleted.");
+//    
+//    IFundamentalObject toDoObject = new FundamentalObject.VersionedObjectDeleter((IVersionedObject) existingObject.getPayload())
+//        .withDeletionType(deletionType)
+//        .build();
+//    
+//    store(toDoObject);
+//  }
+//
+//  @Override
+//  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject)
+//  {
+//    return new ApplicationObjectUpdater(existingObject);
+//  }
+//  
+//  /**
+//   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
+//   * version is to be created.
+//   * 
+//   * @author Bruce Skingle
+//   *
+//   */
+//  public class ApplicationObjectUpdater extends AbstractFundamentalObjectApplicationObjectBuilder<ApplicationObjectUpdater>
+//  {
+//    /**
+//     * Constructor.
+//     * 
+//     * @param existingObject An existing Application Object for which a new version is to be created. 
+//     */
+//    public ApplicationObjectUpdater(IApplicationObject existingObject)
+//    {
+//      super(ApplicationObjectUpdater.class);
+//      
+//      if(existingObject.getContainer() instanceof IBlob)
+//      {
+//        IBlob blob = (IBlob) existingObject.getContainer();
+//        super.withSecurityContext(cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), null));
+//      }
+//      withSequences(existingObject.getContainer().getSequences());
+//
+//      withBaseHash(existingObject.getBaseHash());
+//      withPrevHash(existingObject.getAbsoluteHash());
+//    }
+//
+//    @Override
+//    public ApplicationObjectUpdater withSecurityContext(IOpenSimpleSecurityContext securityContext)
+//    {
+//      throw new IllegalArgumentException("You can't change the SecurityContext of an existing object.");
+//    }
+//
+//    @Override
+//    protected void validate()
+//    {
+//      if(signingKey_ == null)
+//      {
+//        withSigningKey(cryptoClient_.getSigningKey());
+//      }
+//      
+//      withPodId(getPodId());
+//      super.validate();
+//    }
+//
+//  }
+//  
+//  @Override
+//  public IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, Integer limit, String after)
+//  {
+//     return fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+//      .withSequenceHash(sequenceId.getAbsoluteHash())
+//      .withLimit(limit)
+//      .withAfter(after)
+//      .build()
+//      .execute(httpClient_);
+//  }
+//  
+//  @Override
+//  @Deprecated
+//  public void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer)
+//  {
+//     String after = request.getAfter();
+//     Integer limit = request.getMaxItems();
+//     
+//     if(limit != null && limit < 1)
+//       throw new BadRequestException("Limit must be at least 1 or not specified");
+//     
+//     int remainingItems = limit == null ? 0 : limit;
+//     
+//     do
+//     {
+//       SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+//           .withSequenceHash(request.getSequenceHash())
+//           .withAfter(after)
+//           ;
+//       
+//       if(limit != null)
+//         pageRequest.withLimit(remainingItems);
+//       
+//       IPageOfFundamentalObject page = pageRequest
+//           .build()
+//           .execute(httpClient_);
+//       
+//       for(IFundamentalObject item : page.getData())
+//       {
+//         consumer.accept(item);
+//         remainingItems--;
+//       }
+//       
+//       after = null;
+//       IPagination pagination = page.getPagination();
+//       
+//       if(pagination != null)
+//       {
+//         ICursors cursors = pagination.getCursors();
+//         
+//         if(cursors != null)
+//           after = cursors.getAfter();
+//       }
+//     } while(after != null && (limit==null || remainingItems>0));
+//  }
+//  
+//  @Override
+//  public void fetchSequence(FetchSequenceRequest request)
+//  {
+//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getSequenceHash().toString()))
+//    {
+//      ITraceContext trace = traceTransaction.open();
+//      
+//       String after = request.getAfter();
+//       Integer limit = request.getMaxItems();
+//       
+//       if(limit != null && limit < 1)
+//         throw new BadRequestException("Limit must be at least 1 or not specified");
+//       
+//       int remainingItems = limit == null ? 0 : limit;
+//       
+//       do
+//       {
+//         SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
+//             .withSequenceHash(request.getSequenceHash())
+//             .withAfter(after)
+//             ;
+//         
+//         if(limit != null)
+//           pageRequest.withLimit(remainingItems);
+//         
+//         IPageOfFundamentalObject page = pageRequest
+//             .build()
+//             .execute(httpClient_);
+//         
+//         for(IFundamentalObject item : page.getData())
+//         {
+//           request.consume(item, trace, this);
+//           remainingItems--;
+//         }
+//         
+//         after = null;
+//         IPagination pagination = page.getPagination();
+//         
+//         if(pagination != null)
+//         {
+//           ICursors cursors = pagination.getCursors();
+//           
+//           if(cursors != null)
+//             after = cursors.getAfter();
+//         }
+//       } while(after != null && (limit==null || remainingItems>0));
+//    }
+//  }
   
   @Override
   public ChatMessage.Builder newChatMessageBuilder()

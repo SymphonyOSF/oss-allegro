@@ -17,31 +17,18 @@
 package com.symphony.oss.allegro.api;
 
 import java.security.cert.X509Certificate;
-import java.util.function.Consumer;
 
-import javax.annotation.Nullable;
-
-import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
-import org.symphonyoss.s2.common.hash.Hash;
-import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
+import org.symphonyoss.s2.fugue.kv.IKvItem;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
-import com.symphony.oss.models.chat.canon.facade.ThreadId;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
-import com.symphony.oss.models.fundamental.canon.facade.IApplicationObject;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalId;
-import com.symphony.oss.models.fundamental.canon.facade.IFundamentalObject;
-import com.symphony.oss.models.fundmental.canon.DeletionType;
-import com.symphony.oss.models.fundmental.canon.IPageOfFundamentalObject;
-import com.symphony.oss.models.fundmental.canon.ISequence;
+import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.pod.canon.IUserV2;
-import com.symphony.oss.models.system.canon.IFeed;
 
 /**
  * The public interface of the Allegro API.
@@ -76,52 +63,27 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @throws NotFoundException      If the object does not exist.
    */
   String getMessage(String messageId);
+// 
 
-
-  /**
-   * Fetch recent messages from a thread (conversation).
-   * 
-   * This implementation retrieves messages from the object store.
-   * 
-   * @param request   A request object containing the threadId and other parameters.
-   * @param consumer  A consumer of decrypted messages. 
-   * 
-   * @deprecated Use <code>fetchRecentMessages(request.withConsumer(type, consumer)</code> instead.
-   */
-  void fetchRecentMessages(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
-
-  /**
-   * Fetch recent messages from a thread (conversation).
-   * 
-   * This implementation retrieves messages from the pod.
-   * 
-   * @param request   A request object containing the threadId and other parameters.
-   * @param consumer  A consumer of decrypted messages. 
-   * 
-   * @deprecated Use <code>fetchRecentMessagesFromPod(request.withConsumer(type, consumer)</code> instead.
-   */
-  void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request, Consumer<IChatMessage> consumer);
- 
-
-  /**
-   * Fetch recent messages from a thread (conversation).
-   * 
-   * This implementation retrieves messages from the object store.
-   * 
-   * @param request   A request object containing the threadId and other parameters.
-   * 
-   */
-  void fetchRecentMessages(FetchRecentMessagesRequest request);
-
-  /**
-   * Fetch messages from a thread (conversation) in either forwards or reverse sequence.
-   * 
-   * This implementation retrieves messages from the object store.
-   * 
-   * @param request   A request object containing the threadId and other parameters.
-   * 
-   */
-  void fetchMessages(FetchMessagesRequest request);
+//  /**
+//   * Fetch recent messages from a thread (conversation).
+//   * 
+//   * This implementation retrieves messages from the object store.
+//   * 
+//   * @param request   A request object containing the threadId and other parameters.
+//   * 
+//   */
+//  void fetchRecentMessages(FetchRecentMessagesRequest request);
+//
+//  /**
+//   * Fetch messages from a thread (conversation) in either forwards or reverse sequence.
+//   * 
+//   * This implementation retrieves messages from the object store.
+//   * 
+//   * @param request   A request object containing the threadId and other parameters.
+//   * 
+//   */
+//  void fetchMessages(FetchMessagesRequest request);
 
   /**
    * Fetch recent messages from a thread (conversation).
@@ -139,12 +101,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @param chatMessage A message to be sent.
    */
   void sendMessage(IChatMessage chatMessage);
-  
-  /**
-   * 
-   * @return The principalHash (globally unique ID) of the user we have authenticated as.
-   */
-  Hash getPrincipalBaseHash();
 
   /**
    * 
@@ -162,37 +118,37 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @param object A FundamentalObject to be stored.
    */
-  void store(IFundamentalObject object);
+  void store(IKvItem object);
 
-  /**
-   * Store the given ID.
-   * 
-   * @param id A IFundamentalId to be stored.
-   * 
-   * @return The Fundamental Object wrapping this ID.
-   */
-  IFundamentalObject store(IFundamentalId id);
-
-  /**
-   * Fetch a page of items from the given sequence.
-   * 
-   * @param sequenceId  The Hash identifier for a sequence.
-   * @param limit       An optional limit for the maximum number of items to return.
-   * @param after       A cursor indicating where in the sequence to start for continuation requests.
-   *  
-   * @return  A page of objects from the given sequence.
-   */
-  IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, @Nullable Integer limit, String after);
-
-  /**
-   * Open (deserialize and decrypt if necessary) the given object, storing wrapped keys from the key manager if necessary.
-   * 
-   * @param item A FundamentalObject.
-   * @param threadId The thread ID of the message thread to which this object belongs.
-   * 
-   * @return The typed contents of the given object.
-   */
-  IEntity open(IFundamentalObject item, ThreadId threadId);
+//  /**
+//   * Store the given ID.
+//   * 
+//   * @param id A IFundamentalId to be stored.
+//   * 
+//   * @return The Fundamental Object wrapping this ID.
+//   */
+//  IFundamentalObject store(IFundamentalId id);
+//
+//  /**
+//   * Fetch a page of items from the given sequence.
+//   * 
+//   * @param sequenceId  The Hash identifier for a sequence.
+//   * @param limit       An optional limit for the maximum number of items to return.
+//   * @param after       A cursor indicating where in the sequence to start for continuation requests.
+//   *  
+//   * @return  A page of objects from the given sequence.
+//   */
+//  IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, @Nullable Integer limit, String after);
+//
+//  /**
+//   * Open (deserialize and decrypt if necessary) the given object, storing wrapped keys from the key manager if necessary.
+//   * 
+//   * @param item A FundamentalObject.
+//   * @param threadId The thread ID of the message thread to which this object belongs.
+//   * 
+//   * @return The typed contents of the given object.
+//   */
+//  IEntity open(IFundamentalObject item, ThreadId threadId);
 
   /**
    * 
@@ -200,23 +156,23 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   ChatMessage.Builder newChatMessageBuilder();
 
-  /**
-   * Fetch objects from a sequence.
-   * 
-   * @param request   The request parameters.
-   * @param consumer  A consumer to receive returned objects.
-   * 
-   * @deprecated Use <code>fetchSequence(request.withConsumer(type, consumer)</code> instead.
-   */
-  @Deprecated
-  void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer);
-
-  /**
-   * Fetch objects from a sequence.
-   * 
-   * @param request   The request parameters.
-   */
-  void fetchSequence(FetchSequenceRequest request);
+//  /**
+//   * Fetch objects from a sequence.
+//   * 
+//   * @param request   The request parameters.
+//   * @param consumer  A consumer to receive returned objects.
+//   * 
+//   * @deprecated Use <code>fetchSequence(request.withConsumer(type, consumer)</code> instead.
+//   */
+//  @Deprecated
+//  void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer);
+//
+//  /**
+//   * Fetch objects from a sequence.
+//   * 
+//   * @param request   The request parameters.
+//   */
+//  void fetchSequence(FetchSequenceRequest request);
 
   /**
    * 
@@ -231,15 +187,15 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   ApplicationObjectBuilder newApplicationObjectBuilder();
   
-  /**
-   * Create a new ApplicationObjectBuilder to create a new version of the given object.
-   * 
-   * @param existingObject An existing application object for which a new version is to be created.
-   * 
-   * @return A new ApplicationObjectBuilder to create a new version of the given object.
-   */
-  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject);
-
+//  /**
+//   * Create a new ApplicationObjectBuilder to create a new version of the given object.
+//   * 
+//   * @param existingObject An existing application object for which a new version is to be created.
+//   * 
+//   * @return A new ApplicationObjectBuilder to create a new version of the given object.
+//   */
+//  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject);
+//
   /**
    * Fetch the meta-data for a sequence, or create it if it does not exist.
    * 
@@ -247,99 +203,99 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @return The sequence meta-data.
    */
-  ISequence fetchOrCreateSequenceMetaData(FetchOrCreateSequenceMetaDataRequest request);
-  
-  /**
-   * Fetch the meta-data for a sequence.
-   * 
-   * @param request The request parameters.
-   * 
-   * @return The sequence meta-data.
-   * 
-   * @throws NotFoundException If the sequence does not exist. 
-   */
-  ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request);
-
-  /**
-   * Fetch an object by its absolute hash.
-   * 
-   * @param absoluteHash The hash of the required object.
-   * 
-   * @return The raw object.
-   * 
-   * @throws NotFoundException If the object does not exist. 
-   */
-  IFundamentalObject fetchAbsolute(Hash absoluteHash);
-  
-  /**
-   * Fetch an object by its absolute hash.
-   * 
-   * @param absoluteHash The hash of the required object.
-   * @param type         The type of the object.
-   * 
-   * @return The object, decrypted and unwrapped if we have appropriate credentials.
-   * 
-   * @throws NotFoundException      If the object does not exist.
-   * @throws IllegalStateException  If the object exists but is of some other type.
-   */
-  <T extends IEntity> T fetchAbsolute(Hash absoluteHash, Class<T> type);
-
-  /**
-   * Fetch the current version of an object by its base hash.
-   * 
-   * @param baseHash     The base hash of the required object.
-   * 
-   * @return The raw object.
-   * 
-   * @throws NotFoundException If the object does not exist. 
-   */
-  IFundamentalObject fetchCurrent(Hash baseHash);
-  
-  /**
-   * Fetch the current version of an object by its base hash.
-   * 
-   * @param baseHash     The base hash of the required object.
-   * @param type         The type of the object.
-   * 
-   * @return The object, decrypted and unwrapped if we have appropriate credentials.
-   * 
-   * @throws NotFoundException      If the object does not exist.
-   * @throws IllegalStateException  If the object exists but is of some other type.
-   */
-  <T extends IEntity> T fetchCurrent(Hash baseHash, Class<T> type);
-
-  /**
-   * Save the credential for the current session as a cloud service provider secret.
-   */
-  void storeCredential();
-
-  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
-
-  IFeed upsertFeed(UpsertFeedRequest request);
-
-  void fetchFeedMessages(FetchFeedMessagesRequest request);
-  
-  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
-
-  /**
-   * Delete the given object.
-   * 
-   * The deletion may be logical or physical.
-   * 
-   * In the case of a logical delete, the object will be deleted from any current sequences of which it
-   * is a member, and a delete record will be added to any absolute sequences of which it is a member
-   * and as the latest version of the object.
-   * 
-   * When performing a fetch of a logically deleted object a DeletedException (HTTP status 410) will be
-   * thrown, which is a sub-class of NotFoundException (HTTP status 404) so code which does not catch
-   * DeletedException specifically will see a NotFoundException which is the result which would have 
-   * occurred if the object had never existed.
-   * 
-   * In the case of a physical delete, all versions of the object are physically removed as are all
-   * copies of the object on all sequences.
-   * 
-   * @param item          An existing object which is to be deleted.
-   * @param deletionType  The type of deletion to be performed.
-   */
-  void delete(IFundamentalObject item, DeletionType deletionType);
+  IPartition upsertPartition(UpsertPartitionRequest request);
+//  
+//  /**
+//   * Fetch the meta-data for a sequence.
+//   * 
+//   * @param request The request parameters.
+//   * 
+//   * @return The sequence meta-data.
+//   * 
+//   * @throws NotFoundException If the sequence does not exist. 
+//   */
+//  ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request);
+//
+//  /**
+//   * Fetch an object by its absolute hash.
+//   * 
+//   * @param absoluteHash The hash of the required object.
+//   * 
+//   * @return The raw object.
+//   * 
+//   * @throws NotFoundException If the object does not exist. 
+//   */
+//  IFundamentalObject fetchAbsolute(Hash absoluteHash);
+//  
+//  /**
+//   * Fetch an object by its absolute hash.
+//   * 
+//   * @param absoluteHash The hash of the required object.
+//   * @param type         The type of the object.
+//   * 
+//   * @return The object, decrypted and unwrapped if we have appropriate credentials.
+//   * 
+//   * @throws NotFoundException      If the object does not exist.
+//   * @throws IllegalStateException  If the object exists but is of some other type.
+//   */
+//  <T extends IEntity> T fetchAbsolute(Hash absoluteHash, Class<T> type);
+//
+//  /**
+//   * Fetch the current version of an object by its base hash.
+//   * 
+//   * @param baseHash     The base hash of the required object.
+//   * 
+//   * @return The raw object.
+//   * 
+//   * @throws NotFoundException If the object does not exist. 
+//   */
+//  IFundamentalObject fetchCurrent(Hash baseHash);
+//  
+//  /**
+//   * Fetch the current version of an object by its base hash.
+//   * 
+//   * @param baseHash     The base hash of the required object.
+//   * @param type         The type of the object.
+//   * 
+//   * @return The object, decrypted and unwrapped if we have appropriate credentials.
+//   * 
+//   * @throws NotFoundException      If the object does not exist.
+//   * @throws IllegalStateException  If the object exists but is of some other type.
+//   */
+//  <T extends IEntity> T fetchCurrent(Hash baseHash, Class<T> type);
+//
+//  /**
+//   * Save the credential for the current session as a cloud service provider secret.
+//   */
+//  void storeCredential();
+//
+//  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
+//
+//  IFeed upsertFeed(UpsertFeedRequest request);
+//
+//  void fetchFeedMessages(FetchFeedMessagesRequest request);
+//  
+//  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
+//
+//  /**
+//   * Delete the given object.
+//   * 
+//   * The deletion may be logical or physical.
+//   * 
+//   * In the case of a logical delete, the object will be deleted from any current sequences of which it
+//   * is a member, and a delete record will be added to any absolute sequences of which it is a member
+//   * and as the latest version of the object.
+//   * 
+//   * When performing a fetch of a logically deleted object a DeletedException (HTTP status 410) will be
+//   * thrown, which is a sub-class of NotFoundException (HTTP status 404) so code which does not catch
+//   * DeletedException specifically will see a NotFoundException which is the result which would have 
+//   * occurred if the object had never existed.
+//   * 
+//   * In the case of a physical delete, all versions of the object are physically removed as are all
+//   * copies of the object on all sequences.
+//   * 
+//   * @param item          An existing object which is to be deleted.
+//   * @param deletionType  The type of deletion to be performed.
+//   */
+//  void delete(IFundamentalObject item, DeletionType deletionType);
 }
