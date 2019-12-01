@@ -14,43 +14,37 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.api.request;
+
+import org.symphonyoss.s2.common.fluent.Fluent;
 
 /**
- * Request object for UpsertSmsGateway.
+ * Base class for Allegro request objects.
+ * 
+ * @param <T> The concrete type returned by fluent methods.
  * 
  * @author Bruce Skingle
  *
  */
-public class UpsertSmsGatewayRequest extends AbstractUpsertSmsGatewayRequest<UpsertSmsGatewayRequest>
+@Deprecated
+public class AllegroRequest<T extends AllegroRequest<T>> extends Fluent<T>
 {
-  /**
-   * Constructor.
-   */
-  public UpsertSmsGatewayRequest()
-  {
-    super(UpsertSmsGatewayRequest.class);
-  }
-}
-
-class AbstractUpsertSmsGatewayRequest<T extends AbstractUpsertSmsGatewayRequest<T>> extends AbstractUpsertFeedRequest<T>
-{
-  private String   phoneNumber_;
-  
-  public AbstractUpsertSmsGatewayRequest(Class<T> type)
+  protected AllegroRequest(Class<T> type)
   {
     super(type);
   }
 
-  public T withPhoneNumber(String phoneNumber)
+  protected void require(Object value, String name)
   {
-    phoneNumber_ = phoneNumber;
-    
-    return self();
+    if(value == null)
+      throw new IllegalArgumentException(name + " is required.");
   }
-
-  public String getPhoneNumber()
-  {
-    return phoneNumber_;
-  }
+  
+  /**
+   * Validate the request.
+   * 
+   * @throws IllegalArgumentException if any values are invalid.
+   */
+  public void validate()
+  {}
 }

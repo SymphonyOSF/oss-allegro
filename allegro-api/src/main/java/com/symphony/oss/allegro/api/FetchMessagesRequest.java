@@ -18,44 +18,45 @@
 
 package com.symphony.oss.allegro.api;
 
+
 /**
  * A request object for the FetchMessages method.
  * 
  * @author Bruce Skingle
  *
  */
-public class FetchMessagesRequest extends AbstractFetchRecentMessagesRequest<FetchMessagesRequest>
+public class FetchMessagesRequest //extends AbstractFetchRecentMessagesRequest<FetchMessagesRequest>
 {
-  private boolean scanForwards_ = true;
-
-  /**
-   * Constructor.
-   */
-  public FetchMessagesRequest()
-  {
-    super(FetchMessagesRequest.class);
-  }
-  
-  /**
-   * 
-   * @return true if the request should scan the sequence in chronological order.
-   */
-  public boolean isScanForwards()
-  {
-    return scanForwards_;
-  }
-
-  /**
-   * Set whether the request should scan the sequence in chronological order.
-   * 
-   * @param scanForwards Whether the request should scan the sequence in chronological order.
-   * 
-   * @return This (fluent method)
-   */
-  public FetchMessagesRequest withScanForwards(boolean scanForwards)
-  {
-    scanForwards_ = scanForwards;
-    
-    return self();
-  }
+//  private boolean scanForwards_ = true;
+//
+//  /**
+//   * Constructor.
+//   */
+//  public FetchMessagesRequest()
+//  {
+//    super(FetchMessagesRequest.class);
+//  }
+//  
+//  /**
+//   * 
+//   * @return true if the request should scan the sequence in chronological order.
+//   */
+//  public boolean isScanForwards()
+//  {
+//    return scanForwards_;
+//  }
+//
+//  /**
+//   * Set whether the request should scan the sequence in chronological order.
+//   * 
+//   * @param scanForwards Whether the request should scan the sequence in chronological order.
+//   * 
+//   * @return This (fluent method)
+//   */
+//  public FetchMessagesRequest withScanForwards(boolean scanForwards)
+//  {
+//    scanForwards_ = scanForwards;
+//    
+//    return self();
+//  }
 }

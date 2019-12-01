@@ -65,7 +65,6 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
-import org.symphonyoss.s2.fugue.kv.IKvItem;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.Chime;
 import org.symphonyoss.symphony.messageml.elements.FormatEnum;
@@ -82,6 +81,10 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
+import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
@@ -100,6 +103,8 @@ import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.HashType;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.core.canon.ICursors;
+import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.UserId;
@@ -116,17 +121,21 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.KvItemEntity.AbstractKvItemBuilder;
+import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IOpenObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
-import com.symphony.oss.models.object.canon.facade.KvItem;
-import com.symphony.oss.models.object.canon.facade.NamedUserIdObject;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
+import com.symphony.oss.models.object.canon.facade.StoredApplicationObject.AbstractStoredApplicationObjectBuilder;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
-import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
 
 /**
  * Implementation of IAllegroApi, the main Allegro API class.
@@ -137,45 +146,44 @@ import com.symphony.oss.models.podfundamental.canon.PodPrivateHttpModelClient;
 public class AllegroApi implements IAllegroApi
 {
   
-  private static final Logger log_ = LoggerFactory.getLogger(AllegroApi.class);
-  
-  private static final String FORMAT_MESSAGEMLV2 = "com.symphony.messageml.v2";
-  private static final ObjectMapper        OBJECT_MAPPER = new ObjectMapper(); // TODO: get rid of this
-  private static final int ENCRYPTION_ORDINAL = 0;
-  private static final int MEIDA_ENCRYPTION_ORDINAL = 2;
+  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroApi.class);
+
+  private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
+  private static final ObjectMapper             OBJECT_MAPPER              = new ObjectMapper();  // TODO: get rid of this
+  private static final int                      ENCRYPTION_ORDINAL         = 0;
+  private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
   
   private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
   
-  private final String                     userName_;
-  private final ModelRegistry              modelRegistry_;
-  private final String                     clientType_;
-  private final ICipherSuite               cipherSuite_;
-  private final CloseableHttpClient        httpClient_;
-  private final AuthHandler                authHandler_;
-  private final PodHttpModelClient         podApiClient_;
-  private final PodInternalHttpModelClient podInternalApiClient_;
-  private final KmInternalHttpModelClient  kmInternalClient_;
-  private final IAllegroCryptoClient       cryptoClient_;
-  private final IPodInfo                   podInfo_;
-  private final AllegroDataProvider        dataProvider_;
-  private final V4MessageTransformer       messageTramnsformer_;
-  private final EncryptionHandler          agentEncryptionHandler_;
-  private final CoreHttpModelClient        coreApiClient_;
-  private final PodPrivateHttpModelClient  podPrivateApiClient_;
-  private final ChatHttpModelClient        chatApiClient_;
-  private final ObjectHttpModelClient      objectApiClient_;
-  private final PodAndUserId               userId_;
-  private final PemPrivateKey              rsaPemCredential_;
+  private final String                          userName_;
+  private final ModelRegistry                   modelRegistry_;
+  private final String                          clientType_;
+  private final ICipherSuite                    cipherSuite_;
+  private final CloseableHttpClient             httpClient_;
+  private final AuthHandler                     authHandler_;
+  private final PodHttpModelClient              podApiClient_;
+  private final PodInternalHttpModelClient      podInternalApiClient_;
+  private final KmInternalHttpModelClient       kmInternalClient_;
+  private final IAllegroCryptoClient            cryptoClient_;
+  private final IPodInfo                        podInfo_;
+  private final AllegroDataProvider             dataProvider_;
+  private final V4MessageTransformer            messageTramnsformer_;
+  private final EncryptionHandler               agentEncryptionHandler_;
+  private final CoreHttpModelClient             coreApiClient_;
+  private final ChatHttpModelClient             chatApiClient_;
+  private final ObjectHttpModelClient           objectApiClient_;
+  private final PodAndUserId                    userId_;
+  private final PemPrivateKey                   rsaPemCredential_;
 
-  private PodAndUserId                     internalUserId_;
-  private PodId                            podId_;
+  private PodAndUserId                          internalUserId_;
+  private PodId                                 podId_;
 
-  private final Supplier<IAccountInfo>     accountInfoProvider_;
-  private final Supplier<X509Certificate>  podCertProvider_;
+  private final Supplier<IAccountInfo>          accountInfoProvider_;
+  private final Supplier<X509Certificate>       podCertProvider_;
 
   private final ITraceContextTransactionFactory traceContextFactory_;
 
-  private LiveCurrentMessageFactory liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
+  private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
   
   /**
    * Constructor.
@@ -300,10 +308,6 @@ public class AllegroApi implements IAllegroApi
       }
     };
     
-    podPrivateApiClient_  = new PodPrivateHttpModelClient(
-        modelRegistry_,
-        builder.objectStoreUrl_, null, jwtGenerator);
-
     coreApiClient_  = new CoreHttpModelClient(
         modelRegistry_,
         builder.objectStoreUrl_, null, jwtGenerator);
@@ -403,12 +407,11 @@ public class AllegroApi implements IAllegroApi
 //  }
 //  
   @Override
-  public void store(IKvItem object)
+  public void store(IStoredApplicationObject object)
   {
-    objectApiClient_.newObjectsPartitionPartitionKeySortSortKeyGetHttpRequestBuilder()
-      .wi
-//      .withObjectHash(object.getAbsoluteHash())
-//      .withCanonPayload(object)
+    objectApiClient_.newObjectsObjectHashPutHttpRequestBuilder()
+      .withObjectHash(object.getAbsoluteHash())
+      .withCanonPayload(object)
       .build()
       .execute(httpClient_);
   }
@@ -618,10 +621,14 @@ public class AllegroApi implements IAllegroApi
 //  }
 
   @Override
+  public Hash getPartitionHash(FetchPartitionRequest request)
+  {
+    return request.getPartitionHash();
+  }
+  
+  @Override
   public IPartition upsertPartition(UpsertPartitionRequest request)
   {
-    request.validate();
-    
     return objectApiClient_.newPartitionsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertPartitionRequest.Builder()
           .withPartitionId(new NamedUserIdObject.Builder()
@@ -767,14 +774,14 @@ public class AllegroApi implements IAllegroApi
       IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
           .withId(request.getThreadId().toBase64UrlSafeString())
           .withFrom(0L)
-          .withLimit(request.getMaxMessages())
+          .withLimit(request.getMaxItems())
           .withExcludeFields("tokenIds")
           .build()
           .execute(httpClient_);
         
       for(IMessageEnvelope envelope : thread.getEnvelopes())
       {
-        request.consume(liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
+        request.getConsumerManager().consume(liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
       }
     }
   }
@@ -925,7 +932,7 @@ public class AllegroApi implements IAllegroApi
 //  }
   
   @Override
-  public ApplicationObjectBuilder newApplicationObjectBuilder()
+  public ApplicationObjectBuilder newStoredApplicationObjectBuilder()
   {
     return new ApplicationObjectBuilder();
   }
@@ -936,7 +943,7 @@ public class AllegroApi implements IAllegroApi
    * @author Bruce Skingle
    *
    */
-  public class ApplicationObjectBuilder extends AbstractKvItemBuilder<ApplicationObjectBuilder, com.symphony.oss.models.object.canon.facade.IKvItem>
+  public class ApplicationObjectBuilder extends AbstractStoredApplicationObjectBuilder<ApplicationObjectBuilder, IStoredApplicationObject>
   {
     private IApplicationPayload payload_;
 
@@ -1011,15 +1018,15 @@ public class AllegroApi implements IAllegroApi
      */
     public ApplicationObjectBuilder withPartition(IPartition partition)
     {
-      withPartitionKey(partition.getObjectKey());
+      withPartitionHash(partition.getId().getHash());
       
       return this;
     }
 
     @Override
-    protected com.symphony.oss.models.object.canon.facade.IKvItem construct()
+    protected IStoredApplicationObject construct()
     {
-      return new KvItem(this);
+      return new StoredApplicationObject(this);
     }
 
     /**
@@ -1157,55 +1164,52 @@ public class AllegroApi implements IAllegroApi
 //       }
 //     } while(after != null && (limit==null || remainingItems>0));
 //  }
-//  
-//  @Override
-//  public void fetchSequence(FetchSequenceRequest request)
-//  {
-//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getSequenceHash().toString()))
-//    {
-//      ITraceContext trace = traceTransaction.open();
-//      
-//       String after = request.getAfter();
-//       Integer limit = request.getMaxItems();
-//       
-//       if(limit != null && limit < 1)
-//         throw new BadRequestException("Limit must be at least 1 or not specified");
-//       
-//       int remainingItems = limit == null ? 0 : limit;
-//       
-//       do
-//       {
-//         SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-//             .withSequenceHash(request.getSequenceHash())
-//             .withAfter(after)
-//             ;
-//         
-//         if(limit != null)
-//           pageRequest.withLimit(remainingItems);
-//         
-//         IPageOfFundamentalObject page = pageRequest
-//             .build()
-//             .execute(httpClient_);
-//         
-//         for(IFundamentalObject item : page.getData())
-//         {
-//           request.consume(item, trace, this);
-//           remainingItems--;
-//         }
-//         
-//         after = null;
-//         IPagination pagination = page.getPagination();
-//         
-//         if(pagination != null)
-//         {
-//           ICursors cursors = pagination.getCursors();
-//           
-//           if(cursors != null)
-//             after = cursors.getAfter();
-//         }
-//       } while(after != null && (limit==null || remainingItems>0));
-//    }
-//  }
+  
+  @Override
+  public void fetchPartitionObjects(FetchPartitionObjectsRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getPartitionHash().toString()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+       String after = request.getAfter();
+       Integer limit = request.getMaxItems();
+       
+       int remainingItems = limit == null ? 0 : limit;
+       
+       do
+       {
+         PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_.newPartitionsPartitionHashPageGetHttpRequestBuilder()
+             .withPartitionHash(request.getPartitionHash())
+             .withAfter(after)
+             ;
+         
+         if(limit != null)
+           pageRequest.withLimit(remainingItems);
+         
+         IPageOfStoredApplicationObject page = pageRequest
+             .build()
+             .execute(httpClient_);
+         
+         for(IStoredApplicationObject item : page.getData())
+         {
+           request.getConsumerManager().consume(item, trace, this);
+           remainingItems--;
+         }
+         
+         after = null;
+         IPagination pagination = page.getPagination();
+         
+         if(pagination != null)
+         {
+           ICursors cursors = pagination.getCursors();
+           
+           if(cursors != null)
+             after = cursors.getAfter();
+         }
+       } while(after != null && (limit==null || remainingItems>0));
+    }
+  }
   
   @Override
   public ChatMessage.Builder newChatMessageBuilder()
@@ -1265,6 +1269,12 @@ public class AllegroApi implements IAllegroApi
     {
       throw new IllegalArgumentException("Failed to parse input", e);
     }
+  }
+
+  @Override
+  public IApplicationObject open(IStoredApplicationObject storedApplicationObject)
+  {
+    return cryptoClient_.decrypt(storedApplicationObject);
   }
 
   /**

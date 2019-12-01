@@ -20,14 +20,19 @@ import java.security.cert.X509Certificate;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
-import org.symphonyoss.s2.fugue.kv.IKvItem;
+import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
+import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.facade.IPartition;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
 
 /**
@@ -116,9 +121,9 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   /**
    * Store the given object.
    * 
-   * @param object A FundamentalObject to be stored.
+   * @param object An Object to be stored.
    */
-  void store(IKvItem object);
+  void store(IStoredApplicationObject object);
 
 //  /**
 //   * Store the given ID.
@@ -166,13 +171,13 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //   */
 //  @Deprecated
 //  void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer);
-//
-//  /**
-//   * Fetch objects from a sequence.
-//   * 
-//   * @param request   The request parameters.
-//   */
-//  void fetchSequence(FetchSequenceRequest request);
+
+  /**
+   * Fetch objects from a partition.
+   * 
+   * @param request   The request parameters.
+   */
+  void fetchPartitionObjects(FetchPartitionObjectsRequest request);
 
   /**
    * 
@@ -185,7 +190,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @return A new ApplicationObjectBuilder.
    */
-  ApplicationObjectBuilder newApplicationObjectBuilder();
+  ApplicationObjectBuilder newStoredApplicationObjectBuilder();
   
 //  /**
 //   * Create a new ApplicationObjectBuilder to create a new version of the given object.
@@ -298,4 +303,16 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //   * @param deletionType  The type of deletion to be performed.
 //   */
 //  void delete(IFundamentalObject item, DeletionType deletionType);
+
+  /**
+   * Compute the hash of the given partition.
+   * This method does not make any network request, the hash is computed from the given request details.
+   * The Partition may or may not exist and the current user may or may not have access to read from or write to it.
+   * 
+   * @param request ID of the required partition.
+   * 
+   * @return The hash of the given partition.
+   */
+
+  Hash getPartitionHash(FetchPartitionRequest request);
 }

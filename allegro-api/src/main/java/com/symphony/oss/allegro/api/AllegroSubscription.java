@@ -26,52 +26,52 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.models.fundamental.canon.facade.INotification;
+//import com.symphony.oss.models.fundamental.canon.facade.INotification;
 
-/* package */ class AllegroSubscription implements ISubscription<INotification>
+/* package */ class AllegroSubscription //implements ISubscription<INotification>
 {
-  private final IThreadSafeRetryableConsumer<INotification> consumer_;
-  private final ImmutableSet<FeedName>                      subscriptionNames_;
-
-  public AllegroSubscription(CreateFeedSubscriberRequest request, AllegroApi allegroApi)
-  {
-    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getName()));
-    
-    consumer_ = new IThreadSafeRetryableConsumer<INotification>()
-    {
-      @Override
-      public void consume(INotification item, ITraceContext trace)
-          throws RetryableConsumerException, FatalConsumerException
-      {
-        request.consume(item, trace, allegroApi);
-      }
-
-      @Override
-      public void close()
-      {
-        request.closeConsumers();
-      }
-    };
-  }
-  
-  class FeedName extends Name
-  {
-    protected FeedName(String name)
-    {
-      super(name);
-    }
-  }
-
-  @Override
-  public ImmutableSet<? extends Name> getSubscriptionNames()
-  {
-    return subscriptionNames_;
-  }
-
-  @Override
-  public IThreadSafeRetryableConsumer<INotification> getConsumer()
-  {
-    return consumer_;
-  }
+//  private final IThreadSafeRetryableConsumer<INotification> consumer_;
+//  private final ImmutableSet<FeedName>                      subscriptionNames_;
+//
+//  public AllegroSubscription(CreateFeedSubscriberRequest request, AllegroApi allegroApi)
+//  {
+//    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getName()));
+//    
+//    consumer_ = new IThreadSafeRetryableConsumer<INotification>()
+//    {
+//      @Override
+//      public void consume(INotification item, ITraceContext trace)
+//          throws RetryableConsumerException, FatalConsumerException
+//      {
+//        request.consume(item, trace, allegroApi);
+//      }
+//
+//      @Override
+//      public void close()
+//      {
+//        request.closeConsumers();
+//      }
+//    };
+//  }
+//  
+//  class FeedName extends Name
+//  {
+//    protected FeedName(String name)
+//    {
+//      super(name);
+//    }
+//  }
+//
+//  @Override
+//  public ImmutableSet<? extends Name> getSubscriptionNames()
+//  {
+//    return subscriptionNames_;
+//  }
+//
+//  @Override
+//  public IThreadSafeRetryableConsumer<INotification> getConsumer()
+//  {
+//    return consumer_;
+//  }
 
 }

@@ -18,6 +18,8 @@
 
 package com.symphony.oss.allegro.api;
 
+//import com.symphony.oss.allegro.api.request.ConsumerRequest;
+
 /**
  * A request object for the FetchFeedMessages method.
  * 
@@ -27,70 +29,70 @@ package com.symphony.oss.allegro.api;
  * @author Bruce Skingle
  *
  */
-public class FetchFeedMessagesRequest extends ConsumerRequest<FetchFeedMessagesRequest>
+public class FetchFeedMessagesRequest //extends ConsumerRequest<FetchFeedMessagesRequest>
 {
-  private Integer maxMessages_;
-  private String  name_;
-  
-  /**
-   * Constructor.
-   */
-  public FetchFeedMessagesRequest()
-  {
-    super(FetchFeedMessagesRequest.class);
-  }
-
-  /**
-   * 
-   * @return The maximum number of messages to be returned.
-   */
-  public Integer getMaxMessages()
-  {
-    return maxMessages_;
-  }
-
-  /**
-   * Set the maximum number of messages to be returned.
-   * 
-   * @param maxMessages The maximum number of messages to be returned.
-   * 
-   * @return This (fluent method)
-   */
-  public FetchFeedMessagesRequest withMaxMessages(Integer maxMessages)
-  {
-    maxMessages_ = maxMessages;
-    
-    return self();
-  }
-
-  /**
-   * 
-   * @return The name of the feed to be read.
-   */
-  public String getName()
-  {
-    return name_;
-  }
-
-  /**
-   * Set the name of the feed to be read.
-   * 
-   * @param name The name of the feed to be read.
-   * 
-   * @return This (fluent method)
-   */
-  public FetchFeedMessagesRequest withName(String name)
-  {
-    name_ = name;
-    
-    return self();
-  }
-
-  @Override
-  public void validate()
-  {
-    super.validate();
-    
-    require(name_, "Name");
-  }
+//  private Integer maxMessages_;
+//  private String  name_;
+//  
+//  /**
+//   * Constructor.
+//   */
+//  public FetchFeedMessagesRequest()
+//  {
+//    super(FetchFeedMessagesRequest.class);
+//  }
+//
+//  /**
+//   * 
+//   * @return The maximum number of messages to be returned.
+//   */
+//  public Integer getMaxMessages()
+//  {
+//    return maxMessages_;
+//  }
+//
+//  /**
+//   * Set the maximum number of messages to be returned.
+//   * 
+//   * @param maxMessages The maximum number of messages to be returned.
+//   * 
+//   * @return This (fluent method)
+//   */
+//  public FetchFeedMessagesRequest withMaxMessages(Integer maxMessages)
+//  {
+//    maxMessages_ = maxMessages;
+//    
+//    return self();
+//  }
+//
+//  /**
+//   * 
+//   * @return The name of the feed to be read.
+//   */
+//  public String getName()
+//  {
+//    return name_;
+//  }
+//
+//  /**
+//   * Set the name of the feed to be read.
+//   * 
+//   * @param name The name of the feed to be read.
+//   * 
+//   * @return This (fluent method)
+//   */
+//  public FetchFeedMessagesRequest withName(String name)
+//  {
+//    name_ = name;
+//    
+//    return self();
+//  }
+//
+//  @Override
+//  public void validate()
+//  {
+//    super.validate();
+//    
+//    require(name_, "Name");
+//  }
 }

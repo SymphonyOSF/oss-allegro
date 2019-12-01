@@ -16,6 +16,7 @@
 
 package com.symphony.oss.allegro.api;
 
+import com.symphony.oss.allegro.api.request.AllegroRequest;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 
 /**

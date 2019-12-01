@@ -14,36 +14,41 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
-
-import org.symphonyoss.s2.common.fluent.Fluent;
+package com.symphony.oss.allegro.api.request;
 
 /**
- * Base class for Allegro request objects.
- * 
- * @param <T> The concrete type returned by fluent methods.
+ * A request object for the FetchRecentMessages method.
  * 
  * @author Bruce Skingle
  *
  */
-public class AllegroRequest<T extends AllegroRequest<T>> extends Fluent<T>
+public class FetchRecentMessagesRequest extends FetchThreadObjectsRequest
 {
-  protected AllegroRequest(Class<T> type)
+  FetchRecentMessagesRequest(Builder builder)
   {
-    super(type);
-  }
-
-  protected void require(Object value, String name)
-  {
-    if(value == null)
-      throw new IllegalArgumentException(name + " is required.");
+    super(builder);
   }
   
   /**
-   * Validate the request.
+   * Builder.
    * 
-   * @throws IllegalArgumentException if any values are invalid.
+   * @author Bruce Skingle
+   *
    */
-  public void validate()
-  {}
+  public static class Builder extends FetchThreadObjectsRequest.AbstractBuilder<Builder, FetchRecentMessagesRequest>
+  {
+    /**
+     * Constructor.
+     */
+    public Builder()
+    {
+      super(Builder.class);
+    }
+
+    @Override
+    protected FetchRecentMessagesRequest construct()
+    {
+      return new FetchRecentMessagesRequest(this);
+    }
+  }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 

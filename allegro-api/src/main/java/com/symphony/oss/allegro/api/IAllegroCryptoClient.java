@@ -22,6 +22,8 @@ import java.util.Set;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
+import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
  * Interface for all cryptographic capabilities used by Allegro.
@@ -52,6 +54,8 @@ public interface IAllegroCryptoClient
   List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens);
 
   void encrypt(ApplicationObjectBuilder applicationObjectBuilder);
+
+  IApplicationObject decrypt(IStoredApplicationObject storedApplicationObject);
 
 //  IOpenSimpleSecurityContext getOrCreateThreadSecurityContext(ThreadId threadId);
 //
