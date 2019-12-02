@@ -20,7 +20,7 @@ package com.symphony.oss.allegro.api;
 
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
@@ -57,5 +57,5 @@ public interface IFundamentalOpener
    * 
    * @return The decrypted object.
    */
-  IApplicationObject open(IStoredApplicationObject storedApplicationObject);
+  IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject);
 }

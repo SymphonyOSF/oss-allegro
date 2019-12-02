@@ -126,8 +126,7 @@ import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IOpenObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
@@ -1272,7 +1271,7 @@ public class AllegroApi implements IAllegroApi
   }
 
   @Override
-  public IApplicationObject open(IStoredApplicationObject storedApplicationObject)
+  public IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject)
   {
     return cryptoClient_.decrypt(storedApplicationObject);
   }

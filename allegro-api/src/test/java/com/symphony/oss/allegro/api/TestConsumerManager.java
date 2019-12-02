@@ -18,21 +18,12 @@
 
 package com.symphony.oss.allegro.api;
 
-import static org.junit.Assert.assertEquals;
-
-import java.time.temporal.ChronoUnit;
-
 import org.apache.commons.codec.binary.Base64;
-import org.junit.Test;
-import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContextTransaction;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleConsumer;
 
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.chat.canon.IBaseSocialMaestroMessage;
-import com.symphony.oss.models.chat.canon.IBaseSocialMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.ISignalNotification;
@@ -43,7 +34,7 @@ import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.chat.canon.facade.MessageId;
 import com.symphony.oss.models.chat.canon.facade.SocialMessage;
 import com.symphony.oss.models.core.canon.facade.PodId;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 @SuppressWarnings("javadoc")
@@ -106,10 +97,9 @@ public class TestConsumerManager
     }
 
     @Override
-    public IApplicationObject open(IStoredApplicationObject storedApplicationObject)
+    public IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject)
     {
-      // TODO Auto-generated method stub
-      return null;
+      throw new RuntimeException("Not implemented");
     }
   };
   private static final ITraceContext trace = NoOpTraceContextTransaction.INSTANCE.open();

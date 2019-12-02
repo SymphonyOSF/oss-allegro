@@ -22,7 +22,7 @@ import java.util.Set;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
@@ -55,7 +55,7 @@ public interface IAllegroCryptoClient
 
   void encrypt(ApplicationObjectBuilder applicationObjectBuilder);
 
-  IApplicationObject decrypt(IStoredApplicationObject storedApplicationObject);
+  IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject);
 
 //  IOpenSimpleSecurityContext getOrCreateThreadSecurityContext(ThreadId threadId);
 //

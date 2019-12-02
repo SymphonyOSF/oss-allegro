@@ -39,7 +39,7 @@ import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
@@ -338,14 +338,14 @@ public class ConsumerManager
     {
       if(hasChatTypes_ || hasApplicationTypes_)
       {
-        IApplicationObject applicationObject = opener.open(storedApplicationObject);
+        IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
         
-        if(consumeChatTypes(applicationObject.getPayload(), traceContext, opener))
+        if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
           return;
         
         if(hasApplicationTypes_)
         {
-          if(consume(applicationObject.getPayload(), traceContext))
+          if(consume(applicationObjectPayload, traceContext))
             return;
         }
       }

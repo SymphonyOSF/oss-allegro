@@ -17,7 +17,6 @@
 package com.symphony.oss.allegro.api;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -46,11 +45,11 @@ import com.symphony.oss.models.internal.km.canon.facade.IUserKeys;
 import com.symphony.oss.models.internal.pod.canon.IPodInfo;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.facade.ApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IOpenObjectPayload;
+import com.symphony.oss.models.object.canon.facade.AbstractApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload.AbstractApplicationObjectPayloadBuilder;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
-import com.symphony.oss.models.object.canon.facade.OpenObjectPayload;
 import com.symphony.security.clientsdk.entity.EntityCryptoHandler;
 import com.symphony.security.clientsdk.entity.EntityCryptoHandlerV2;
 import com.symphony.security.clientsdk.search.ClientTokenizer_v2;
@@ -334,7 +333,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   }
   
   @Override
-  public IApplicationObject decrypt(IStoredApplicationObject storedApplicationObject)
+  public IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject)
   {
     AllegroCryptoHelper helper = contentKeyCache_.getContentKey(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), internalUserId_);
 
@@ -342,12 +341,15 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     
     IEntity entity = modelRegistry_.parseOne(plainText.getReader());
     
-    if(entity instanceof IApplicationPayload)
-      return new ApplicationObject.Builder()
-          .withHeader(storedApplicationObject.getHeader())
-          .withPayload((IApplicationPayload)entity)
-          .withStoredApplicationObject(storedApplicationObject)
-          .build();
+    if(entity instanceof ApplicationObjectPayload)
+    {
+      ApplicationObjectPayload payload = (ApplicationObjectPayload)entity;
+      
+      payload.setStoredApplicationObject(storedApplicationObject);
+      ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader()).setStoredApplicationObject(storedApplicationObject);
+      
+      return payload;
+    }
           
     throw new IllegalArgumentException("Decrypted payload is " + entity.getCanonType() + " not IApplicationPayload.");
   }
