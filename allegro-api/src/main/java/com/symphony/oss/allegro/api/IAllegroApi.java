@@ -23,6 +23,7 @@ import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
@@ -31,6 +32,7 @@ import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
@@ -192,15 +194,15 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   ApplicationObjectBuilder newStoredApplicationObjectBuilder();
   
-//  /**
-//   * Create a new ApplicationObjectBuilder to create a new version of the given object.
-//   * 
-//   * @param existingObject An existing application object for which a new version is to be created.
-//   * 
-//   * @return A new ApplicationObjectBuilder to create a new version of the given object.
-//   */
-//  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject);
-//
+  /**
+   * Create a new ApplicationObjectBuilder to create a new version of the given object.
+   * 
+   * @param existingObject An existing application object for which a new version is to be created.
+   * 
+   * @return A new ApplicationObjectBuilder to create a new version of the given object.
+   */
+  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
+
   /**
    * Fetch the meta-data for a sequence, or create it if it does not exist.
    * 

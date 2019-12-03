@@ -321,7 +321,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   
 
   @Override
-  public void encrypt(ApplicationObjectBuilder builder)
+  public void encrypt(IEncryptableObjectBuilder builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     

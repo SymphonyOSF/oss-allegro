@@ -49,11 +49,13 @@ import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
+import org.symphonyoss.s2.canon.runtime.IModelRegistry;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.IJsonDomNode;
+import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.MutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
 import org.symphonyoss.s2.common.fault.CodingFault;
@@ -78,6 +80,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Files;
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
@@ -107,6 +110,8 @@ import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
@@ -129,6 +134,7 @@ import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRe
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject.AbstractStoredApplicationObjectBuilder;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
@@ -942,16 +948,17 @@ public class AllegroApi implements IAllegroApi
    * @author Bruce Skingle
    *
    */
-  public class ApplicationObjectBuilder extends AbstractStoredApplicationObjectBuilder<ApplicationObjectBuilder, IStoredApplicationObject>
+  public class ZZApplicationObjectBuilder extends AbstractStoredApplicationObjectBuilder<ApplicationObjectBuilder, IStoredApplicationObject>
+  implements IEncryptableObjectBuilder
   {
     private IApplicationPayload payload_;
 
     /**
      * Constructor.
      */
-    public ApplicationObjectBuilder()
+    public ZZApplicationObjectBuilder()
     {
-      super(ApplicationObjectBuilder.class);
+      super(ZZApplicationObjectBuilder.class);
     }
     
     /**
@@ -972,6 +979,7 @@ public class AllegroApi implements IAllegroApi
      * 
      * @return the unencrypted payload.
      */
+    @Override
     public IApplicationPayload getPayload()
     {
       return payload_;
@@ -1052,62 +1060,182 @@ public class AllegroApi implements IAllegroApi
 //    
 //    store(toDoObject);
 //  }
-//
-//  @Override
-//  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObject existingObject)
-//  {
-//    return new ApplicationObjectUpdater(existingObject);
-//  }
-//  
-//  /**
-//   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
-//   * version is to be created.
-//   * 
-//   * @author Bruce Skingle
-//   *
-//   */
-//  public class ApplicationObjectUpdater extends AbstractFundamentalObjectApplicationObjectBuilder<ApplicationObjectUpdater>
-//  {
-//    /**
-//     * Constructor.
-//     * 
-//     * @param existingObject An existing Application Object for which a new version is to be created. 
-//     */
-//    public ApplicationObjectUpdater(IApplicationObject existingObject)
-//    {
-//      super(ApplicationObjectUpdater.class);
-//      
-//      if(existingObject.getContainer() instanceof IBlob)
-//      {
-//        IBlob blob = (IBlob) existingObject.getContainer();
-//        super.withSecurityContext(cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), null));
-//      }
-//      withSequences(existingObject.getContainer().getSequences());
-//
-//      withBaseHash(existingObject.getBaseHash());
-//      withPrevHash(existingObject.getAbsoluteHash());
-//    }
-//
-//    @Override
-//    public ApplicationObjectUpdater withSecurityContext(IOpenSimpleSecurityContext securityContext)
-//    {
-//      throw new IllegalArgumentException("You can't change the SecurityContext of an existing object.");
-//    }
-//
-//    @Override
-//    protected void validate()
-//    {
-//      if(signingKey_ == null)
-//      {
-//        withSigningKey(cryptoClient_.getSigningKey());
-//      }
-//      
-//      withPodId(getPodId());
-//      super.validate();
-//    }
-//
-//  }
-//  
+
+  @Override
+  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject)
+  {
+    return new ApplicationObjectUpdater(existingObject);
+  }
+  
+  /**
+   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
+   * version is to be created.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class ApplicationObjectUpdater extends AbstractStoredApplicationObjectBuilder<ApplicationObjectUpdater, IStoredApplicationObject>
+  implements IEncryptableObjectBuilder
+  {
+    private static final String NOT_ALLOWED = "This method cannot be called for an Updater";
+    
+    private IApplicationPayload payload_;
+
+    /**
+     * Constructor.
+     * 
+     * @param existingObject An existing Application Object for which a new version is to be created. 
+     */
+    public ApplicationObjectUpdater(IApplicationObjectPayload existingObject)
+    {
+      super(ApplicationObjectUpdater.class, existingObject.getStoredApplicationObject());
+      
+//      super.withBaseHash(existingObject.getStoredApplicationObject().getBaseHash());
+      super.withPrevHash(existingObject.getStoredApplicationObject().getAbsoluteHash());
+      super.withPrevSortKey(existingObject.getStoredApplicationObject().getSortKey());
+    }
+    
+    /**
+     * Set the object payload (which is to be encrypted).
+     * 
+     * @param payload The object payload (which is to be encrypted).
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectUpdater withPayload(IApplicationPayload payload)
+    {
+      payload_ = payload;
+      
+      return self();
+    }
+
+    /**
+     * 
+     * @return the unencrypted payload.
+     */
+    public IApplicationPayload getPayload()
+    {
+      return payload_;
+    }
+
+    @Override
+    public ApplicationObjectUpdater withValues(ImmutableJsonObject jsonObject, boolean ignoreValidation,
+        IModelRegistry modelRegistry)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPartitionHash(Hash value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPartitionHash(ImmutableByteArray value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withBaseHash(Hash value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withBaseHash(ImmutableByteArray value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPrevHash(Hash value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPrevHash(ImmutableByteArray value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPrevSortKey(SortKey value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withPrevSortKey(String value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withCipherSuiteId(CipherSuiteId value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withCipherSuiteId(String value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withThreadId(ThreadId value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withThreadId(ImmutableByteArray value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withRotationId(RotationId value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    public ApplicationObjectUpdater withRotationId(Long value)
+    {
+      throw new IllegalArgumentException(NOT_ALLOWED);
+    }
+
+    @Override
+    protected void validate()
+    {
+      if(getHashType() == null)
+        withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
+      
+      if(getThreadId() == null)
+        throw new IllegalStateException("ThreadId is required.");
+      
+      if(payload_ == null)
+        throw new IllegalStateException("Payload is required.");
+      
+      withOwner(getUserId());
+      
+      cryptoClient_.encrypt(this);
+      
+      super.validate();
+    }
+
+    @Override
+    protected IStoredApplicationObject construct()
+    {
+      return new StoredApplicationObject(this);
+    }
+
+  }
+  
 //  @Override
 //  public IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, Integer limit, String after)
 //  {
