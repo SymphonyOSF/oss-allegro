@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.api.request;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.pipeline.IConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeConsumer;
 
-abstract class AbstractAdaptor<T> implements IConsumer<T>
+abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeConsumer<T>
 {
-  private static final Logger log_ = LoggerFactory.getLogger(AbstractAdaptor.class);
+  private static final Logger log_ = LoggerFactory.getLogger(ThreadSafeAbstractAdaptor.class);
   
   private final Class<T> payloadType_;
   
-  protected IConsumer<Object>           defaultConsumer_ = new IConsumer<Object>()
+  protected IThreadSafeConsumer<Object>           defaultConsumer_ = new IThreadSafeConsumer<Object>()
   {
     @Override
     public synchronized void consume(Object item, ITraceContext trace)
@@ -41,7 +41,7 @@ abstract class AbstractAdaptor<T> implements IConsumer<T>
     public void close(){}
   };
   
-  public AbstractAdaptor(Class<T> payloadType)
+  public ThreadSafeAbstractAdaptor(Class<T> payloadType)
   {
     payloadType_ = payloadType;
   }
@@ -51,7 +51,7 @@ abstract class AbstractAdaptor<T> implements IConsumer<T>
     return payloadType_;
   }
 
-  public void setDefaultConsumer(IConsumer<Object> defaultConsumer)
+  public void setDefaultConsumer(IThreadSafeConsumer<Object> defaultConsumer)
   {
     defaultConsumer_ = defaultConsumer;
   }

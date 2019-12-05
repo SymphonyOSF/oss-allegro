@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.0.10-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
   
@@ -49,10 +49,15 @@
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
+      <artifactId>object-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <version>${oss.models.version}</version>
       <artifactId>crypto-model</artifactId>
     </dependency>
     
-    <dependency>
+    <!-- <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
       <artifactId>fundamental-model</artifactId>
@@ -61,12 +66,12 @@
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
       <artifactId>system-model</artifactId>
-    </dependency>
-    <dependency>
+    </dependency> -->
+    <!-- <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
       <artifactId>pod-private-model</artifactId>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
@@ -93,11 +98,11 @@
       <version>${oss.models.version}</version>
       <artifactId>km-internal-model</artifactId>
     </dependency>
-    <dependency>
+    <!-- <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
       <artifactId>sbe-id</artifactId>
-    </dependency>
+    </dependency> -->
     
     <dependency>
       <groupId>org.symphonyoss.s2.canon</groupId>

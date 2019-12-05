@@ -16,9 +16,8 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.symphonyoss.s2.common.hash.Hash;
-
-import com.symphony.oss.models.fundmental.canon.SequenceType;
+import com.symphony.oss.allegro.api.request.AllegroRequest;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 
 /**
  * Base class for SequenceMetaData requests.
@@ -28,18 +27,17 @@ import com.symphony.oss.models.fundmental.canon.SequenceType;
  * @author Bruce Skingle
  *
  */
-public abstract class SequenceMetaDataRequest<T extends SequenceMetaDataRequest<T>> extends AllegroRequest<T>
+public abstract class PartitionRequest<T extends PartitionRequest<T>> extends AllegroRequest<T>
 {
-  private Hash          principalBaseHash_;
-  private SequenceType  sequenceType_;
-  private String        contentType_;
+  private PodAndUserId owner_;
+  private String       name_;
   
   /**
    * Constructor.
    * 
    * @param type The concrete type returned by fluent methods.
    */
-  public SequenceMetaDataRequest(Class<T> type)
+  public PartitionRequest(Class<T> type)
   {
     super(type);
   }
@@ -48,44 +46,21 @@ public abstract class SequenceMetaDataRequest<T extends SequenceMetaDataRequest<
    * 
    * @return The principal base hash.
    */
-  public Hash getPrincipalBaseHash()
+  public PodAndUserId getOwner()
   {
-    return principalBaseHash_;
+    return owner_;
   }
   
   /**
    * Set the principal base hash.
    * 
-   * @param principalBaseHash The principal base hash.
+   * @param owner The principal base hash.
    * 
    * @return This (fluent method)
    */
-  public T withPrincipalBaseHash(Hash principalBaseHash)
+  public T withOwner(PodAndUserId owner)
   {
-    principalBaseHash_ = principalBaseHash;
-    
-    return self();
-  }
-  
-  /**
-   * 
-   * @return The sequence type for the sequence.
-   */
-  public SequenceType getSequenceType()
-  {
-    return sequenceType_;
-  }
-  
-  /**
-   * Set the sequence type for the sequence.
-   * 
-   * @param sequenceType The sequence type for the sequence.
-   * 
-   * @return This (fluent method)
-   */
-  public T withSequenceType(SequenceType sequenceType)
-  {
-    sequenceType_ = sequenceType;
+    owner_ = owner;
     
     return self();
   }
@@ -94,21 +69,21 @@ public abstract class SequenceMetaDataRequest<T extends SequenceMetaDataRequest<
    * 
    * @return The content type for the sequence.
    */
-  public String getContentType()
+  public String getName()
   {
-    return contentType_;
+    return name_;
   }
   
   /**
    * Set the content type for the sequence.
    * 
-   * @param contentType The content type for the sequence.
+   * @param name The content type for the sequence.
    * 
    * @return This (fluent method)
    */
-  public T withContentType(String contentType)
+  public T withName(String name)
   {
-    contentType_ = contentType;
+    name_ = name;
     
     return self();
   }
@@ -118,7 +93,6 @@ public abstract class SequenceMetaDataRequest<T extends SequenceMetaDataRequest<
   {
     super.validate();
     
-    require(sequenceType_, "Sequence Type");
-    require(contentType_, "Content Type");
+    require(name_, "Name");
   }
 }
