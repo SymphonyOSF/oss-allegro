@@ -23,6 +23,7 @@ import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
@@ -32,9 +33,10 @@ import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.object.canon.DeletionType;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
 
 /**
@@ -60,6 +62,12 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   IUserV2 getSessioninfo();
 
+  /**
+   * 
+   * @return Info for the logged in user.
+   */
+  IUserV2 getUserInfo();
+  
   /**
    * Fetch a chat message by its ID.
    * 
@@ -125,7 +133,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @param object An Object to be stored.
    */
-  void store(IStoredApplicationObject object);
+  void store(IAbstractStoredApplicationObject object);
 
 //  /**
 //   * Store the given ID.
@@ -192,7 +200,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @return A new ApplicationObjectBuilder.
    */
-  ApplicationObjectBuilder newStoredApplicationObjectBuilder();
+  ApplicationObjectBuilder newApplicationObjectBuilder();
   
   /**
    * Create a new ApplicationObjectBuilder to create a new version of the given object.
@@ -202,7 +210,16 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @return A new ApplicationObjectBuilder to create a new version of the given object.
    */
   ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
-
+  
+  /**
+   * Create a new ApplicationObjectDeleter to delete the given object.
+   * 
+   * @param existingObject An existing application object which is to be deleted.
+   * 
+   * @return A new ApplicationObjectDeleter to delete the given object.
+   */
+  ApplicationObjectDeleter newApplicationObjectDeleter(IApplicationObjectPayload existingObject);
+  
   /**
    * Fetch the meta-data for a sequence, or create it if it does not exist.
    * 
@@ -283,28 +300,28 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //  void fetchFeedMessages(FetchFeedMessagesRequest request);
 //  
 //  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
-//
-//  /**
-//   * Delete the given object.
-//   * 
-//   * The deletion may be logical or physical.
-//   * 
-//   * In the case of a logical delete, the object will be deleted from any current sequences of which it
-//   * is a member, and a delete record will be added to any absolute sequences of which it is a member
-//   * and as the latest version of the object.
-//   * 
-//   * When performing a fetch of a logically deleted object a DeletedException (HTTP status 410) will be
-//   * thrown, which is a sub-class of NotFoundException (HTTP status 404) so code which does not catch
-//   * DeletedException specifically will see a NotFoundException which is the result which would have 
-//   * occurred if the object had never existed.
-//   * 
-//   * In the case of a physical delete, all versions of the object are physically removed as are all
-//   * copies of the object on all sequences.
-//   * 
-//   * @param item          An existing object which is to be deleted.
-//   * @param deletionType  The type of deletion to be performed.
-//   */
-//  void delete(IFundamentalObject item, DeletionType deletionType);
+
+  /**
+   * Delete the given object.
+   * 
+   * The deletion may be logical or physical.
+   * 
+   * In the case of a logical delete, the object will be deleted from any current sequences of which it
+   * is a member, and a delete record will be added to any absolute sequences of which it is a member
+   * and as the latest version of the object.
+   * 
+   * When performing a fetch of a logically deleted object a DeletedException (HTTP status 410) will be
+   * thrown, which is a sub-class of NotFoundException (HTTP status 404) so code which does not catch
+   * DeletedException specifically will see a NotFoundException which is the result which would have 
+   * occurred if the object had never existed.
+   * 
+   * In the case of a physical delete, all versions of the object are physically removed as are all
+   * copies of the object on all sequences.
+   * 
+   * @param item          An existing object which is to be deleted.
+   * @param deletionType  The type of deletion to be performed.
+   */
+  void delete(IApplicationObjectPayload item, DeletionType deletionType);
 
   /**
    * Compute the hash of the given partition.

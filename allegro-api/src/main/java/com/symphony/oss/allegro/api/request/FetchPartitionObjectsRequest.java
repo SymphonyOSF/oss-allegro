@@ -26,6 +26,7 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
  */
 public class FetchPartitionObjectsRequest extends FetchPartitionRequest
 {
+  private final boolean         scanForwards_;
   private final Integer         maxItems_;
   private final String          after_;
   private final ConsumerManager consumerManager_;
@@ -37,9 +38,19 @@ public class FetchPartitionObjectsRequest extends FetchPartitionRequest
   {
     super(builder);
 
+    scanForwards_     = builder.scanForwards_;
     maxItems_         = builder.maxItems_;
     after_            = builder.after_;
     consumerManager_  = builder.consumerManager_;
+  }
+
+  /**
+   * 
+   * @return The order of scan.
+   */
+  public Boolean getScanForwards()
+  {
+    return scanForwards_;
   }
   
   /**
@@ -102,6 +113,7 @@ public class FetchPartitionObjectsRequest extends FetchPartitionRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionRequest> extends FetchPartitionRequest.AbstractBuilder<T,B>
   {
+    protected boolean         scanForwards_ = true;
     protected Integer         maxItems_;
     protected String          after_;
     protected ConsumerManager consumerManager_;
@@ -109,6 +121,20 @@ public class FetchPartitionObjectsRequest extends FetchPartitionRequest
     AbstractBuilder(Class<T> type)
     {
       super(type);
+    }
+    
+    /**
+     * Set the direction of scan.
+     * 
+     * @param scanForwards If true then scan forwards, else scan in the reverse order of sort keys.
+     * 
+     * @return This (fluent method)
+     */
+    public T withScanForwards(boolean scanForwards)
+    {
+      scanForwards_ = scanForwards;
+      
+      return self();
     }
     
     /**

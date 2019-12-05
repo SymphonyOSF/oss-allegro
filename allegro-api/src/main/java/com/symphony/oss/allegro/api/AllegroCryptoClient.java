@@ -31,6 +31,7 @@ import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.immutable.ImmutableByteArray;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptablePayloadbuilder;
 import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
@@ -321,15 +322,15 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   
 
   @Override
-  public void encrypt(IEncryptableObjectBuilder builder)
+  public void encrypt(EncryptablePayloadbuilder<?> builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     
     AllegroCryptoHelper helper = contentKeyCache_.getContentKey(builder.getThreadId(), rotationId, internalUserId_);
     
-    builder.setEncryptedPayload(cipherSuite_.encrypt(helper.getSecretKey(), builder.getPayload().serialize()));
-    builder.withRotationId(rotationId);
-    builder.withCipherSuiteId(cipherSuite_.getId());
+    builder.withEncryptedPayload(cipherSuite_.encrypt(helper.getSecretKey(), builder.getPayload().serialize()))
+      .withRotationId(rotationId)
+      .withCipherSuiteId(cipherSuite_.getId());
   }
   
   @Override
@@ -346,7 +347,11 @@ class AllegroCryptoClient implements IAllegroCryptoClient
       ApplicationObjectPayload payload = (ApplicationObjectPayload)entity;
       
       payload.setStoredApplicationObject(storedApplicationObject);
-      ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader()).setStoredApplicationObject(storedApplicationObject);
+      
+      AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
+      
+      if(header != null)
+        header.setStoredApplicationObject(storedApplicationObject);
       
       return payload;
     }

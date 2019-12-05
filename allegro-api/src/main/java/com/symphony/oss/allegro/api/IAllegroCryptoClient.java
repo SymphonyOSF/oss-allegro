@@ -19,7 +19,7 @@ package com.symphony.oss.allegro.api;
 import java.util.List;
 import java.util.Set;
 
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptablePayloadbuilder;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
@@ -53,7 +53,7 @@ public interface IAllegroCryptoClient
 
   List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens);
 
-  void encrypt(ApplicationObjectBuilder applicationObjectBuilder);
+  void encrypt(EncryptablePayloadbuilder<?> builder);
 
   IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject);
 
