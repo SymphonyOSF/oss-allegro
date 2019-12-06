@@ -69,10 +69,10 @@
     
     <s2.common.version>0.2.7</s2.common.version>
     <canon.version>0.2.14</canon.version>
-    <fugue.version>0.2.38</fugue.version>
+    <fugue.version>0.2.39</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.3.2</oss.models.version>
+    <oss.models.version>0.3.3</oss.models.version>
   </properties>
   
   <modules>
