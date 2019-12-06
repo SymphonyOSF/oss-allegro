@@ -72,7 +72,7 @@
     <fugue.version>0.2.38</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.3.1</oss.models.version>
+    <oss.models.version>0.3.2</oss.models.version>
   </properties>
   
   <modules>
