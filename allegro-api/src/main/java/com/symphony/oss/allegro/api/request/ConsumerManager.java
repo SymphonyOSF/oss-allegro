@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.IConsumer;
@@ -38,7 +39,6 @@ import com.symphony.oss.allegro.api.IFundamentalOpener;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
@@ -249,7 +249,7 @@ public class ConsumerManager
       if(IChatMessage.class.isAssignableFrom(type))
         hasChatTypes_ = true;
       
-      if(IApplicationPayload.class.isAssignableFrom(type))
+      if(IApplicationObjectPayload.class.isAssignableFrom(type))
         hasApplicationTypes_ = true;
       
       return self();
@@ -338,15 +338,22 @@ public class ConsumerManager
     {
       if(hasChatTypes_ || hasApplicationTypes_)
       {
-        IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
-        
-        if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
-          return;
-        
-        if(hasApplicationTypes_)
+        try
         {
-          if(consume(applicationObjectPayload, traceContext))
+          IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
+          
+          if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
             return;
+          
+          if(hasApplicationTypes_)
+          {
+            if(consume(applicationObjectPayload, traceContext))
+              return;
+          }
+        }
+        catch(PermissionDeniedException e)
+        {
+          // can't decrypt
         }
       }
     }
