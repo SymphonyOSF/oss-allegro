@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
+import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
@@ -83,9 +84,11 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
@@ -125,16 +128,21 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
+import com.symphony.oss.models.object.ObjectModelUtils;
 import com.symphony.oss.models.object.canon.DeletionType;
+import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
+import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IFeedObject;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
@@ -507,80 +515,78 @@ public class AllegroApi implements IAllegroApi
 //    
 //    return subscriberManager;
 //  }
-//  
-//  @Override
-//  public void fetchFeedMessages(FetchFeedMessagesRequest request)
-//  {
-//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
-//    {
-//      ITraceContext trace = traceTransaction.open();
-//      
-//      List<IFeedMessage> messages  = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
-//          .withName(request.getName())
-//          .withCanonPayload(new FeedRequest.Builder()
-//              .withMaxMessages(request.getMaxMessages() != null ? request.getMaxMessages() : 1)
-//              .build())
-//          .build()
-//          .execute(httpClient_);
-//      
-//      FeedRequest.Builder builder = new FeedRequest.Builder()
-//          .withMaxMessages(0)
-//          .withWaitTimeSeconds(0);
-//      
-//      System.out.println("Received " + messages.size() + " messages.");
-//      for(IFeedMessage message : messages)
-//      {
-//        request.consume(message.getPayload(), trace, this);
-//          
-//        builder.withDelete(new FeedMessageDelete.Builder()
-//            .withReceiptHandle(message.getReceiptHandle())
-//            .build()
-//            );
-//      }
-//      
-//      try
-//      {
-//        // Delete (ACK) the consumed messages
-//        messages = systemApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
-//            .withName(request.getName())
-//            .withCanonPayload(builder.build())
-//            .build()
-//            .execute(httpClient_);
-//      }
-//      catch(NotFoundException e)
-//      {
-//        messages.clear();
-//      }
-//    }
-//    catch(NotFoundException e)
-//    {
-//      // No messages
-//    }
-//    
-//    request.closeConsumers();
-//  }
-//
-//  @Override
-//  public IFeed upsertFeed(UpsertFeedRequest request)
-//  {
-//    request.validate();
-//    
-//    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
-//        .withType(request.getType())
-//        .withSequences(request.getSequences())
-//        .build()
-//        ;
-//    
-//    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
-//        .withName(request.getName())
-//        .withCanonPayload(subscriptionRequest)
-//        .build()
-//        .execute(httpClient_)
-//        ;
-//    
-//    return feed;
-//  }
-//
+  
+  @Override
+  public void fetchFeedObjects(FetchFeedObjectsRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+      List<IFeedObject> messages  = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
+          .withName(request.getName())
+          .withCanonPayload(new FeedRequest.Builder()
+              .withMaxItems(request.getMaxItems() != null ? request.getMaxItems() : 1)
+              .build())
+          .build()
+          .execute(httpClient_);
+      
+      FeedRequest.Builder builder = new FeedRequest.Builder()
+          .withMaxItems(0)
+          .withWaitTimeSeconds(0);
+      
+      System.out.println("Received " + messages.size() + " messages.");
+      for(IFeedObject message : messages)
+      {
+        request.getConsumerManager().consume(message.getPayload(), trace, this);
+          
+        builder.withDelete(new FeedObjectDelete.Builder()
+            .withReceiptHandle(message.getReceiptHandle())
+            .build()
+            );
+      }
+      
+      try
+      {
+        // Delete (ACK) the consumed messages
+        messages = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
+            .withName(request.getName())
+            .withCanonPayload(builder.build())
+            .build()
+            .execute(httpClient_);
+      }
+      catch(NotFoundException e)
+      {
+        messages.clear();
+      }
+    }
+    catch(NotFoundException e)
+    {
+      // No messages
+      e.printStackTrace();
+    }
+    
+    request.getConsumerManager().closeConsumers();
+  }
+
+  @Override
+  public IFeed upsertFeed(UpsertFeedRequest request)
+  {
+    ObjectModelUtils.validateFeedName(request.getName());
+    
+    return objectApiClient_.newFeedsUpsertPostHttpRequestBuilder()
+      .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertFeedRequest.Builder()
+          .withFeedId(new NamedUserIdObject.Builder()
+              .withUserId(getUserId())
+              .withName(request.getName())
+              .build())
+            .withPartitionHashes(request.getPartitionHashes())
+            .build())
+      .build()
+      .execute(httpClient_)
+      ;
+  }
+
 //  @Override
 //  public void upsertGatewaySubscription(UpsertSmsGatewayRequest request)
 //  {
@@ -648,61 +654,6 @@ public class AllegroApi implements IAllegroApi
       .build()
       .execute(httpClient_)
       ;
-    
-//    Hash subjectHash = request.getO;
-//    
-//    if(subjectHash == null)
-//      subjectHash = getPrincipalBaseHash();
-//    
-//    IContentIdObject id = new ContentIdObject.Builder()
-//        .withSubjectHash(subjectHash)
-//        .withSubjectType(Principal.CLIENT_TYPE_ID)
-//        .withContentType(request.getContentType())
-//        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
-//        .build();
-//    
-//    try
-//    {
-//      return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
-//    }
-//    catch(NotFoundException e)
-//    {
-//      IOpenSimpleSecurityContext securityContext = cryptoClient_.getOrCreateThreadSecurityContext(request.getThreadId());
-//
-//      ISequence sequence = new Sequence.Builder()
-//          .withType(request.getSequenceType())
-//          .withSecurityContextHash(securityContext.getParentHash())
-//          .withSigningKeyHash(cryptoClient_.getSigningKey().getAbsoluteHash())
-//          .withBaseHash(id.getAbsoluteHash())
-//          .withPrevHash(id.getAbsoluteHash())
-//          .build();
-//      
-//      IFundamentalObject sequenceObject = new FundamentalObject.ObjectBuilder()
-//          .withPayload(sequence)
-//          .withSigningKey(cryptoClient_.getSigningKey())
-//          .build();
-//      
-////      ITransaction transaction = new Transaction.Builder()
-////        .withId(id)
-////        .withAdditionalObjects(sequenceObject)
-////        .build();
-//      
-//      IFundamentalObject idObject =  new FundamentalObject.IdBuilder()
-//      .withFundamentalId(id)
-//      .build();
-//      
-//      fundamentalApiClient_.newObjectsTransactionPostHttpRequestBuilder()
-//        .withCanonPayload(idObject)
-//        .withCanonPayload(sequenceObject)
-//        .build()
-//        .execute(httpClient_);
-//      
-////      store(id);
-////      store(sequenceObject); we need to make these two calls in one and validate the ID object for principal hash
-//      
-//      return sequence;
-//    }
-
   }
 
   private String getVersion()

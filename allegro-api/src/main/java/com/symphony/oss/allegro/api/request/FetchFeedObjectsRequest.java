@@ -16,57 +16,65 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-import org.symphonyoss.s2.common.hash.Hash;
-
-import com.google.common.collect.ImmutableSet;
 
 /**
- * Request object for UpsertFeed.
+ * Request to fetch a partition.
  * 
  * @author Bruce Skingle
  *
  */
-public class UpsertFeedRequest
+public class FetchFeedObjectsRequest
 {
-  private final String             name_;
-  private final ImmutableSet<Hash> partitionHashes_;
+  private final String          name_;
+  private final Integer         maxItems_;
+  private final ConsumerManager consumerManager_;
   
-  UpsertFeedRequest(AbstractBuilder<?,?> builder)
+  /**
+   * Constructor.
+   */
+  FetchFeedObjectsRequest(AbstractBuilder<?,?> builder)
   {
-    name_             = builder.name_;
-    partitionHashes_  = ImmutableSet.copyOf(builder.partitionHashes_);
+    name_            = builder.name_;
+    maxItems_         = builder.maxItems_;
+    consumerManager_  = builder.consumerManager_;
   }
   
   /**
    * 
-   * @return The name of the partition.
+   * @return The maximum number of objects to return.
+   */
+  public Integer getMaxItems()
+  {
+    return maxItems_;
+  }
+
+  /**
+   * 
+   * @return The name of the feed to read from.
    */
   public String getName()
   {
     return name_;
   }
-  
+
   /**
    * 
-   * @return The allowable ThreadIds for this partition.
+   * @return The ConsumerManager to receive objects.
    */
-  public Set<Hash> getPartitionHashes()
+  public ConsumerManager getConsumerManager()
   {
-    return partitionHashes_;
+    return consumerManager_;
   }
-  
+
   /**
    * Builder.
    * 
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, UpsertFeedRequest>
+  public static class Builder extends AbstractBuilder<Builder, FetchFeedObjectsRequest>
   {
     /**
      * Constructor.
@@ -77,9 +85,9 @@ public class UpsertFeedRequest
     }
 
     @Override
-    protected UpsertFeedRequest construct()
+    protected FetchFeedObjectsRequest construct()
     {
-      return new UpsertFeedRequest(this);
+      return new FetchFeedObjectsRequest(this);
     }
   }
 
@@ -91,10 +99,11 @@ public class UpsertFeedRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends BaseAbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected String        name_;
-    protected Set<Hash>     partitionHashes_ = new HashSet<>();
+    protected String          name_;
+    protected Integer         maxItems_;
+    protected ConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -114,18 +123,31 @@ public class UpsertFeedRequest
       
       return self();
     }
-
+    
     /**
-     * Add the given partition hashes to the set of partitions o be subscribed to.
+     * Set the maximum number of objects to return.
      * 
-     * @param partitionHashes partition hashes to the set of partitions o be subscribed to.
+     * @param maxItems The maximum number of objects to return.
      * 
      * @return This (fluent method)
      */
-    public T withPartitionHashes(Hash ...partitionHashes)
+    public T withMaxItems(Integer maxItems)
     {
-      for(Hash partitionHash : partitionHashes)
-        partitionHashes_.add(partitionHash);
+      maxItems_ = maxItems;
+      
+      return self();
+    }
+    
+    /**
+     * Set the ConsumerManager to receive objects.
+     * 
+     * @param consumerManager The ConsumerManager to receive objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withConsumerManager(ConsumerManager consumerManager)
+    {
+      consumerManager_ = consumerManager;
       
       return self();
     }
@@ -135,7 +157,8 @@ public class UpsertFeedRequest
     {
       super.validate(faultAccumulator);
       
-      faultAccumulator.checkNotNull(name_, "Name");
+      if(maxItems_ != null && maxItems_ < 1)
+        faultAccumulator.error("maxItems must be at least 1, or not set.");
     }
   }
 }

@@ -25,9 +25,11 @@ import org.symphonyoss.s2.common.hash.Hash;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
@@ -35,6 +37,7 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.pod.canon.IUserV2;
@@ -296,8 +299,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
 //
 //  IFeed upsertFeed(UpsertFeedRequest request);
-//
-//  void fetchFeedMessages(FetchFeedMessagesRequest request);
 //  
 //  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
 
@@ -334,4 +335,8 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
 
   Hash getPartitionHash(FetchPartitionRequest request);
+
+  IFeed upsertFeed(UpsertFeedRequest request);
+  
+  void fetchFeedObjects(FetchFeedObjectsRequest request);
 }
