@@ -36,8 +36,8 @@ import org.symphonyoss.s2.fugue.pubsub.AbstractPullSubscriberManager;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-//import com.symphony.oss.models.fundamental.canon.facade.INotification;
-//import com.symphony.oss.models.system.canon.SystemHttpModelClient;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 /**
  * Allegro implementation of SubscriberManager.
@@ -45,136 +45,136 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Bruce Skingle
  *
  */
-/* package */ class AllegroSubscriberManager //extends AbstractPullSubscriberManager<INotification, AllegroSubscriberManager>
+/* package */ class AllegroSubscriberManager extends AbstractPullSubscriberManager<IAbstractStoredApplicationObject, AllegroSubscriberManager>
 {
-  private static final Logger log_         = LoggerFactory.getLogger(AllegroSubscriberManager.class);
-//
-//  private List<AllegroSubscriber>     subscribers_ = new LinkedList<>();
-//  private final SystemHttpModelClient systemApiClient_;
-//  private final CloseableHttpClient   httpClient_;
-//
-//  private AllegroSubscriberManager(Builder builder)
-//  {
-//    super(AllegroSubscriberManager.class, builder);
-//    
-//    systemApiClient_ = builder.systemApiClient_;
-//    httpClient_ = builder.httpClient_;
-//  }
-//  
-//  /**
-//   * Concrete builder.
-//   * 
-//   * @author Bruce Skingle
-//   *
-//   */
-//  public static class Builder extends AbstractPullSubscriberManager.Builder<Builder, INotification, AllegroSubscriberManager>
-//  {
-//    private SystemHttpModelClient systemApiClient_;
-//    private CloseableHttpClient   httpClient_;
-//    private int                   subscriberThreadPoolSize_ = 1;
-//    private int                   handlerThreadPoolSize_    = 1;
-//
-//    /**
-//     * Constructor.
-//     */
-//    public Builder()
-//    {
-//      super(Builder.class);
-//    }
-//    
-//    @Override
-//    protected String getConfigPath()
-//    {
-//      return "/";
-//    }
-//
-//    public Builder withSystemApiClient(SystemHttpModelClient systemApiClient)
-//    {
-//      systemApiClient_ = systemApiClient;
-//      
-//      return self();
-//    }
-//
-//    public Builder withHttpClient(CloseableHttpClient httpClient)
-//    {
-//      httpClient_ = httpClient;
-//      
-//      return self();
-//    }
-//
-//    public Builder withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
-//    {
-//      subscriberThreadPoolSize_ = subscriberThreadPoolSize;
-//      
-//      return self();
-//    }
-//
-//    public Builder withHandlerThreadPoolSize(int handlerThreadPoolSize)
-//    {
-//      handlerThreadPoolSize_ = handlerThreadPoolSize;
-//      
-//      return self();
-//    }
-//
-//    @Override
-//    public void validate(FaultAccumulator faultAccumulator)
-//    {
-//      faultAccumulator.checkNotNull(systemApiClient_, "systemApiClient");
-//      faultAccumulator.checkNotNull(httpClient_, "httpClient");
-//      
-//      withConfig(new LocalConfiguration());
-//      
-//      super.validate(faultAccumulator);
-//    }
-//    
-//    class LocalConfiguration extends Configuration
-//    {
-//      protected LocalConfiguration()
-//      {
-//        super(new ObjectMapper().createObjectNode().put("subscriberThreadPoolSize", subscriberThreadPoolSize_).put("handlerThreadPoolSize", handlerThreadPoolSize_));
-//      }
-//    }
-//
-//    @Override
-//    protected AllegroSubscriberManager construct()
-//    {
-//      return new AllegroSubscriberManager(this);
-//    }
-//  }
-//
-//  @Override
-//  protected void initSubscription(ISubscription<INotification> subscription)
-//  {
-//    for(Name subscriptionName : subscription.getSubscriptionNames())
-//    {
-//      log_.info("Subscribing to " + subscriptionName + "..."); 
-//      
-//      AllegroSubscriber subscriber = new AllegroSubscriber(this, systemApiClient_, httpClient_, subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
-//          getCounter(), createBusyCounter(subscriptionName));
-//
-//      subscribers_.add(subscriber); 
-//    }
-//  }
-//
-//  @Override
-//  protected void startSubscriptions()
-//  {
-//    for(AllegroSubscriber subscriber : subscribers_)
-//    {
-//      log_.info("Starting subscription to " + subscriber.getFeedName() + "...");
-//      submit(subscriber, true);
-//    }
-//  }
-//
-//  @Override
-//  protected void stopSubscriptions()
-//  {
-//     for(AllegroSubscriber subscriber : subscribers_)
-//        subscriber.stop();
-//      
-//     super.stopSubscriptions();
-//     
-//     for(AllegroSubscriber subscriber : subscribers_)
-//       subscriber.close();
-//  }
+  private static final Logger       log_         = LoggerFactory.getLogger(AllegroSubscriberManager.class);
+
+  private List<AllegroSubscriber>     subscribers_ = new LinkedList<>();
+  private final ObjectHttpModelClient objectApiClient_;
+  private final CloseableHttpClient   httpClient_;
+
+  private AllegroSubscriberManager(Builder builder)
+  {
+    super(AllegroSubscriberManager.class, builder);
+    
+    objectApiClient_ = builder.objectApiClient_;
+    httpClient_ = builder.httpClient_;
+  }
+  
+  /**
+   * Concrete builder.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public static class Builder extends AbstractPullSubscriberManager.Builder<Builder, IAbstractStoredApplicationObject, AllegroSubscriberManager>
+  {
+    private ObjectHttpModelClient objectApiClient_;
+    private CloseableHttpClient   httpClient_;
+    private int                   subscriberThreadPoolSize_ = 1;
+    private int                   handlerThreadPoolSize_    = 1;
+
+    /**
+     * Constructor.
+     */
+    public Builder()
+    {
+      super(Builder.class);
+    }
+    
+    @Override
+    protected String getConfigPath()
+    {
+      return "/";
+    }
+
+    public Builder withObjectApiClient(ObjectHttpModelClient objectApiClient)
+    {
+      objectApiClient_ = objectApiClient;
+      
+      return self();
+    }
+
+    public Builder withHttpClient(CloseableHttpClient httpClient)
+    {
+      httpClient_ = httpClient;
+      
+      return self();
+    }
+
+    public Builder withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
+    {
+      subscriberThreadPoolSize_ = subscriberThreadPoolSize;
+      
+      return self();
+    }
+
+    public Builder withHandlerThreadPoolSize(int handlerThreadPoolSize)
+    {
+      handlerThreadPoolSize_ = handlerThreadPoolSize;
+      
+      return self();
+    }
+
+    @Override
+    public void validate(FaultAccumulator faultAccumulator)
+    {
+      faultAccumulator.checkNotNull(objectApiClient_, "systemApiClient");
+      faultAccumulator.checkNotNull(httpClient_, "httpClient");
+      
+      withConfig(new LocalConfiguration());
+      
+      super.validate(faultAccumulator);
+    }
+    
+    class LocalConfiguration extends Configuration
+    {
+      protected LocalConfiguration()
+      {
+        super(new ObjectMapper().createObjectNode().put("subscriberThreadPoolSize", subscriberThreadPoolSize_).put("handlerThreadPoolSize", handlerThreadPoolSize_));
+      }
+    }
+
+    @Override
+    protected AllegroSubscriberManager construct()
+    {
+      return new AllegroSubscriberManager(this);
+    }
+  }
+
+  @Override
+  protected void initSubscription(ISubscription<IAbstractStoredApplicationObject> subscription)
+  {
+    for(Name subscriptionName : subscription.getSubscriptionNames())
+    {
+      log_.info("Subscribing to " + subscriptionName + "..."); 
+      
+      AllegroSubscriber subscriber = new AllegroSubscriber(this, objectApiClient_, httpClient_, subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
+          getCounter(), createBusyCounter(subscriptionName));
+
+      subscribers_.add(subscriber); 
+    }
+  }
+
+  @Override
+  protected void startSubscriptions()
+  {
+    for(AllegroSubscriber subscriber : subscribers_)
+    {
+      log_.info("Starting subscription to " + subscriber.getFeedName() + "...");
+      submit(subscriber, true);
+    }
+  }
+
+  @Override
+  protected void stopSubscriptions()
+  {
+     for(AllegroSubscriber subscriber : subscribers_)
+        subscriber.stop();
+      
+     super.stopSubscriptions();
+     
+     for(AllegroSubscriber subscriber : subscribers_)
+       subscriber.close();
+  }
 }

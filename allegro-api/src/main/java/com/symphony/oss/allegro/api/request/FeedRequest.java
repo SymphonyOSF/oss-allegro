@@ -25,50 +25,25 @@ import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
  * @author Bruce Skingle
  *
  */
-public class FetchFeedObjectsRequest extends FeedObjectsRequest
+public class FeedRequest
 {
-  private final Integer         maxItems_;
+  private final String          name_;
   
   /**
    * Constructor.
    */
-  FetchFeedObjectsRequest(AbstractBuilder<?,?> builder)
+  FeedRequest(AbstractBuilder<?,?> builder)
   {
-    super(builder);
-    
-    maxItems_         = builder.maxItems_;
+    name_            = builder.name_;
   }
   
   /**
    * 
-   * @return The maximum number of objects to return.
+   * @return The name of the feed to read from.
    */
-  public Integer getMaxItems()
+  public String getName()
   {
-    return maxItems_;
-  }
-
-  /**
-   * Builder.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public static class Builder extends AbstractBuilder<Builder, FetchFeedObjectsRequest>
-  {
-    /**
-     * Constructor.
-     */
-    public Builder()
-    {
-      super(Builder.class);
-    }
-
-    @Override
-    protected FetchFeedObjectsRequest construct()
-    {
-      return new FetchFeedObjectsRequest(this);
-    }
+    return name_;
   }
 
   /**
@@ -79,9 +54,9 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends FeedObjectsRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FeedRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected Integer         maxItems_;
+    protected String          name_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -89,15 +64,15 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
     }
     
     /**
-     * Set the maximum number of objects to return.
+     * Set the name of the partition.
      * 
-     * @param maxItems The maximum number of objects to return.
+     * @param name The content type for the sequence.
      * 
      * @return This (fluent method)
      */
-    public T withMaxItems(Integer maxItems)
+    public T withName(String name)
     {
-      maxItems_ = maxItems;
+      name_ = name;
       
       return self();
     }
@@ -107,8 +82,7 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
     {
       super.validate(faultAccumulator);
       
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
+      faultAccumulator.checkNotNull(name_, "Feed name");
     }
   }
 }

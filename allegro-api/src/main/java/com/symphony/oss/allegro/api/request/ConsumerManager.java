@@ -86,7 +86,7 @@ public class ConsumerManager
   private final boolean                     hasChatTypes_;
   private final IConsumer<Object>           defaultConsumer_;
     
-  protected ConsumerManager(AbstractBuilder<?,?> builder)
+  ConsumerManager(AbstractBuilder<?,?> builder)
   {
     consumerMap_          = ImmutableMap.copyOf(builder.consumerMap_);
     consumerTypeList_     = ImmutableList.copyOf(builder.consumerTypeList_);

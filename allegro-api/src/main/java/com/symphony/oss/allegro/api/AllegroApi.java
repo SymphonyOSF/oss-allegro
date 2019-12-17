@@ -64,6 +64,7 @@ import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
+import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
@@ -88,6 +89,7 @@ import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
@@ -499,22 +501,22 @@ public class AllegroApi implements IAllegroApi
 //        .execute(httpClient_)
 //        ;
 //  }
-//  
-//  @Override
-//  public IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request)
-//  {
-//    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
-//        .withHttpClient(httpClient_)
-//        .withSystemApiClient(systemApiClient_)
-//        .withTraceContextTransactionFactory(traceContextFactory_)
-//        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
-//        .withSubscription(new AllegroSubscription(request, this))
-//        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
-//        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
-//      .build();
-//    
-//    return subscriberManager;
-//  }
+  
+  @Override
+  public IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request)
+  {
+    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
+        .withHttpClient(httpClient_)
+        .withObjectApiClient(objectApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
+        .withSubscription(new AllegroSubscription(request, this))
+        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
+        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
+      .build();
+    
+    return subscriberManager;
+  }
   
   @Override
   public void fetchFeedObjects(FetchFeedObjectsRequest request)

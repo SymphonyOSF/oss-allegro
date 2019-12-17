@@ -21,6 +21,7 @@ import java.security.cert.X509Certificate;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.common.hash.Hash;
+import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
@@ -29,6 +30,7 @@ import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -298,9 +300,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //
 //  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
 //
-//  IFeed upsertFeed(UpsertFeedRequest request);
-//  
-//  IFugueLifecycleComponent createFeedSubscriber(CreateFeedSubscriberRequest request);
 
   /**
    * Delete the given object.
@@ -339,4 +338,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   IFeed upsertFeed(UpsertFeedRequest request);
   
   void fetchFeedObjects(FetchFeedObjectsRequest request);
+  
+  IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request);
 }

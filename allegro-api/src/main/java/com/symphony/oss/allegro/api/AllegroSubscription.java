@@ -26,52 +26,53 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.google.common.collect.ImmutableSet;
-//import com.symphony.oss.models.fundamental.canon.facade.INotification;
+import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
-/* package */ class AllegroSubscription //implements ISubscription<INotification>
+/* package */ class AllegroSubscription implements ISubscription<IAbstractStoredApplicationObject>
 {
-//  private final IThreadSafeRetryableConsumer<INotification> consumer_;
-//  private final ImmutableSet<FeedName>                      subscriptionNames_;
-//
-//  public AllegroSubscription(CreateFeedSubscriberRequest request, AllegroApi allegroApi)
-//  {
-//    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getName()));
-//    
-//    consumer_ = new IThreadSafeRetryableConsumer<INotification>()
-//    {
-//      @Override
-//      public void consume(INotification item, ITraceContext trace)
-//          throws RetryableConsumerException, FatalConsumerException
-//      {
-//        request.consume(item, trace, allegroApi);
-//      }
-//
-//      @Override
-//      public void close()
-//      {
-//        request.closeConsumers();
-//      }
-//    };
-//  }
-//  
-//  class FeedName extends Name
-//  {
-//    protected FeedName(String name)
-//    {
-//      super(name);
-//    }
-//  }
-//
-//  @Override
-//  public ImmutableSet<? extends Name> getSubscriptionNames()
-//  {
-//    return subscriptionNames_;
-//  }
-//
-//  @Override
-//  public IThreadSafeRetryableConsumer<INotification> getConsumer()
-//  {
-//    return consumer_;
-//  }
+  private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
+  private final ImmutableSet<FeedName>                                         subscriptionNames_;
+
+  public AllegroSubscription(SubscribeFeedObjectsRequest request, AllegroApi allegroApi)
+  {
+    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getName()));
+    
+    consumer_ = new IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject>()
+    {
+      @Override
+      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace)
+          throws RetryableConsumerException, FatalConsumerException
+      {
+        request.getConsumerManager().consume(item, trace, allegroApi);
+      }
+
+      @Override
+      public void close()
+      {
+        request.getConsumerManager().closeConsumers();
+      }
+    };
+  }
+  
+  class FeedName extends Name
+  {
+    protected FeedName(String name)
+    {
+      super(name);
+    }
+  }
+
+  @Override
+  public ImmutableSet<? extends Name> getSubscriptionNames()
+  {
+    return subscriptionNames_;
+  }
+
+  @Override
+  public IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> getConsumer()
+  {
+    return consumer_;
+  }
 
 }
