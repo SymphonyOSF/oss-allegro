@@ -22,8 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.IConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IRetryableConsumer;
 
-abstract class AbstractAdaptor<T> implements IConsumer<T>
+abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
 {
   private static final Logger log_ = LoggerFactory.getLogger(AbstractAdaptor.class);
   

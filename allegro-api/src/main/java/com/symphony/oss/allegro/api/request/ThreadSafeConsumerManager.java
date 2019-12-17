@@ -20,8 +20,11 @@ package com.symphony.oss.allegro.api.request;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleThreadSafeConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeConsumer;
+import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
+import org.symphonyoss.s2.fugue.pipeline.ISimpleThreadSafeRetryableConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeRetryableConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
 
 /**
  * Manager of Thread Safe Consumers.
@@ -32,9 +35,79 @@ public class ThreadSafeConsumerManager extends ConsumerManager
 {
   private static final Logger log_ = LoggerFactory.getLogger(ThreadSafeConsumerManager.class);
   
+  private IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
+  
   protected ThreadSafeConsumerManager(AbstractBuilder<?,?> builder)
   {
     super(builder);
+    
+    threadSafeUnprocessableMessageConsumer_ = builder.threadSafeUnprocessableMessageConsumer_;
+  }
+
+  /**
+   * 
+   * @return The consumer to which unprocessable messages will be directed.
+   */
+  public IThreadSafeErrorConsumer<Object> getUnprocessableMessageConsumer()
+  {
+    return threadSafeUnprocessableMessageConsumer_;
+  }
+  
+  /**
+   * AbstractBuilder.
+   * 
+   * @author Bruce Skingle
+   *
+   * @param <T> Concrete type of the builder for fluent methods.
+   * @param <B> Concrete type of the built object for fluent methods.
+   */
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ConsumerManager> extends ConsumerManager.AbstractBuilder<T,B>
+  {
+    private IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
+
+    AbstractBuilder(Class<T> type)
+    {
+      super(type);
+    }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * @return This (fluent method)
+     */
+    protected T withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      threadSafeUnprocessableMessageConsumer_ = unprocessableMessageConsumer;
+      
+      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
+    }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * @return This (fluent method)
+     */
+    protected T withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      threadSafeUnprocessableMessageConsumer_ = new IThreadSafeErrorConsumer<Object>()
+      {
+
+        @Override
+        public void consume(Object item, ITraceContext trace, String message, Throwable cause)
+        {
+          unprocessableMessageConsumer.consume(item, trace, message, cause);
+        }
+
+        @Override
+        public void close(){}
+      };
+      
+      return super.withUnprocessableMessageConsumer(threadSafeUnprocessableMessageConsumer_);
+    }
   }
   
   /**
@@ -70,7 +143,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method).
      */
-    public <C> Builder withConsumer(Class<C> type, IThreadSafeConsumer<C> consumer)
+    public <C> Builder withConsumer(Class<C> type, IThreadSafeRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -89,13 +162,13 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      */
     public Builder withConsumer(ThreadSafeAbstractAdaptor<?> adaptor)
     {
-      return withThreadSafeConsumerAdaptor(adaptor);
+      return withConsumerAdaptor(adaptor);
     }
     
     @SuppressWarnings("unchecked")
-    public Builder withThreadSafeConsumerAdaptor(@SuppressWarnings("rawtypes") ThreadSafeAbstractAdaptor adaptor)
+    public Builder withConsumerAdaptor(@SuppressWarnings("rawtypes") ThreadSafeAbstractAdaptor adaptor)
     {
-      adaptor.setDefaultConsumer((IThreadSafeConsumer<Object>) getDefaultConsumer());
+      adaptor.setDefaultConsumer((IThreadSafeRetryableConsumer<Object>) getDefaultConsumer());
       
       return withConsumer(adaptor.getPayloadType(), adaptor);
     }
@@ -112,7 +185,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method).
      */
-    public <C> Builder withConsumer(Class<C> type, ISimpleThreadSafeConsumer<C> consumer)
+    public <C> Builder withConsumer(Class<C> type, ISimpleThreadSafeRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -129,7 +202,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method).
      */
-    public Builder withDefaultConsumer(ISimpleThreadSafeConsumer<Object> defaultConsumer)
+    public Builder withDefaultConsumer(ISimpleThreadSafeRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
     }
@@ -145,9 +218,36 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method).
      */
-    public Builder withDefaultConsumer(IThreadSafeConsumer<Object> defaultConsumer)
+    public Builder withDefaultConsumer(IThreadSafeRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
+    }
+    
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * @return This (fluent method)
+     */
+    public Builder withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
+    }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * This convenience method accepts a non-closable consumer, which is a functional interface and is
+     * convenient to use in cases where a close notification is not required.
+     * 
+     * @return This (fluent method)
+     */
+    public Builder withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
     }
   }
 }

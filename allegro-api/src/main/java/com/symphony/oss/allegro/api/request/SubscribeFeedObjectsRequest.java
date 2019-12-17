@@ -17,11 +17,6 @@
 package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
-
-import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 /**
  * Request to fetch a partition.
@@ -31,10 +26,10 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
  */
 public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
 {
-  private final IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableMessageConsumer_;
-  private final int                                                        subscriberThreadPoolSize_;
-  private final int                                                        handlerThreadPoolSize_;
-  
+  private final ThreadSafeConsumerManager consumerManager_;
+  private final int                       subscriberThreadPoolSize_;
+  private final int                       handlerThreadPoolSize_;
+
   /**
    * Constructor.
    */
@@ -42,9 +37,18 @@ public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
   {
     super(builder);
 
-    unprocessableMessageConsumer_   = builder.unprocessableMessageConsumer_;
+    consumerManager_  = builder.consumerManager_;
     subscriberThreadPoolSize_       = builder.subscriberThreadPoolSize_;
     handlerThreadPoolSize_          = builder.handlerThreadPoolSize_;
+  }
+  
+  /**
+   * 
+   * @return The ConsumerManager to receive objects.
+   */
+  public ThreadSafeConsumerManager getConsumerManager()
+  {
+    return consumerManager_;
   }
 
   /**
@@ -63,15 +67,6 @@ public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
   public int getHandlerThreadPoolSize()
   {
     return handlerThreadPoolSize_;
-  }
-
-  /**
-   * 
-   * @return The consumer to which unprocessable messages will be directed.
-   */
-  public IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> getUnprocessableMessageConsumer()
-  {
-    return unprocessableMessageConsumer_;
   }
 
   /**
@@ -107,13 +102,27 @@ public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends SubscribeFeedObjectsRequest> extends FeedObjectsRequest.AbstractBuilder<T,B>
   {
-    private IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableMessageConsumer_;
-    private int                                                        subscriberThreadPoolSize_ = 1;
-    private int                                                        handlerThreadPoolSize_    = 1;
+    protected ThreadSafeConsumerManager consumerManager_;
+    protected int                       subscriberThreadPoolSize_ = 1;
+    protected int                       handlerThreadPoolSize_    = 1;
     
     AbstractBuilder(Class<T> type)
     {
       super(type);
+    }
+    
+    /**
+     * Set the ConsumerManager to receive objects.
+     * 
+     * @param consumerManager The ConsumerManager to receive objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withConsumerManager(ThreadSafeConsumerManager consumerManager)
+    {
+      consumerManager_ = consumerManager;
+      
+      return self();
     }
 
     /**
@@ -150,55 +159,15 @@ public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
       
       return self();
     }
-
-    /**
-     * Set the consumer to which unprocessable messages will be directed.
-     * 
-     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
-     * 
-     * @return This (fluent method)
-     */
-    public T withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableMessageConsumer)
-    {
-      unprocessableMessageConsumer_ = unprocessableMessageConsumer;
-      
-      return self();
-    }
-
-    /**
-     * Set the consumer to which unprocessable messages will be directed.
-     * 
-     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
-     * 
-     * This convenience method accepts a non-closable consumer, which is a functional interface and is
-     * convenient to use in cases where a close notification is not required.
-     * 
-     * @return This (fluent method)
-     */
-    public T withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<IAbstractStoredApplicationObject> unprocessableMessageConsumer)
-    {
-      unprocessableMessageConsumer_ = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-          {
-
-            @Override
-            public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
-            {
-              unprocessableMessageConsumer.consume(item, trace, message, cause);
-            }
-
-            @Override
-            public void close(){}
-          };
-      
-      return self();
-    }
     
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
       
-      faultAccumulator.checkNotNull(unprocessableMessageConsumer_, "UnprocessableMessageConsumer must not be set to null (there is a default, you don't have to set one)");
+      // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
+      if(consumerManager_ == null)
+        consumerManager_ = new ThreadSafeConsumerManager.Builder().build();
       
       if(subscriberThreadPoolSize_ < 1)
         faultAccumulator.error("SubscriberThreadPoolSize must be at least 1.");

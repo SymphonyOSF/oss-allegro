@@ -25,8 +25,9 @@ import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
  * @author Bruce Skingle
  *
  */
-public class FetchFeedObjectsRequest extends FeedObjectsRequest
+public class FetchFeedObjectsRequest extends FeedRequest
 {
+  private final ConsumerManager consumerManager_;
   private final Integer         maxItems_;
   
   /**
@@ -36,7 +37,17 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
   {
     super(builder);
     
+    consumerManager_  = builder.consumerManager_;
     maxItems_         = builder.maxItems_;
+  }
+  
+  /**
+   * 
+   * @return The ConsumerManager to receive objects.
+   */
+  public ConsumerManager getConsumerManager()
+  {
+    return consumerManager_;
   }
   
   /**
@@ -79,14 +90,30 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends FeedObjectsRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends FeedRequest.AbstractBuilder<T,B>
   {
+    protected ConsumerManager consumerManager_;
     protected Integer         maxItems_;
     
     AbstractBuilder(Class<T> type)
     {
       super(type);
     }
+    
+    /**
+     * Set the ConsumerManager to receive objects.
+     * 
+     * @param consumerManager The ConsumerManager to receive objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withConsumerManager(ConsumerManager consumerManager)
+    {
+      consumerManager_ = consumerManager;
+      
+      return self();
+    }
+
     
     /**
      * Set the maximum number of objects to return.
@@ -106,6 +133,10 @@ public class FetchFeedObjectsRequest extends FeedObjectsRequest
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
+      
+      // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
+      if(consumerManager_ == null)
+        consumerManager_ = new ConsumerManager.Builder().build();
       
       if(maxItems_ != null && maxItems_ < 1)
         faultAccumulator.error("maxItems must be at least 1, or not set.");

@@ -233,17 +233,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @return The sequence meta-data.
    */
   IPartition upsertPartition(UpsertPartitionRequest request);
-//  
-//  /**
-//   * Fetch the meta-data for a sequence.
-//   * 
-//   * @param request The request parameters.
-//   * 
-//   * @return The sequence meta-data.
-//   * 
-//   * @throws NotFoundException If the sequence does not exist. 
-//   */
-//  ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request);
 //
 //  /**
 //   * Fetch an object by its absolute hash.
@@ -293,12 +282,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //   */
 //  <T extends IEntity> T fetchCurrent(Hash baseHash, Class<T> type);
 //
-//  /**
-//   * Save the credential for the current session as a cloud service provider secret.
-//   */
-//  void storeCredential();
-//
-//  void upsertGatewaySubscription(UpsertSmsGatewayRequest request);
 //
 
   /**
@@ -332,12 +315,120 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @return The hash of the given partition.
    */
-
   Hash getPartitionHash(FetchPartitionRequest request);
 
+  /**
+   * Upsert (insert or update as necessary) a feed with the given details. A feed is identified by a user ID and name tuple,
+   * feeds can only be created with the userId of the creator.
+   *  
+   * This operation creates the feed if necessary and can also subscribe the feed to one or more partitions if it is not
+   * already subscribed. This method is idempotent.
+   *
+   * e.g.
+   * 
+   * <code>
+      IFeed feed = allegroApi_.upsertFeed(
+        new UpsertFeedRequest.Builder()
+          .withName("MyFeedName")
+          .withPartitionHashes(allegroApi_.getPartitionHash(
+              new FetchPartitionRequest.Builder()
+                .withName("MyPartitionName")
+                .withOwner(ownerUserId)
+                .build()
+              ))
+          .build()
+          );
+   * </code>
+   *  
+   * @param request The details of the feed to be created or returned.
+   * 
+   * @return The feed object.
+   */
   IFeed upsertFeed(UpsertFeedRequest request);
   
+  /**
+   * Fetch a batch of objects from the given feed.
+   * 
+   * It is up to the server to decide how many objects to return, if there are more objects available than requested this does
+   * NOT guarantee that the full number of objects requested will be returned.
+   * 
+   * e.g.
+   * <code>
+    allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
+        .withName("myCalendarFeed")
+        .withMaxItems(10)
+        .withConsumerManager(new ConsumerManager.Builder()
+            .withConsumer(Object.class, (object, trace) ->
+            {
+              System.out.println(object);
+            })
+            .build())
+        .build()
+        );
+   * </code>
+   * 
+   * @param request The details of the request
+   */
   void fetchFeedObjects(FetchFeedObjectsRequest request);
-  
+
+  /**
+   * Subscribe to the given feed.
+   * 
+   * This method uses two thread pools to asynchronously fetch messages.
+   * 
+   * The start() method must be called on the returned subscriber to begin processing messages.
+   * 
+   * e.g.
+   * <code>
+    IFugueLifecycleComponent subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
+        .withName("myCalendarFeed")
+        .withSubscriberThreadPoolSize(10)
+        .withHandlerThreadPoolSize(90)
+        .withConsumerManager(new ConsumerManager.Builder()
+          .withConsumer(IToDoItem.class, (message, traceContext) ->
+          {
+            log_.info(message.toString());
+          })
+          .withUnprocessableMessageConsumer((item, trace, message, cause) ->
+          {
+            log_.error("Failed to consume message: " + message + "\nPayload:" + item, cause);
+          })
+          .build()
+        )
+      .build()
+    );
+
+    log_.info("Subscriber state: " + subscriber.getLifecycleState());
+    subscriber.start();
+    
+    // some activity or a wait loop....
+     
+    
+    log_.info("Stopping...");
+    subscriber.stop();
+    log_.info("Subscriber state: " + subscriber.getLifecycleState());
+   * </code>
+   * 
+   * @param request The details of the request
+   * 
+   * @return A subscriber controller, you must call the start() method on this object and the stop() method may be called for a graceful shutdown.
+   */
   IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request);
+
+  /**
+   * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
+   * skey in private methods intended for use by Symphony clients.
+   * 
+   * @return The session token.
+   */
+  String getSessionToken();
+
+  /**
+   * The key manager token is required in a cookie called kmsession for calls to private Key Manager methods.
+   * 
+   * THIS TOKEN SHOULD NEVER BE SENT TO ANY NON-KEY MANAGER ENDPOINTS, TO DO SO IS A SECURITY RISK.
+   * 
+   * @return The key manager token.
+   */
+  String getKeyManagerToken();
 }

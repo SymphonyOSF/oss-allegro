@@ -26,11 +26,18 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
+import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
+import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.IConsumer;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IErrorConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IRetryableConsumer;
+import org.symphonyoss.s2.fugue.pipeline.ISimpleErrorConsumer;
+import org.symphonyoss.s2.fugue.pipeline.ISimpleRetryableConsumer;
 import org.symphonyoss.s2.fugue.pipeline.IThreadSafeConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
+import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
@@ -39,6 +46,7 @@ import com.symphony.oss.allegro.api.IFundamentalOpener;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
@@ -80,11 +88,12 @@ public class ConsumerManager
 {
   private static final Logger log_ = LoggerFactory.getLogger(ConsumerManager.class);
   
-  private final ImmutableMap<Class<?>, IConsumer<?>> consumerMap_;
+  private final ImmutableMap<Class<?>, IRetryableConsumer<?>> consumerMap_;
   private final ImmutableList<Class<?>>              consumerTypeList_;
   private final boolean                     hasApplicationTypes_;
   private final boolean                     hasChatTypes_;
   private final IConsumer<Object>           defaultConsumer_;
+  private final IErrorConsumer<Object> unprocessableMessageConsumer_;
     
   ConsumerManager(AbstractBuilder<?,?> builder)
   {
@@ -93,6 +102,7 @@ public class ConsumerManager
     hasApplicationTypes_  = builder.hasApplicationTypes_;
     hasChatTypes_         = builder.hasChatTypes_;
     defaultConsumer_      = builder.defaultConsumer_;
+    unprocessableMessageConsumer_   = builder.unprocessableMessageConsumer_;
   }
   
   /**
@@ -129,7 +139,7 @@ public class ConsumerManager
      * @return This (fluent method).
      */
     @Override
-    public <C> Builder withConsumer(Class<C> type, IConsumer<C> consumer)
+    public <C> Builder withConsumer(Class<C> type, IRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -164,7 +174,7 @@ public class ConsumerManager
      * @return This (fluent method).
      */
     @Override
-    public <C> Builder withConsumer(Class<C> type, ISimpleConsumer<C> consumer)
+    public <C> Builder withConsumer(Class<C> type, ISimpleRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -182,7 +192,7 @@ public class ConsumerManager
      * @return This (fluent method).
      */
     @Override
-    public Builder withDefaultConsumer(ISimpleConsumer<Object> defaultConsumer)
+    public Builder withDefaultConsumer(ISimpleRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
     }
@@ -203,6 +213,33 @@ public class ConsumerManager
     {
       return super.withDefaultConsumer(defaultConsumer);
     }
+    
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * @return This (fluent method)
+     */
+    public Builder withUnprocessableMessageConsumer(IErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
+    }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * This convenience method accepts a non-closable consumer, which is a functional interface and is
+     * convenient to use in cases where a close notification is not required.
+     * 
+     * @return This (fluent method)
+     */
+    public Builder withUnprocessableMessageConsumer(ISimpleErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
+    }
   }
   
   /**
@@ -215,21 +252,36 @@ public class ConsumerManager
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ConsumerManager> extends BaseAbstractBuilder<T,B>
   {
-    private Map<Class<?>, IConsumer<?>> consumerMap_      = new HashMap<>();
-    private List<Class<?>>              consumerTypeList_ = new LinkedList<>();
-    private boolean                     hasApplicationTypes_;
-    private boolean                     hasChatTypes_;
-    private IConsumer<Object>           defaultConsumer_ = new IThreadSafeConsumer<Object>()
+    private Map<Class<?>, IRetryableConsumer<?>>             consumerMap_                  = new HashMap<>();
+    private List<Class<?>>                                   consumerTypeList_             = new LinkedList<>();
+    private boolean                                          hasApplicationTypes_;
+    private boolean                                          hasChatTypes_;
+    private IConsumer<Object>                                defaultConsumer_              = new IThreadSafeConsumer<Object>()
       {
         @Override
         public synchronized void consume(Object item, ITraceContext trace)
         {
-          log_.error("No consumer found for message of type " + item.getClass() + "\n" + item);
+          log_.error("No consumer found for object of type " + item.getClass() + "\n" + item);
         }
         
         @Override
         public void close(){}
       };
+
+    private IErrorConsumer<Object> unprocessableMessageConsumer_ = new IErrorConsumer<Object>()
+        {
+
+          @Override
+          public void consume(Object item, ITraceContext trace, String message,
+              Throwable cause)
+          {
+            log_.error("Failed to process object of type " + item.getClass() + ": " + message + "\n" + item, cause);
+          }
+
+          @Override
+          public void close(){}
+      
+        };
     
     AbstractBuilder(Class<T> type)
     {
@@ -241,7 +293,7 @@ public class ConsumerManager
       return defaultConsumer_;
     }
     
-    protected <C> T withConsumer(Class<C> type, IConsumer<C> consumer)
+    protected <C> T withConsumer(Class<C> type, IRetryableConsumer<C> consumer)
     {
       consumerMap_.put(type, consumer);
       consumerTypeList_.add(type);
@@ -264,12 +316,12 @@ public class ConsumerManager
       return (T)withConsumer(adaptor.getPayloadType(), adaptor);
     }
     
-    protected <C> T withConsumer(Class<C> type, ISimpleConsumer<C> consumer)
+    protected <C> T withConsumer(Class<C> type, ISimpleRetryableConsumer<C> consumer)
     {
-      return withConsumer(type, new IConsumer<C>()
+      return withConsumer(type, new IRetryableConsumer<C>()
       {
         @Override
-        public void consume(C item, ITraceContext trace)
+        public void consume(C item, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
         {
           consumer.consume(item, trace);
         }
@@ -279,12 +331,12 @@ public class ConsumerManager
       });
     }
     
-    protected T withDefaultConsumer(ISimpleConsumer<Object> defaultConsumer)
+    protected T withDefaultConsumer(ISimpleRetryableConsumer<Object> defaultConsumer)
     {
-      return withDefaultConsumer(new IConsumer<Object>()
+      return withDefaultConsumer(new IRetryableConsumer<Object>()
       {
         @Override
-        public void consume(Object item, ITraceContext trace)
+        public void consume(Object item, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
         {
           defaultConsumer.consume(item, trace);
         }
@@ -300,13 +352,63 @@ public class ConsumerManager
       
       return self();
     }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * @return This (fluent method)
+     */
+    protected T withUnprocessableMessageConsumer(IErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      unprocessableMessageConsumer_ = unprocessableMessageConsumer;
+      
+      return self();
+    }
+
+    /**
+     * Set the consumer to which unprocessable messages will be directed.
+     * 
+     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
+     * 
+     * This convenience method accepts a non-closable consumer, which is a functional interface and is
+     * convenient to use in cases where a close notification is not required.
+     * 
+     * @return This (fluent method)
+     */
+    protected T withUnprocessableMessageConsumer(ISimpleErrorConsumer<Object> unprocessableMessageConsumer)
+    {
+      unprocessableMessageConsumer_ = new IThreadSafeErrorConsumer<Object>()
+          {
+
+            @Override
+            public void consume(Object item, ITraceContext trace, String message, Throwable cause)
+            {
+              unprocessableMessageConsumer.consume(item, trace, message, cause);
+            }
+
+            @Override
+            public void close(){}
+          };
+      
+      return self();
+    }
+    
+    @Override
+    protected void validate(FaultAccumulator faultAccumulator)
+    {
+      super.validate(faultAccumulator);
+      
+      faultAccumulator.checkNotNull(unprocessableMessageConsumer_, "UnprocessableMessageConsumer must not be set to null (there is a default, you don't have to set one)");
+    }
   }
 
   /**
    * 
    * @return All consumers.
    */
-  public ImmutableCollection<IConsumer<?>> getConsumers()
+  public ImmutableCollection<IRetryableConsumer<?>> getConsumers()
   {
     return consumerMap_.values();
   }
@@ -317,8 +419,10 @@ public class ConsumerManager
    * @param object        An object to be consumed.
    * @param traceContext  A trace context.
    * @param opener        An opener to assist with decoding the object.
+   * @throws FatalConsumerException 
+   * @throws RetryableConsumerException 
    */
-  public void consume(Object object, ITraceContext traceContext, IFundamentalOpener opener)
+  public void consume(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(consumeChatTypes(object, traceContext, opener))
       return;
@@ -362,7 +466,7 @@ public class ConsumerManager
       defaultConsumer_.consume(object, traceContext);
   }
   
-  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IFundamentalOpener opener)
+  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {
@@ -383,10 +487,10 @@ public class ConsumerManager
   }
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  private boolean consume(Object object, ITraceContext traceContext)
+  private boolean consume(Object object, ITraceContext traceContext) throws RetryableConsumerException, FatalConsumerException
   {
     Class<? extends Object> type = object.getClass();
-    IConsumer consumer = consumerMap_.get(type);
+    IRetryableConsumer consumer = consumerMap_.get(type);
     
     if(consumer != null)
     {
@@ -408,7 +512,7 @@ public class ConsumerManager
     if(bestType == null)
       return false;
     
-    ((IConsumer)consumerMap_.get(bestType)).consume(object, traceContext);
+    ((IRetryableConsumer)consumerMap_.get(bestType)).consume(object, traceContext);
     return true;
   }
 
@@ -417,9 +521,26 @@ public class ConsumerManager
    */
   public void closeConsumers()
   {
-    for(IConsumer<?> consumer : consumerMap_.values())
+    for(IRetryableConsumer<?> consumer : consumerMap_.values())
       consumer.close();
     
     defaultConsumer_.close();
+  }
+
+  public void consumeUnprocessable(Object item, ITraceContext trace, String message, Throwable cause)
+  {
+    unprocessableMessageConsumer_.consume(item, trace, message, cause);
+    
+  }
+
+  
+
+  /**
+   * 
+   * @return The consumer to which unprocessable messages will be directed.
+   */
+  public IErrorConsumer<Object> getUnprocessableMessageConsumer()
+  {
+    return unprocessableMessageConsumer_;
   }
 }

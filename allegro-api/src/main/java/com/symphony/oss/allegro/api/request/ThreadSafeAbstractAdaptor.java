@@ -21,15 +21,15 @@ package com.symphony.oss.allegro.api.request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeConsumer;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeRetryableConsumer;
 
-abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeConsumer<T>
+abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeRetryableConsumer<T>
 {
   private static final Logger log_ = LoggerFactory.getLogger(ThreadSafeAbstractAdaptor.class);
   
   private final Class<T> payloadType_;
   
-  protected IThreadSafeConsumer<Object>           defaultConsumer_ = new IThreadSafeConsumer<Object>()
+  protected IThreadSafeRetryableConsumer<Object>           defaultConsumer_ = new IThreadSafeRetryableConsumer<Object>()
   {
     @Override
     public synchronized void consume(Object item, ITraceContext trace)
@@ -51,7 +51,7 @@ abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeConsumer<T>
     return payloadType_;
   }
 
-  public void setDefaultConsumer(IThreadSafeConsumer<Object> defaultConsumer)
+  public void setDefaultConsumer(IThreadSafeRetryableConsumer<Object> defaultConsumer)
   {
     defaultConsumer_ = defaultConsumer;
   }

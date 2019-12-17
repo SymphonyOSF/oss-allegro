@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import javax.net.ssl.HostnameVerifier;
@@ -62,6 +63,7 @@ import org.symphonyoss.s2.common.dom.json.MutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
 import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
+import org.symphonyoss.s2.common.fault.TransientTransactionFault;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
@@ -69,6 +71,9 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
+import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
+import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
+import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.Chime;
 import org.symphonyoss.symphony.messageml.elements.FormatEnum;
@@ -142,9 +147,11 @@ import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
+import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IFeedObject;
+import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
@@ -169,6 +176,7 @@ public class AllegroApi implements IAllegroApi
   private static final ObjectMapper             OBJECT_MAPPER              = new ObjectMapper();  // TODO: get rid of this
   private static final int                      ENCRYPTION_ORDINAL         = 0;
   private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
+  private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);
   
   private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
   
@@ -377,6 +385,18 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
+  public String getKeyManagerToken()
+  {
+    return authHandler_.getKeyManagerToken();
+  }
+
+  @Override
+  public String getSessionToken()
+  {
+    return authHandler_.getSessionToken();
+  }
+
+  @Override
   public PodId getPodId()
   {
     return podId_;
@@ -505,11 +525,26 @@ public class AllegroApi implements IAllegroApi
   @Override
   public IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request)
   {
+    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+    {
+      @Override
+      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+      {
+        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+      }
+
+      @Override
+      public void close()
+      {
+        request.getConsumerManager().getUnprocessableMessageConsumer().close();
+      }
+    };
+    
     AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
         .withHttpClient(httpClient_)
         .withObjectApiClient(objectApiClient_)
         .withTraceContextTransactionFactory(traceContextFactory_)
-        .withUnprocessableMessageConsumer(request.getUnprocessableMessageConsumer())
+        .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSubscription(request, this))
         .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
         .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
@@ -537,15 +572,45 @@ public class AllegroApi implements IAllegroApi
           .withMaxItems(0)
           .withWaitTimeSeconds(0);
       
-      System.out.println("Received " + messages.size() + " messages.");
       for(IFeedObject message : messages)
       {
-        request.getConsumerManager().consume(message.getPayload(), trace, this);
+        try
+        {
+          request.getConsumerManager().consume(message.getPayload(), trace, this);
+            
+          builder.withDelete(new FeedObjectDelete.Builder()
+              .withReceiptHandle(message.getReceiptHandle())
+              .build()
+              );
+        }
+        catch (TransientTransactionFault e)
+        {
+          log_.warn("Transient processing failure, will retry (forever)", e);
+          builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+        }
+        catch(RetryableConsumerException e)
+        {
+          log_.warn("Transient processing failure, will retry (forever)", e);
+          builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+        }
+        catch (RuntimeException  e)
+        {
+          log_.warn("Unexpected processing failure, will retry (forever)", e);
+          builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
+        }
+        catch (FatalConsumerException e)
+        {
+          log_.error("Unprocessable message, aborted", e);
+
+          trace.trace("MESSAGE_IS_UNPROCESSABLE");
           
-        builder.withDelete(new FeedObjectDelete.Builder()
-            .withReceiptHandle(message.getReceiptHandle())
-            .build()
-            );
+          builder.withDelete(new FeedObjectDelete.Builder()
+              .withReceiptHandle(message.getReceiptHandle())
+              .build()
+              );
+          
+          request.getConsumerManager().consumeUnprocessable(message.getPayload(), trace, "Unprocessable message, aborted", e);
+        }
       }
       
       try
@@ -569,6 +634,16 @@ public class AllegroApi implements IAllegroApi
     }
     
     request.getConsumerManager().closeConsumers();
+  }
+
+  private IFeedObjectExtend createExtend(String receiptHandle, Long retryTime, TimeUnit timeUnit)
+  {
+    long delay = retryTime == null || timeUnit == null ? FAILED_CONSUMER_RETRY_TIME : timeUnit.toSeconds(retryTime);
+    
+    return new FeedObjectExtend.Builder()
+        .withReceiptHandle(receiptHandle)
+        .withVisibilityTimeout((int)delay)
+        .build();
   }
 
   @Override
@@ -743,7 +818,16 @@ public class AllegroApi implements IAllegroApi
         
       for(IMessageEnvelope envelope : thread.getEnvelopes())
       {
-        request.getConsumerManager().consume(liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_), trace, this);
+        ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
+        
+        try
+        {
+          request.getConsumerManager().consume(lcmessage, trace, this);
+        }
+        catch (RetryableConsumerException | FatalConsumerException e)
+        {
+          request.getConsumerManager().consumeUnprocessable(lcmessage, trace, "Failed to process message", e);
+        }
       }
     }
   }
@@ -1558,7 +1642,14 @@ public class AllegroApi implements IAllegroApi
          
          for(IAbstractStoredApplicationObject item : page.getData())
          {
-           request.getConsumerManager().consume(item, trace, this);
+           try
+           {
+             request.getConsumerManager().consume(item, trace, this);
+           }
+           catch (RetryableConsumerException | FatalConsumerException e)
+           {
+             request.getConsumerManager().consumeUnprocessable(item, trace, "Failed to process message", e);
+           }
            remainingItems--;
          }
          
