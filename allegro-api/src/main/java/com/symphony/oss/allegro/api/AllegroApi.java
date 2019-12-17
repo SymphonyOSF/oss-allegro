@@ -453,74 +453,6 @@ public class AllegroApi implements IAllegroApi
       .build()
       .execute(httpClient_);
   }
-//
-//  @Override
-//  public IFundamentalObject store(IFundamentalId id)
-//  {
-//    IFundamentalObject fundamentalObject = new FundamentalObject.IdBuilder()
-//        .withFundamentalId(id)
-//        .build();
-//    
-//    store(fundamentalObject);
-//    
-//    return fundamentalObject;
-//  }
-//
-//  @Override
-//  public ISequence fetchSequenceMetaData(FetchSequenceMetaDataRequest request)
-//  {
-//    request.validate();
-//    
-//    Hash subjectHash = request.getPrincipalBaseHash();
-//    
-//    if(subjectHash == null)
-//      subjectHash = getPrincipalBaseHash();
-//    
-//    IContentIdObject id = new ContentIdObject.Builder()
-//        .withSubjectHash(subjectHash)
-//        .withSubjectType(Principal.CLIENT_TYPE_ID)
-//        .withContentType(request.getContentType())
-//        .withIdType(request.getSequenceType() == SequenceType.ABSOLUTE ? ContentIdType.ABSOLUTE_SEQUENCE : ContentIdType.CURRENT_SEQUENCE)
-//        .build();
-//    
-//    return fetchCurrent(id.getAbsoluteHash(), ISequence.class);
-//
-////    IFundamentalObject result = fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-////        .withCurrentVersion(true)
-////        .withObjectHash(id.getAbsoluteHash())
-////        .build()
-////        .execute(httpClient_);
-////    
-////    if(result.getPayload() instanceof IdPlainTextPayloadContainer)
-////    {
-////      IApplicationObject payload = ((IdPlainTextPayloadContainer)result.getPayload()).getPayload();
-////      
-////      if(!(payload instanceof ObjectPointer))
-////        throw new IllegalStateException("Unexpected return type " + payload.getCanonType() + ", expected ObjectPointer.");
-////      
-////      Hash sequenceHash = ((ObjectPointer)payload).getBaseHash();
-////      
-////      return fetchAbsolute(sequenceHash, ISequence.class);
-////    }
-////    
-////    throw new IllegalStateException("Unexpected return type " + result.getPayload().getCanonType() + ", expected IdPlainTextPayloadContainer.");
-//
-//  }
-//  
-//  @Override
-//  public void storeCredential()
-//  {
-//    systemApiClient_.newCredentialsPostHttpRequestBuilder()
-//        .withCanonPayload(new SaveCredentialRequest.Builder()
-//            .withCipherSuiteId(cipherSuite_.getId())
-//            .withEncodedPrivateKey(rsaPemCredential_)
-//            .withUserName(userName_)
-//            .build()
-//            )
-//        .build()
-//        .execute(httpClient_)
-//        ;
-//  }
   
   @Override
   public IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request)
@@ -571,6 +503,7 @@ public class AllegroApi implements IAllegroApi
       FeedRequest.Builder builder = new FeedRequest.Builder()
           .withMaxItems(0)
           .withWaitTimeSeconds(0);
+      int ackCnt = 0;
       
       for(IFeedObject message : messages)
       {
@@ -582,21 +515,25 @@ public class AllegroApi implements IAllegroApi
               .withReceiptHandle(message.getReceiptHandle())
               .build()
               );
+          ackCnt++;
         }
         catch (TransientTransactionFault e)
         {
           log_.warn("Transient processing failure, will retry (forever)", e);
           builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+          ackCnt++;
         }
         catch(RetryableConsumerException e)
         {
           log_.warn("Transient processing failure, will retry (forever)", e);
           builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+          ackCnt++;
         }
         catch (RuntimeException  e)
         {
           log_.warn("Unexpected processing failure, will retry (forever)", e);
           builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
+          ackCnt++;
         }
         catch (FatalConsumerException e)
         {
@@ -608,12 +545,13 @@ public class AllegroApi implements IAllegroApi
               .withReceiptHandle(message.getReceiptHandle())
               .build()
               );
+          ackCnt++;
           
           request.getConsumerManager().consumeUnprocessable(message.getPayload(), trace, "Unprocessable message, aborted", e);
         }
       }
       
-      try
+      if(ackCnt>0)
       {
         // Delete (ACK) the consumed messages
         messages = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
@@ -622,15 +560,10 @@ public class AllegroApi implements IAllegroApi
             .build()
             .execute(httpClient_);
       }
-      catch(NotFoundException e)
-      {
-        messages.clear();
-      }
     }
     catch(NotFoundException e)
     {
       // No messages
-      e.printStackTrace();
     }
     
     request.getConsumerManager().closeConsumers();
@@ -663,53 +596,6 @@ public class AllegroApi implements IAllegroApi
       .execute(httpClient_)
       ;
   }
-
-//  @Override
-//  public void upsertGatewaySubscription(UpsertSmsGatewayRequest request)
-//  {
-////    String name = SmsGatewayMetadata.TYPE_ID + ":" + request.getType();
-////    
-////    ISubscriptionRequest subscriptionRequest = new SubscriptionRequest.Builder()
-////        .withType(request.getType())
-////        .withSequences(request.getSequences())
-////        .build()
-////        ;
-////
-////    IFeed feed = systemApiClient_.newFeedsNamePostHttpRequestBuilder()
-////        .withName(name)
-////        .withCanonPayload(subscriptionRequest)
-////        .build()
-////        .execute(httpClient_)
-////        ;
-//    
-//    ISmsGatewayMetadata metaData = new SmsGatewayMetadata.Builder()
-//        .withType(FeedType.EXTERNAL_GATEWAY)
-//        .withSequences(request.getSequences())
-//        .withCipherSuiteId(cipherSuite_.getId())
-//        .withEncodedPrivateKey(rsaPemCredential_)
-//        .withUserName(userName_)
-//        .withPhoneNumber(request.getPhoneNumber())
-//        .build()
-//        ;
-//    
-//    ISignedApplicationObject metaDataObject = new SignedApplicationObject.Builder()
-//        .withPayload(metaData)
-//        .withSigningKey(cryptoClient_.getSigningKey())
-//        .build();
-//    
-//    ISubscriptionMetadataRequest subscriptionMetadataRequest = new SubscriptionMetadataRequest.Builder()
-//        .withMetadata(metaDataObject)
-//        .withSequences(request.getSequences())
-//        .build()
-//        ;
-//    
-//    
-//    systemApiClient_.newGatewaysMetadataPostHttpRequestBuilder()
-//        .withCanonPayload(subscriptionMetadataRequest)
-//        .build()
-//        .execute(httpClient_)
-//        ;
-//  }
 
   @Override
   public Hash getPartitionHash(FetchPartitionRequest request)
@@ -915,15 +801,6 @@ public class AllegroApi implements IAllegroApi
 //    }
 //  }
 //
-//  private IOpenSecurityContext getPodSecurityContext(Hash securityContextHash)
-//  {
-//    IOpenSecurityContextInfo securityContextInfo = podPrivateApiClient_.newSecurityContextsObjectHashGetHttpRequestBuilder()
-//        .withObjectHash(securityContextHash)
-//        .build()
-//        .execute(httpClient_);
-//    
-//    return new OpenSecurityContext(securityContextInfo, modelRegistry_);
-//  }
 //
 //  private IChatMessage maestroMessage(IMaestroMessage message)
 //  {
@@ -934,47 +811,6 @@ public class AllegroApi implements IAllegroApi
 //        ;
 //        
 //    return builder.build();
-//  }
-
-//  @Override
-//  public IEntity open(IFundamentalObject item, ThreadId threadId)
-//  {
-//    return doOpen(item, threadId);
-//  }
-//
-//  @Override
-//  public IEntity open(IFundamentalObject item)
-//  {
-//    return doOpen(item, null);
-//  }
-//
-//  private IEntity doOpen(IFundamentalObject item, @Nullable ThreadId threadId)
-//  {
-//    IFundamentalPayload payload = item.getPayload();
-//    
-//    IBlob blob;
-//    
-////    if(payload instanceof IIdPayloadContainer)
-////    {
-////      blob = ((IIdPayloadContainer) payload).getPayload();
-////    }
-////    else 
-//    if(payload instanceof IBlob)
-//    {
-//      blob = (IBlob)payload;
-//    }
-//    else if(payload instanceof IClob)
-//    {
-//      return ((IClob)payload).getPayload();
-//    }
-//    else
-//    {
-//      return payload;
-//    }
-//    
-//    IOpenSimpleSecurityContext securityContext = cryptoClient_.getSecurityContext(blob.getSecurityContextHash(), threadId);
-//    
-//    return modelRegistry_.open(item, securityContext);
 //  }
   
   @Override
@@ -1250,113 +1086,7 @@ public class AllegroApi implements IAllegroApi
       return (StoredApplicationObject) builder_.build();
     }
   }
-  
-//  /**
-//   * Builder for FundamentalObjects which accepts a ThreadId in place of a security context and which attaches the podId.
-//   * 
-//   * @author Bruce Skingle
-//   *
-//   */
-//  public class ZZApplicationObjectBuilder extends AbstractStoredApplicationObjectBuilder<ApplicationObjectBuilder, IStoredApplicationObject>
-//  implements IEncryptableObjectBuilder
-//  {
-//    private IApplicationPayload payload_;
-//
-//    /**
-//     * Constructor.
-//     */
-//    public ZZApplicationObjectBuilder()
-//    {
-//      super(ZZApplicationObjectBuilder.class);
-//    }
-//    
-//    /**
-//     * Set the object payload (which is to be encrypted).
-//     * 
-//     * @param payload The object payload (which is to be encrypted).
-//     * 
-//     * @return This (fluent method).
-//     */
-//    public ApplicationObjectBuilder withPayload(IApplicationPayload payload)
-//    {
-//      payload_ = payload;
-//      
-//      return self();
-//    }
-//
-//    /**
-//     * 
-//     * @return the unencrypted payload.
-//     */
-//    @Override
-//    public IApplicationPayload getPayload()
-//    {
-//      return payload_;
-//    }
-//
-//    @Override
-//    protected void validate()
-//    {
-//      if(getHashType() == null)
-//        withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
-//      
-//      if(getThreadId() == null)
-//        throw new IllegalStateException("ThreadId is required.");
-//      
-//      if(payload_ == null)
-//        throw new IllegalStateException("Payload is required.");
-//      
-//      withOwner(getUserId());
-//      
-//      cryptoClient_.encrypt(this);
-//      
-//      super.validate();
-//    }
-//
-//    @Override
-//    public ApplicationObjectBuilder withEncryptedPayload(EncryptedData value)
-//    {
-//      throw new IllegalArgumentException("Call withPayload() instead.");
-//    }
-//
-//    @Override
-//    public ApplicationObjectBuilder withEncryptedPayload(ImmutableByteArray value)
-//    {
-//      throw new IllegalArgumentException("Call withPayload() instead.");
-//    }
-//    
-//    /**
-//     * Set the partition key for the object from the given partition.
-//     * 
-//     * @param partition A partition object.
-//     * 
-//     * @return This (fluent method).
-//     */
-//    public ApplicationObjectBuilder withPartition(IPartition partition)
-//    {
-//      withPartitionHash(partition.getId().getHash());
-//      
-//      return this;
-//    }
-//
-//    @Override
-//    protected IStoredApplicationObject construct()
-//    {
-//      return new StoredApplicationObject(this);
-//    }
-//
-//    /**
-//     * Package private access to set encryptedPayload from IAllegroCryptoClient.encrypt().
-//     * 
-//     * @param encryptedPayload The encrypted payload.
-//     */
-//    void setEncryptedPayload(EncryptedData encryptedPayload)
-//    {
-//      super.withEncryptedPayload(encryptedPayload);
-//    }
-//
-//  }
-  
+    
   @Override
   public void delete(IApplicationObjectPayload existingObject, DeletionType deletionType)
   {
@@ -1556,62 +1286,6 @@ public class AllegroApi implements IAllegroApi
       return (DeletedApplicationObject) builder_.build();
     }
   }
-  
-//  @Override
-//  public IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, Integer limit, String after)
-//  {
-//     return fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-//      .withSequenceHash(sequenceId.getAbsoluteHash())
-//      .withLimit(limit)
-//      .withAfter(after)
-//      .build()
-//      .execute(httpClient_);
-//  }
-//  
-//  @Override
-//  @Deprecated
-//  public void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer)
-//  {
-//     String after = request.getAfter();
-//     Integer limit = request.getMaxItems();
-//     
-//     if(limit != null && limit < 1)
-//       throw new BadRequestException("Limit must be at least 1 or not specified");
-//     
-//     int remainingItems = limit == null ? 0 : limit;
-//     
-//     do
-//     {
-//       SequencesSequenceHashPageGetHttpRequestBuilder pageRequest = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-//           .withSequenceHash(request.getSequenceHash())
-//           .withAfter(after)
-//           ;
-//       
-//       if(limit != null)
-//         pageRequest.withLimit(remainingItems);
-//       
-//       IPageOfFundamentalObject page = pageRequest
-//           .build()
-//           .execute(httpClient_);
-//       
-//       for(IFundamentalObject item : page.getData())
-//       {
-//         consumer.accept(item);
-//         remainingItems--;
-//       }
-//       
-//       after = null;
-//       IPagination pagination = page.getPagination();
-//       
-//       if(pagination != null)
-//       {
-//         ICursors cursors = pagination.getCursors();
-//         
-//         if(cursors != null)
-//           after = cursors.getAfter();
-//       }
-//     } while(after != null && (limit==null || remainingItems>0));
-//  }
   
   @Override
   public void fetchPartitionObjects(FetchPartitionObjectsRequest request)
