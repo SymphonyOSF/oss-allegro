@@ -358,7 +358,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
         .withName("myCalendarFeed")
         .withMaxItems(10)
         .withConsumerManager(new ConsumerManager.Builder()
-            .withConsumer(Object.class, (object, trace) ->
+            .withConsumer(Object.class, (object, trace) -&gt;
             {
               System.out.println(object);
             })
@@ -385,11 +385,11 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
         .withSubscriberThreadPoolSize(10)
         .withHandlerThreadPoolSize(90)
         .withConsumerManager(new ConsumerManager.Builder()
-          .withConsumer(IToDoItem.class, (message, traceContext) ->
+          .withConsumer(IToDoItem.class, (message, traceContext) -&gt;
           {
             log_.info(message.toString());
           })
-          .withUnprocessableMessageConsumer((item, trace, message, cause) ->
+          .withUnprocessableMessageConsumer((item, trace, message, cause) -&gt;
           {
             log_.error("Failed to consume message: " + message + "\nPayload:" + item, cause);
           })

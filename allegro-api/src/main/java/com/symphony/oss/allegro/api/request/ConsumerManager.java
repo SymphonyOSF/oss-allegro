@@ -419,8 +419,9 @@ public class ConsumerManager
    * @param object        An object to be consumed.
    * @param traceContext  A trace context.
    * @param opener        An opener to assist with decoding the object.
-   * @throws FatalConsumerException 
-   * @throws RetryableConsumerException 
+   * 
+   * @throws FatalConsumerException       If thrown by the called consumer
+   * @throws RetryableConsumerException   If thrown by the called consumer
    */
   public void consume(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
   {
