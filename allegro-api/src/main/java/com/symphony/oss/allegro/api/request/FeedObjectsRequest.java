@@ -27,25 +27,12 @@ import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
  */
 public class FeedObjectsRequest extends FeedRequest
 {
-  private final ConsumerManager consumerManager_;
-  
   /**
    * Constructor.
    */
   FeedObjectsRequest(AbstractBuilder<?,?> builder)
   {
     super(builder);
-    
-    consumerManager_  = builder.consumerManager_;
-  }
-  
-  /**
-   * 
-   * @return The ConsumerManager to receive objects.
-   */
-  public ConsumerManager getConsumerManager()
-  {
-    return consumerManager_;
   }
 
   /**
@@ -58,35 +45,15 @@ public class FeedObjectsRequest extends FeedRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FeedObjectsRequest> extends FeedRequest.AbstractBuilder<T,B>
   {
-    protected ConsumerManager consumerManager_;
-    
     AbstractBuilder(Class<T> type)
     {
       super(type);
-    }
-        
-    /**
-     * Set the ConsumerManager to receive objects.
-     * 
-     * @param consumerManager The ConsumerManager to receive objects.
-     * 
-     * @return This (fluent method)
-     */
-    public T withConsumerManager(ConsumerManager consumerManager)
-    {
-      consumerManager_ = consumerManager;
-      
-      return self();
     }
     
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-      
-      // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
-      if(consumerManager_ == null)
-        consumerManager_ = new ConsumerManager.Builder().build();
     }
   }
 }
