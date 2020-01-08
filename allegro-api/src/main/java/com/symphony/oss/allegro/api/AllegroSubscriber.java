@@ -31,6 +31,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
+import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.Fugue;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
@@ -66,7 +67,7 @@ class AllegroSubscriber extends AbstractPullSubscriber
   private final AllegroSubscriberManager                                       manager_;
   private final ObjectHttpModelClient                                          objectApiClient_;
   private final CloseableHttpClient                                            httpClient_;
-  private final String                                                         feedName_;
+  private final Hash                                                           feedHash_;
   private final ITraceContextTransactionFactory                                traceFactory_;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final NonIdleSubscriber                                              nonIdleSubscriber_;
@@ -76,13 +77,13 @@ class AllegroSubscriber extends AbstractPullSubscriber
   AllegroSubscriber(AllegroSubscriberManager manager,
       ObjectHttpModelClient systemApiClient,
       CloseableHttpClient httpClient,
-      String feedName,
+      String feedHash,
       ITraceContextTransactionFactory traceFactory,
       IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer, 
       ICounter counter, IBusyCounter busyCounter
       )
   {
-    super(manager, feedName, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
+    super(manager, feedHash, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
     
     if(Fugue.isDebugSingleThread())
     {
@@ -92,7 +93,7 @@ class AllegroSubscriber extends AbstractPullSubscriber
     manager_ = manager;
     objectApiClient_ = systemApiClient;
     httpClient_ = httpClient;
-    feedName_ = feedName;
+    feedHash_ = Hash.newInstance(feedHash);
     traceFactory_ = traceFactory;
     consumer_ = consumer;
     nonIdleSubscriber_ = new NonIdleSubscriber();
@@ -137,12 +138,12 @@ class AllegroSubscriber extends AbstractPullSubscriber
     {
       List<IPullSubscriberMessage>result = new LinkedList<>();
       
-      try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchFeed", feedName_))
+      try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchFeed", feedHash_.toString()))
       {
         ITraceContext trace = traceTransaction.open();
         
-        List<IFeedObject> messages  = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-            .withName(feedName_)
+        List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+            .withFeedHash(feedHash_)
             .withCanonPayload(new FeedRequest.Builder()
                 .withWaitTimeSeconds(waitTimeSeconds)
                 .withMaxItems(maxItems)
@@ -150,9 +151,9 @@ class AllegroSubscriber extends AbstractPullSubscriber
             .build()
             .execute(httpClient_);
         
-        FeedRequest.Builder builder = new FeedRequest.Builder()
-            .withMaxItems(0)
-            .withWaitTimeSeconds(0);
+//        FeedRequest.Builder builder = new FeedRequest.Builder()
+//            .withMaxItems(0)
+//            .withWaitTimeSeconds(0);
         
         System.out.println("Received " + messages.size() + " messages.");
         for(IFeedObject message : messages)
@@ -196,9 +197,9 @@ class AllegroSubscriber extends AbstractPullSubscriber
     }
   }
 
-  public String getFeedName()
+  public Hash getFeedHash()
   {
-    return feedName_;
+    return feedHash_;
   }
 
   private class AllegroPullSubscriberMessage implements IPullSubscriberMessage
@@ -239,8 +240,8 @@ class AllegroSubscriber extends AbstractPullSubscriber
             {
               trace.trace("ABOUT_TO_ACK");
               
-              objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-                .withName(feedName_)
+              objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+                .withFeedHash(feedHash_)
                 .withCanonPayload(new FeedRequest.Builder()
                     .withWaitTimeSeconds(0)
                     .withMaxItems(0)
@@ -266,8 +267,8 @@ class AllegroSubscriber extends AbstractPullSubscriber
             
               int visibilityTimout = (int) (retryTime / 1000);
               
-              objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-              .withName(feedName_)
+              objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+              .withFeedHash(feedHash_)
               .withCanonPayload(new FeedRequest.Builder()
                   .withWaitTimeSeconds(0)
                   .withMaxItems(0)
@@ -301,8 +302,8 @@ class AllegroSubscriber extends AbstractPullSubscriber
       {
         try
         {
-          objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-          .withName(feedName_)
+          objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+          .withFeedHash(feedHash_)
           .withCanonPayload(new FeedRequest.Builder()
               .withWaitTimeSeconds(0)
               .withMaxItems(0)

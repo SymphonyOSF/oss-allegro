@@ -161,7 +161,7 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
   {
     for(AllegroSubscriber subscriber : subscribers_)
     {
-      log_.info("Starting subscription to " + subscriber.getFeedName() + "...");
+      log_.info("Starting subscription to " + subscriber.getFeedHash() + "...");
       submit(subscriber, true);
     }
   }

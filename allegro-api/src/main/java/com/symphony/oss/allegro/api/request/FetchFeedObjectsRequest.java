@@ -17,7 +17,6 @@
 package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 
 /**
  * Request to fetch a partition.
@@ -25,7 +24,7 @@ import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
  * @author Bruce Skingle
  *
  */
-public class FetchFeedObjectsRequest extends FeedRequest
+public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
 {
   private final ConsumerManager consumerManager_;
   private final Integer         maxItems_;
@@ -90,7 +89,7 @@ public class FetchFeedObjectsRequest extends FeedRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends FeedRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected ConsumerManager consumerManager_;
     protected Integer         maxItems_;

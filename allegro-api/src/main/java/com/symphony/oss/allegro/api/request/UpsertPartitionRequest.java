@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 
 import com.google.common.collect.ImmutableSet;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
@@ -31,24 +30,15 @@ import com.symphony.oss.models.core.canon.facade.ThreadId;
  * @author Bruce Skingle
  *
  */
-public class UpsertPartitionRequest
+public class UpsertPartitionRequest extends NamedUserIdObjectRequest
 {
-  private final String                 name_;
   private final ImmutableSet<ThreadId> threadIds_;
   
   UpsertPartitionRequest(AbstractBuilder<?,?> builder)
   {
-    name_       = builder.name_;
+    super(builder);
+    
     threadIds_  = ImmutableSet.copyOf(builder.threadIds_);
-  }
-  
-  /**
-   * 
-   * @return The name of the partition.
-   */
-  public String getName()
-  {
-    return name_;
   }
   
   /**
@@ -91,28 +81,13 @@ public class UpsertPartitionRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertPartitionRequest> extends BaseAbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertPartitionRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
-    protected String        name_;
     protected Set<ThreadId> threadIds_ = new HashSet<>();
     
     AbstractBuilder(Class<T> type)
     {
       super(type);
-    }
-    
-    /**
-     * Set the name of the partition.
-     * 
-     * @param name The content type for the sequence.
-     * 
-     * @return This (fluent method)
-     */
-    public T withName(String name)
-    {
-      name_ = name;
-      
-      return self();
     }
 
     /**
@@ -134,8 +109,6 @@ public class UpsertPartitionRequest
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-      
-      faultAccumulator.checkNotNull(name_, "Name");
     }
   }
 }

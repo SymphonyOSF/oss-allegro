@@ -20,7 +20,6 @@ import java.security.cert.X509Certificate;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
-import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
@@ -28,7 +27,6 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
-import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
@@ -52,9 +50,22 @@ import com.symphony.oss.models.pod.canon.IUserV2;
  */
 public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 {
-  public static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
-  public static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
-  public static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
+  /** Permission value for no access */
+  static final int   PERMISSION_NONE       = 0;
+  
+  /** Permission value for read access */
+  static final int   PERMISSION_READ       = 1<<0;
+  
+//  /** Permission value for write access */
+//  static final int   PERMISSION_WRITE      = 1<<1;
+//  
+//  /** Permission value for insert access */
+//  static final int   PERMISSION_INSERT     = 1<<2;
+  
+  static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
+  static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
+  static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
+  
   
   /**
    * Force authentication.
@@ -305,17 +316,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @param deletionType  The type of deletion to be performed.
    */
   void delete(IApplicationObjectPayload item, DeletionType deletionType);
-
-  /**
-   * Compute the hash of the given partition.
-   * This method does not make any network request, the hash is computed from the given request details.
-   * The Partition may or may not exist and the current user may or may not have access to read from or write to it.
-   * 
-   * @param request ID of the required partition.
-   * 
-   * @return The hash of the given partition.
-   */
-  Hash getPartitionHash(FetchPartitionRequest request);
 
   /**
    * Upsert (insert or update as necessary) a feed with the given details. A feed is identified by a user ID and name tuple,

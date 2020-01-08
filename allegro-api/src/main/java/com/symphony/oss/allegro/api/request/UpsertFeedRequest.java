@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Symphony Communication Services, LLC.
+ * Copyright 2019-2020 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
 
 import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.allegro.api.ResourcePermissions;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 
 /**
  * Request object for UpsertFeed.
@@ -31,33 +32,31 @@ import com.google.common.collect.ImmutableSet;
  * @author Bruce Skingle
  *
  */
-public class UpsertFeedRequest
+public class UpsertFeedRequest extends NamedUserIdObjectRequest
 {
-  private final String             name_;
-  private final ImmutableSet<Hash> partitionHashes_;
+  private final ImmutableSet<NamedUserIdObjectOrHashRequest> partitionIds_;
   
   UpsertFeedRequest(AbstractBuilder<?,?> builder)
   {
-    name_             = builder.name_;
-    partitionHashes_  = ImmutableSet.copyOf(builder.partitionHashes_);
+    super(builder);
+    
+    partitionIds_  = ImmutableSet.copyOf(builder.partitionIds_);
   }
   
   /**
    * 
-   * @return The name of the partition.
-   */
-  public String getName()
-  {
-    return name_;
-  }
-  
-  /**
+   * @param defaultOwner The default owner for partitions.
    * 
-   * @return The allowable ThreadIds for this partition.
+   * @return The partitions to which the feed should be subscribed.
    */
-  public Set<Hash> getPartitionHashes()
+  public Set<Hash> getPartitionHashes(PodAndUserId defaultOwner)
   {
-    return partitionHashes_;
+    Set<Hash> hashes = new HashSet<>();
+    
+    for(NamedUserIdObjectOrHashRequest id : partitionIds_)
+      hashes.add(id.getHash(defaultOwner));
+    
+    return hashes;
   }
   
   /**
@@ -91,26 +90,27 @@ public class UpsertFeedRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends BaseAbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
-    protected String        name_;
-    protected Set<Hash>     partitionHashes_ = new HashSet<>();
+    protected Set<NamedUserIdObjectOrHashRequest> partitionIds_ = new HashSet<>();
+    protected ResourcePermissions                         permissions_;
     
     AbstractBuilder(Class<T> type)
     {
       super(type);
     }
-    
+
     /**
-     * Set the name of the partition.
+     * Add the given partition IDs to the set of partitions to be subscribed to.
      * 
-     * @param name The content type for the sequence.
+     * @param partitionId partition IDs to the set of partitions to be subscribed to.
      * 
      * @return This (fluent method)
      */
-    public T withName(String name)
+    public T withPartitionIds(NamedUserIdObjectOrHashRequest ...partitionId)
     {
-      name_ = name;
+      for(NamedUserIdObjectOrHashRequest id : partitionId)
+        partitionIds_.add(id);
       
       return self();
     }
@@ -125,9 +125,14 @@ public class UpsertFeedRequest
     public T withPartitionHashes(Hash ...partitionHashes)
     {
       for(Hash partitionHash : partitionHashes)
-        partitionHashes_.add(partitionHash);
+        partitionIds_.add(new PartitionId.Builder().withHash(partitionHash).build());
       
       return self();
+    }
+
+    public void withPermissions(ResourcePermissions permissions)
+    {
+      permissions_ = permissions;
     }
     
     @Override

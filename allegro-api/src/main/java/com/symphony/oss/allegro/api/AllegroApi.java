@@ -92,7 +92,6 @@ import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
-import com.symphony.oss.allegro.api.request.FetchPartitionRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
@@ -135,13 +134,11 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.ObjectModelUtils;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
-import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
@@ -169,6 +166,9 @@ import com.symphony.oss.models.pod.canon.PodModel;
  */
 public class AllegroApi implements IAllegroApi
 {
+
+  static final int   ALLOWED_PERMISSIONS_READ         = PERMISSION_READ;
+//  static final int   ALLOWED_PERMISSIONS_READ_WRITE   = PERMISSION_READ | PERMISSION_WRITE;
   
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroApi.class);
 
@@ -488,12 +488,14 @@ public class AllegroApi implements IAllegroApi
   @Override
   public void fetchFeedObjects(FetchFeedObjectsRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", request.getName()))
+    Hash feedHash = request.getHash(getUserId());
+    
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", feedHash.toString()))
     {
       ITraceContext trace = traceTransaction.open();
       
-      List<IFeedObject> messages  = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-          .withName(request.getName())
+      List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+          .withFeedHash(feedHash)
           .withCanonPayload(new FeedRequest.Builder()
               .withMaxItems(request.getMaxItems() != null ? request.getMaxItems() : 1)
               .build())
@@ -554,8 +556,8 @@ public class AllegroApi implements IAllegroApi
       if(ackCnt>0)
       {
         // Delete (ACK) the consumed messages
-        messages = objectApiClient_.newFeedsNameObjectsPostHttpRequestBuilder()
-            .withName(request.getName())
+        messages = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+            .withFeedHash(feedHash)
             .withCanonPayload(builder.build())
             .build()
             .execute(httpClient_);
@@ -582,25 +584,16 @@ public class AllegroApi implements IAllegroApi
   @Override
   public IFeed upsertFeed(UpsertFeedRequest request)
   {
-    ObjectModelUtils.validateFeedName(request.getName());
+    //ObjectModelUtils.validateFeedName(request.getName());
     
     return objectApiClient_.newFeedsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertFeedRequest.Builder()
-          .withFeedId(new NamedUserIdObject.Builder()
-              .withUserId(getUserId())
-              .withName(request.getName())
-              .build())
-            .withPartitionHashes(request.getPartitionHashes())
-            .build())
+        .withFeedId(request.getAndValidateId(getUserId()))
+        .withPartitionHashes(request.getPartitionHashes(getUserId()))
+        .build())
       .build()
       .execute(httpClient_)
       ;
-  }
-
-  @Override
-  public Hash getPartitionHash(FetchPartitionRequest request)
-  {
-    return request.getPartitionHash();
   }
   
   @Override
@@ -608,12 +601,9 @@ public class AllegroApi implements IAllegroApi
   {
     return objectApiClient_.newPartitionsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertPartitionRequest.Builder()
-          .withPartitionId(new NamedUserIdObject.Builder()
-              .withUserId(getUserId())
-              .withName(request.getName())
-              .build())
-            .withThreadIds(request.getThreadIds())
-            .build())
+        .withPartitionId(request.getAndValidateId(getUserId()))
+        .withThreadIds(request.getThreadIds())
+        .build())
       .build()
       .execute(httpClient_)
       ;
@@ -1290,7 +1280,9 @@ public class AllegroApi implements IAllegroApi
   @Override
   public void fetchPartitionObjects(FetchPartitionObjectsRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", request.getPartitionHash().toString()))
+    Hash partitionHash = request.getHash(getUserId());
+    
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", partitionHash.toString()))
     {
       ITraceContext trace = traceTransaction.open();
       
@@ -1302,7 +1294,7 @@ public class AllegroApi implements IAllegroApi
        do
        {
          PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_.newPartitionsPartitionHashPageGetHttpRequestBuilder()
-             .withPartitionHash(request.getPartitionHash())
+             .withPartitionHash(partitionHash)
              .withAfter(after)
              .withScanForwards(request.getScanForwards())
              ;

@@ -18,6 +18,7 @@
 
 package com.symphony.oss.allegro.api;
 
+import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.naming.Name;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
@@ -36,7 +37,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
   public AllegroSubscription(SubscribeFeedObjectsRequest request, AllegroApi allegroApi)
   {
-    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getName()));
+    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getHash(allegroApi.getUserId())));
     
     consumer_ = new IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject>()
     {
@@ -57,9 +58,9 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   
   class FeedName extends Name
   {
-    protected FeedName(String name)
+    protected FeedName(Hash hash)
     {
-      super(name);
+      super(hash.toStringBase64());
     }
   }
 

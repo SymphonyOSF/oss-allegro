@@ -1,5 +1,7 @@
 /*
- * Copyright 2019 Symphony Communication Services, LLC.
+ *
+ *
+ * Copyright 2020 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +19,25 @@
 package com.symphony.oss.allegro.api.request;
 
 /**
- * Request to fetch a partition.
+ * An ID of a partition, expressed as a NamedUserIdObject or a Hash.
  * 
  * @author Bruce Skingle
  *
  */
-public class FetchPartitionRequest extends NamedUserIdObjectOrHashRequest
+public class PartitionId extends NamedUserIdObjectOrHashRequest
 {
-  /**
-   * Constructor.
-   */
-  FetchPartitionRequest(AbstractBuilder<?,?> builder)
+  PartitionId(AbstractBuilder<?, ?> builder)
   {
     super(builder);
   }
-  
+
   /**
-   * Builder.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public static class Builder extends AbstractBuilder<Builder, FetchPartitionRequest>
+  * Builder.
+  * 
+  * @author Bruce Skingle
+  *
+  */
+  public static class Builder extends AbstractBuilder<Builder, PartitionId>
   {
     /**
      * Constructor.
@@ -47,23 +46,23 @@ public class FetchPartitionRequest extends NamedUserIdObjectOrHashRequest
     {
       super(Builder.class);
     }
-
+  
     @Override
-    protected FetchPartitionRequest construct()
+    protected PartitionId construct()
     {
-      return new FetchPartitionRequest(this);
+      return new PartitionId(this);
     }
   }
-
+  
   /**
-   * AbstractBuilder.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> Concrete type of the builder for fluent methods.
-   * @param <B> Concrete type of the built object for fluent methods.
-   */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
+  * AbstractBuilder.
+  * 
+  * @author Bruce Skingle
+  *
+  * @param <T> Concrete type of the builder for fluent methods.
+  * @param <B> Concrete type of the built object for fluent methods.
+  */
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends PartitionId> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     AbstractBuilder(Class<T> type)
     {

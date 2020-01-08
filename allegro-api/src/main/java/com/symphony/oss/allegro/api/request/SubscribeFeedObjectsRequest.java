@@ -24,7 +24,7 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
  * @author Bruce Skingle
  *
  */
-public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
+public class SubscribeFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
 {
   private final ThreadSafeConsumerManager consumerManager_;
   private final int                       subscriberThreadPoolSize_;
@@ -100,7 +100,7 @@ public class SubscribeFeedObjectsRequest extends FeedObjectsRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends SubscribeFeedObjectsRequest> extends FeedObjectsRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends SubscribeFeedObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected ThreadSafeConsumerManager consumerManager_;
     protected int                       subscriberThreadPoolSize_ = 1;

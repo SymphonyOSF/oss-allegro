@@ -24,7 +24,7 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
  * @author Bruce Skingle
  *
  */
-public class FetchPartitionObjectsRequest extends FetchPartitionRequest
+public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
 {
   private final boolean         scanForwards_;
   private final Integer         maxItems_;
@@ -111,7 +111,7 @@ public class FetchPartitionObjectsRequest extends FetchPartitionRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionRequest> extends FetchPartitionRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected boolean         scanForwards_ = true;
     protected Integer         maxItems_;
