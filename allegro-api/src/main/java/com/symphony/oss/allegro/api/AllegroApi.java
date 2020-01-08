@@ -563,10 +563,6 @@ public class AllegroApi implements IAllegroApi
             .execute(httpClient_);
       }
     }
-    catch(NotFoundException e)
-    {
-      // No messages
-    }
     
     request.getConsumerManager().closeConsumers();
   }
