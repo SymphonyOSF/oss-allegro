@@ -92,10 +92,10 @@ public class NamedUserIdObjectOrHashRequest extends NamedUserIdObjectRequest
    * 
    * Only one of
    * <ul> 
-   * <li/> Name (and optionally Owner)
-   * <li/> ID
-   * <li/> Hash
-   * </li>
+   * <li> Name (and optionally Owner)
+   * <li> ID
+   * <li> Hash
+   * </ul>
    * 
    * may be set, if this is not the case (e.g. if you set ID and Hash) then an exception will be thrown from the build()
    * method.
@@ -119,10 +119,10 @@ public class NamedUserIdObjectOrHashRequest extends NamedUserIdObjectRequest
      * 
      * Only one of
      * <ul> 
-     * <li/> Name (and optionally Owner)
-     * <li/> ID
-     * <li/> Hash
-     * </li>
+     * <li> Name (and optionally Owner)
+     * <li> ID
+     * <li> Hash
+     * </ul>
      * 
      * may be set, if this is not the case (e.g. if you set ID and Hash) then an exception will be thrown from the build()
      * method.

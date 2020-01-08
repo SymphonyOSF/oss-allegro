@@ -132,9 +132,9 @@ public class NamedUserIdObjectRequest
    * 
    * Only one of
    * <ul> 
-   * <li/> Name (and optionally Owner)
-   * <li/> ID
-   * </li>
+   * <li> Name (and optionally Owner)
+   * <li> ID
+   * </ul>
    * 
    * may be set, if this is not the case (e.g. if you set ID and Name) then an exception will be thrown from the build()
    * method.

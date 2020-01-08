@@ -79,15 +79,6 @@ public class ResourcePermissions
   /**
    * AbstractBuilder.
    * 
-   * Only one of
-   * <ul> 
-   * <li/> Name (and optionally Owner)
-   * <li/> ID
-   * </li>
-   * 
-   * may be set, if this is not the case (e.g. if you set ID and Name) then an exception will be thrown from the build()
-   * method.
-   * 
    * @author Bruce Skingle
    *
    * @param <T> Concrete type of the builder for fluent methods.
