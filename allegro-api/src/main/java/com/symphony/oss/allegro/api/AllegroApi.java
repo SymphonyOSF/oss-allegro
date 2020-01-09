@@ -1380,6 +1380,7 @@ public class AllegroApi implements IAllegroApi
          PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_.newPartitionsPartitionHashPageGetHttpRequestBuilder()
              .withPartitionHash(partitionHash)
              .withAfter(after)
+             .withSortKeyPrefix(request.getSortKeyPrefix())
              .withScanForwards(request.getScanForwards())
              ;
          

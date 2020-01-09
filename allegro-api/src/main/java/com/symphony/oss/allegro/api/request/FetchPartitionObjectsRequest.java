@@ -29,6 +29,7 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
   private final boolean         scanForwards_;
   private final Integer         maxItems_;
   private final String          after_;
+  private final String          sortKeyPrefix_;
   private final ConsumerManager consumerManager_;
   
   /**
@@ -41,6 +42,7 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     scanForwards_     = builder.scanForwards_;
     maxItems_         = builder.maxItems_;
     after_            = builder.after_;
+    sortKeyPrefix_    = builder.sortKeyPrefix_;
     consumerManager_  = builder.consumerManager_;
   }
 
@@ -69,6 +71,15 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
   public String getAfter()
   {
     return after_;
+  }
+
+  /**
+   * 
+   * @return The required prefix for the sort key value of returned objects.
+   */
+  public String getSortKeyPrefix()
+  {
+    return sortKeyPrefix_;
   }
 
   /**
@@ -116,6 +127,7 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     protected boolean         scanForwards_ = true;
     protected Integer         maxItems_;
     protected String          after_;
+    protected String          sortKeyPrefix_;
     protected ConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
@@ -147,6 +159,20 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     public T withAfter(String after)
     {
       after_ = after;
+      
+      return self();
+    }
+    
+    /**
+     * Set the after of the partition.
+     * 
+     * @param sortKeyPrefix The required prefix for sort key value of returned objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withSortKeyPrefix(String sortKeyPrefix)
+    {
+      sortKeyPrefix_ = sortKeyPrefix;
       
       return self();
     }
