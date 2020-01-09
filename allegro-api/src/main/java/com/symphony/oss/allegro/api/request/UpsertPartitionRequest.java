@@ -16,13 +16,9 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 
-import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.models.core.canon.facade.ThreadId;
+import com.symphony.oss.allegro.api.ResourcePermissions;
 
 /**
  * Request to create a partition.
@@ -32,22 +28,22 @@ import com.symphony.oss.models.core.canon.facade.ThreadId;
  */
 public class UpsertPartitionRequest extends NamedUserIdObjectRequest
 {
-  private final ImmutableSet<ThreadId> threadIds_;
+  private final ResourcePermissions                          permissions_;
   
   UpsertPartitionRequest(AbstractBuilder<?,?> builder)
   {
     super(builder);
     
-    threadIds_  = ImmutableSet.copyOf(builder.threadIds_);
+    permissions_   = builder.permissions_;
   }
   
   /**
    * 
-   * @return The allowable ThreadIds for this partition.
+   * @return The ResourcePermissions for the feed.
    */
-  public Set<ThreadId> getThreadIds()
+  public ResourcePermissions getPermissions()
   {
-    return threadIds_;
+    return permissions_;
   }
   
   /**
@@ -83,7 +79,7 @@ public class UpsertPartitionRequest extends NamedUserIdObjectRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertPartitionRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
-    protected Set<ThreadId> threadIds_ = new HashSet<>();
+    protected ResourcePermissions permissions_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -91,16 +87,23 @@ public class UpsertPartitionRequest extends NamedUserIdObjectRequest
     }
 
     /**
-     * Add the given thread IDs to the set of valid threadIds for this partition.
+     * Set the given ResourcePermissions for the feed.
      * 
-     * @param threadIds IDs of threads which can be used to encrypt objects in this partition.
+     * The Feed owner can always read the feed.
+     * 
+     * Applicable Permissions are:
+     * 
+     * None
+     * Read
+     * Write
+     * 
+     * @param permissions ResourcePermissions.
      * 
      * @return This (fluent method)
      */
-    public T withThreadIds(ThreadId ...threadIds)
+    public T withPermissions(ResourcePermissions permissions)
     {
-      for(ThreadId threadid : threadIds)
-        threadIds_.add(threadid);
+      permissions_ = permissions;
       
       return self();
     }

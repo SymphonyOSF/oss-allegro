@@ -54,6 +54,15 @@ public class ResourcePermissions
   }
 
   /**
+   * 
+   * @return The user permissions.
+   */
+  public ImmutableMap<PodAndUserId, Set<Permission>> getUserPermissions()
+  {
+    return userPermissions_;
+  }
+
+  /**
    * Builder.
    * 
    * @author Bruce Skingle
@@ -86,7 +95,7 @@ public class ResourcePermissions
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ResourcePermissions> extends BaseAbstractBuilder<T,B>
   {
-    protected Map<PodAndUserId, Set<Permission>> userPermissions_;
+    protected Map<PodAndUserId, Set<Permission>> userPermissions_ = new HashMap<>();
     
     AbstractBuilder(Class<T> type)
     {

@@ -26,10 +26,13 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -53,7 +56,6 @@ import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
@@ -93,6 +95,7 @@ import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
@@ -139,9 +142,12 @@ import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IUserIdObject;
+import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.UserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
 import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
@@ -582,23 +588,77 @@ public class AllegroApi implements IAllegroApi
   {
     //ObjectModelUtils.validateFeedName(request.getName());
     
+
+    List<IUserPermissionsRequest> userPermissions = new LinkedList<>();
+    
+    if(request.getPermissions() != null)
+    {
+      for(Entry<PodAndUserId, Set<Permission>> userPermission : request.getPermissions().getUserPermissions().entrySet())
+      {
+        userPermissions.add(new UserPermissionsRequest.Builder()
+          .withUserId(userPermission.getKey())
+          .withPermissions(toCanonPermissions(userPermission.getValue()))
+          .build()
+          );
+      }
+    }
+    
     return objectApiClient_.newFeedsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertFeedRequest.Builder()
         .withFeedId(request.getAndValidateId(getUserId()))
         .withPartitionHashes(request.getPartitionHashes(getUserId()))
+        .withUserPermissions(userPermissions)
         .build())
       .build()
       .execute(httpClient_)
       ;
   }
   
+  private Set<com.symphony.oss.models.object.canon.Permission> toCanonPermissions(Set<Permission> permissions)
+  {
+    Set<com.symphony.oss.models.object.canon.Permission> canonPermissions = new HashSet<>();
+    
+    for(Permission p : permissions)
+    {
+      switch(p)
+      {
+        case Read:
+          canonPermissions.add(com.symphony.oss.models.object.canon.Permission.READ);
+          break;
+          
+        case Write:
+          canonPermissions.add(com.symphony.oss.models.object.canon.Permission.WRITE);
+          break;
+          
+        default:
+          throw new IllegalArgumentException("Unknown permission " + p);
+      }
+    }
+    
+    return canonPermissions;
+  }
+
   @Override
   public IPartition upsertPartition(UpsertPartitionRequest request)
   {
+    List<IUserPermissionsRequest> userPermissions = new LinkedList<>();
+    
+    if(request.getPermissions() != null)
+    {
+      for(Entry<PodAndUserId, Set<Permission>> userPermission : request.getPermissions().getUserPermissions().entrySet())
+      {
+        userPermissions.add(new UserPermissionsRequest.Builder()
+          .withUserId(userPermission.getKey())
+          .withPermissions(toCanonPermissions(userPermission.getValue()))
+          .build()
+          );
+      }
+    }
+    
     return objectApiClient_.newPartitionsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertPartitionRequest.Builder()
         .withPartitionId(request.getAndValidateId(getUserId()))
-        .withThreadIds(request.getThreadIds())
+        .withUserPermissions(userPermissions)
         .build())
       .build()
       .execute(httpClient_)
@@ -1047,6 +1107,34 @@ public class AllegroApi implements IAllegroApi
     public ApplicationObjectBuilder withThreadId(ThreadId threadId)
     {
       builder_.withThreadId(threadId);
+      
+      return self();
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partitionHash The Hash of the partition.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectBuilder withPartition(Hash partitionHash)
+    {
+      builder_.withPartitionHash(partitionHash);
+      
+      return self();
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partitionId The ID of the partition.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectBuilder withPartition(PartitionId partitionId)
+    {
+      builder_.withPartitionHash(partitionId.getId(getUserId()).getHash());
       
       return self();
     }

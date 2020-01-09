@@ -35,12 +35,14 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 public class UpsertFeedRequest extends NamedUserIdObjectRequest
 {
   private final ImmutableSet<NamedUserIdObjectOrHashRequest> partitionIds_;
+  private final ResourcePermissions                          permissions_;
   
   UpsertFeedRequest(AbstractBuilder<?,?> builder)
   {
     super(builder);
     
     partitionIds_  = ImmutableSet.copyOf(builder.partitionIds_);
+    permissions_   = builder.permissions_;
   }
   
   /**
@@ -59,6 +61,15 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
     return hashes;
   }
   
+  /**
+   * 
+   * @return The ResourcePermissions for the feed.
+   */
+  public ResourcePermissions getPermissions()
+  {
+    return permissions_;
+  }
+
   /**
    * Builder.
    * 
@@ -93,7 +104,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
     protected Set<NamedUserIdObjectOrHashRequest> partitionIds_ = new HashSet<>();
-    protected ResourcePermissions                         permissions_;
+    protected ResourcePermissions                 permissions_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -130,9 +141,25 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
       return self();
     }
 
-    public void withPermissions(ResourcePermissions permissions)
+    /**
+     * Set the given ResourcePermissions for the feed.
+     * 
+     * The Feed owner can always read the feed.
+     * 
+     * Applicable Permissions are:
+     * 
+     * None
+     * Read
+     * 
+     * @param permissions ResourcePermissions.
+     * 
+     * @return This (fluent method) 
+     */
+    public T withPermissions(ResourcePermissions permissions)
     {
       permissions_ = permissions;
+      
+      return self();
     }
     
     @Override
