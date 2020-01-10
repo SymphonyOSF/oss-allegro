@@ -23,9 +23,8 @@ from these attributes in a strictly defined way.
 
 Each user can only create Partitions which include their own userId which
 prevents denial of service attacks by users creating a Partition with a name calculated to collide with that used
-by another user. The owner of a Partition can assign a set of PodIds to the Partition with the effect that
-only users from thise Pods can access the data. The owner can also associate Object Store entitlements with the
-Partition which further limits access to users who have the required entitlements.
+by another user. The owner of a Partition can assign entitlements to the Partition to control who has access to
+the data contained in a partition.
 
 In addition to these physical access controls, in order to read the contents of an object, a user needs access to
 the encryption key which is controlled by the usual conversation membership functions.
@@ -48,4 +47,17 @@ the absolute hash of the object is appended to the user provided Sort Key.
 All updates to the Object Store are transactional and protected by optimistic locking, if the object has
 already changed from the expected version then the update fails.
 
+##Update Notifications
+The Object Store provides a feed mechanism which allows a caller to be notified when an object is created or updated 
+in one or more partitions.
+A Feed is a persistent queue of update notifications onto which a copy of all newly created or updated objects is
+pushed.
+When messages are consumed from this queue they are actively acknowledged by the Allegro API client so that the
+system provides an at least once delivery guarantee.
+
+In general update notifications will be delivered in the order in which they occurred, but this is not guaranteed, and
+in order to achieved the desired levels of performance and scalability, most applications will need to implement on
+a multi-threaded basis. For these reasons, consuming applications should be designed on the basis of an eventually
+consistent model, and if the order of processing is significant then timestamps or sequence numbers need to be
+included within the stored objects so that the correct ordering can be asserted.
 

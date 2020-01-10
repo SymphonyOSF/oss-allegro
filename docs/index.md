@@ -29,6 +29,6 @@ to that object requires physical access to the encrypted object (which is contro
 as well as access to the content key for that thread,
 which the Key Manager will only provide to callers who are a member of the conversation.
 
-The immediate objective of Allegro is to provide a means for bots and extension applications to store state
-safely in the cloud, the API does not yet provide all of the capabilities of the [Symphony REST API](https://developers.symphony.com/restapi/reference) which
-may be a more appropriate solution for some use cases for the time being.
+The objective of Allegro is to provide a means for bots and extension applications to store state
+safely in the cloud, the API does not provide all of the capabilities of the [Symphony REST API](https://developers.symphony.com/restapi/reference) which
+may be a more appropriate solution for some use cases.
