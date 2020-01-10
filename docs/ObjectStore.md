@@ -47,8 +47,7 @@ the absolute hash of the object is appended to the user provided Sort Key.
 All updates to the Object Store are transactional and protected by optimistic locking, if the object has
 already changed from the expected version then the update fails.
 
-##Update Notifications
-
+## Update Notifications
 The Object Store provides a feed mechanism which allows a caller to be notified when an object is created or updated 
 in one or more partitions.
 A Feed is a persistent queue of update notifications onto which a copy of all newly created or updated objects is
