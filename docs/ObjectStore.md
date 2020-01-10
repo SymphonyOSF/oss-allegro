@@ -48,6 +48,7 @@ All updates to the Object Store are transactional and protected by optimistic lo
 already changed from the expected version then the update fails.
 
 ##Update Notifications
+
 The Object Store provides a feed mechanism which allows a caller to be notified when an object is created or updated 
 in one or more partitions.
 A Feed is a persistent queue of update notifications onto which a copy of all newly created or updated objects is
