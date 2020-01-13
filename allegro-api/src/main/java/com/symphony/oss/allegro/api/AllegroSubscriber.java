@@ -161,10 +161,6 @@ class AllegroSubscriber extends AbstractPullSubscriber
           result.add(new AllegroPullSubscriberMessage(message, trace));
         }
       }
-      catch(NotFoundException e)
-      {
-        // No messages
-      }
       
 //      
 //      
