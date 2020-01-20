@@ -26,6 +26,7 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
@@ -431,4 +432,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @return The key manager token.
    */
   String getKeyManagerToken();
+
+  void fetchObjectVersions(FetchObjectVersionsRequest request);
 }
