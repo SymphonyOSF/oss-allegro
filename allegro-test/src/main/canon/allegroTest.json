@@ -1,0 +1,38 @@
+{
+	"canon": "0.0.1",
+	"info": {
+		"title": "Symphony 2.0 Calendar Application Model",
+		"license": {
+			"name": "Apache 2.0",
+			"url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+		}
+	},
+	"id": "com.symphony.oss.allegro.test",
+  "version": "1.0",
+	"basePath": "/allegroTest/v1",
+	"model": {
+		"javaGenPackage": "com.symphony.oss.allegro.test.canon",
+		"javaFacadePackage": "com.symphony.oss.allegro.test.canon.facade"
+	},
+	"components": {
+		"schemas": {
+      "TestItem": {
+        "description": "A Test item.",
+        "type": "object",
+        "extends": "https://models.oss.symphony.com/object.json#/components/schemas/ApplicationObjectPayload",
+        "facade": false,
+        "properties": {
+          "due": {
+            "$ref": "https://models.oss.symphony.com/core.json#/components/schemas/Instant"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    }
+	}
+}

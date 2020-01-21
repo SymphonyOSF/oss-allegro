@@ -18,8 +18,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.ISimpleThreadSafeRetryableConsumer;
 import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
@@ -31,26 +30,49 @@ import org.symphonyoss.s2.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
  * 
  * @author Bruce Skingle
  */
-public class ThreadSafeConsumerManager extends ConsumerManager
+public class AsyncConsumerManager extends AbstractConsumerManager
 {
-  private static final Logger log_ = LoggerFactory.getLogger(ThreadSafeConsumerManager.class);
+  //private static final Logger log_ = LoggerFactory.getLogger(AsyncConsumerManager.class);
   
   private IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
+  private final int                       subscriberThreadPoolSize_;
+  private final int                       handlerThreadPoolSize_;
   
-  protected ThreadSafeConsumerManager(AbstractBuilder<?,?> builder)
+  protected AsyncConsumerManager(AbstractBuilder<?,?> builder)
   {
     super(builder);
     
     threadSafeUnprocessableMessageConsumer_ = builder.threadSafeUnprocessableMessageConsumer_;
+    subscriberThreadPoolSize_       = builder.subscriberThreadPoolSize_;
+    handlerThreadPoolSize_          = builder.handlerThreadPoolSize_;
   }
 
   /**
    * 
    * @return The consumer to which unprocessable messages will be directed.
    */
+  @Override
   public IThreadSafeErrorConsumer<Object> getUnprocessableMessageConsumer()
   {
     return threadSafeUnprocessableMessageConsumer_;
+  }
+
+  /**
+   * 
+   * @return The size of the subscriber thread pool.
+   */
+  public int getSubscriberThreadPoolSize()
+  {
+    return subscriberThreadPoolSize_;
+  }
+
+  /**
+   * 
+   * @return The size of the handler thread pool.
+   */
+  public int getHandlerThreadPoolSize()
+  {
+    return handlerThreadPoolSize_;
   }
   
   /**
@@ -61,9 +83,11 @@ public class ThreadSafeConsumerManager extends ConsumerManager
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ConsumerManager> extends ConsumerManager.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractConsumerManager> extends AbstractConsumerManager.AbstractBuilder<T,B>
   {
-    private IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
+    protected IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
+    protected int                              subscriberThreadPoolSize_ = 1;
+    protected int                              handlerThreadPoolSize_    = 1;
 
     AbstractBuilder(Class<T> type)
     {
@@ -108,6 +132,53 @@ public class ThreadSafeConsumerManager extends ConsumerManager
       
       return super.withUnprocessableMessageConsumer(threadSafeUnprocessableMessageConsumer_);
     }
+
+    /**
+     * Set the size of the thread pool for subscriber requests.
+     * 
+     * @param subscriberThreadPoolSize The size of the thread pool for subscriber requests.
+     * 
+     * The subscriber thread pool is used to make connections over the network to request a batch
+     * of messages. Once a batch is received, all but one of the messages in the batch are passed
+     * individually to the handler thread pool and the final one is processed in the subscriber thread.
+     * 
+     * @return This (fluent method)
+     */
+    public T withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
+    {
+      subscriberThreadPoolSize_ = subscriberThreadPoolSize;
+      
+      return self();
+    }
+
+    /**
+     * Set the size of the thread pool for handler requests.
+     * 
+     * @param handlerThreadPoolSize The size of the thread pool for handler requests.
+     * 
+     * The handler thread pool is used to process messages received in a batch in parallel.
+     * The optimum size of the handler thread pool is 9 * subscriberThreadPoolSize.
+     * 
+     * @return This (fluent method)
+     */
+    public T withHandlerThreadPoolSize(int handlerThreadPoolSize)
+    {
+      handlerThreadPoolSize_ = handlerThreadPoolSize;
+      
+      return self();
+    }
+    
+    @Override
+    protected void validate(FaultAccumulator faultAccumulator)
+    {
+      super.validate(faultAccumulator);
+      
+      if(subscriberThreadPoolSize_ < 1)
+        faultAccumulator.error("SubscriberThreadPoolSize must be at least 1.");
+      
+      if(handlerThreadPoolSize_ < 1)
+        faultAccumulator.error("HandlerThreadPoolSize must be at least 1.");
+    }
   }
   
   /**
@@ -116,7 +187,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, ThreadSafeConsumerManager>
+  public static class Builder extends AbstractBuilder<Builder, AsyncConsumerManager>
   {
     /**
      * Constructor.
@@ -127,9 +198,9 @@ public class ThreadSafeConsumerManager extends ConsumerManager
     }
 
     @Override
-    public ThreadSafeConsumerManager construct()
+    public AsyncConsumerManager construct()
     {
-      return new ThreadSafeConsumerManager(this);
+      return new AsyncConsumerManager(this);
     }
 
     /**
@@ -166,7 +237,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
     }
     
     @SuppressWarnings("unchecked")
-    public Builder withConsumerAdaptor(@SuppressWarnings("rawtypes") ThreadSafeAbstractAdaptor adaptor)
+    private Builder withConsumerAdaptor(@SuppressWarnings("rawtypes") ThreadSafeAbstractAdaptor adaptor)
     {
       adaptor.setDefaultConsumer((IThreadSafeRetryableConsumer<Object>) getDefaultConsumer());
       
@@ -230,6 +301,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method)
      */
+    @Override
     public Builder withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
     {
       return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
@@ -245,6 +317,7 @@ public class ThreadSafeConsumerManager extends ConsumerManager
      * 
      * @return This (fluent method)
      */
+    @Override
     public Builder withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
     {
       return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);

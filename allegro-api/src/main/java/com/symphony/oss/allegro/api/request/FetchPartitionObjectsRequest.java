@@ -16,8 +16,6 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-
 /**
  * Request to fetch a partition.
  * 
@@ -27,10 +25,9 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
 public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
 {
   private final boolean         scanForwards_;
-  private final Integer         maxItems_;
   private final String          after_;
   private final String          sortKeyPrefix_;
-  private final ConsumerManager consumerManager_;
+  private final AbstractConsumerManager consumerManager_;
   
   /**
    * Constructor.
@@ -40,7 +37,6 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     super(builder);
 
     scanForwards_     = builder.scanForwards_;
-    maxItems_         = builder.maxItems_;
     after_            = builder.after_;
     sortKeyPrefix_    = builder.sortKeyPrefix_;
     consumerManager_  = builder.consumerManager_;
@@ -53,15 +49,6 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
   public Boolean getScanForwards()
   {
     return scanForwards_;
-  }
-  
-  /**
-   * 
-   * @return The maximum number of objects to return.
-   */
-  public Integer getMaxItems()
-  {
-    return maxItems_;
   }
 
   /**
@@ -86,7 +73,7 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public ConsumerManager getConsumerManager()
+  public AbstractConsumerManager getConsumerManager()
   {
     return consumerManager_;
   }
@@ -125,10 +112,9 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected boolean         scanForwards_ = true;
-    protected Integer         maxItems_;
     protected String          after_;
     protected String          sortKeyPrefix_;
-    protected ConsumerManager consumerManager_;
+    protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -178,40 +164,17 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     }
     
     /**
-     * Set the maximum number of objects to return.
-     * 
-     * @param maxItems The maximum number of objects to return.
-     * 
-     * @return This (fluent method)
-     */
-    public T withMaxItems(Integer maxItems)
-    {
-      maxItems_ = maxItems;
-      
-      return self();
-    }
-    
-    /**
      * Set the ConsumerManager to receive objects.
      * 
      * @param consumerManager The ConsumerManager to receive objects.
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(ConsumerManager consumerManager)
+    public T withConsumerManager(AbstractConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       
       return self();
-    }
-    
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-      
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
     }
   }
 }

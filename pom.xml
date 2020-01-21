@@ -68,7 +68,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>  
     
     <s2.common.version>0.2.7</s2.common.version>
-    <canon.version>0.2.15</canon.version>
+    <canon.version>0.2.16-SNAPSHOT</canon.version>
     <fugue.version>0.2.41-SNAPSHOT</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
@@ -77,6 +77,7 @@
   
   <modules>
     <module>allegro-api</module>
+    <module>allegro-test</module>
   </modules>
 
   <repositories>

@@ -28,7 +28,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
 {
   private final Integer         maxItems_;
   private final String          after_;
-  private final ConsumerManager consumerManager_;
+  private final AbstractConsumerManager consumerManager_;
   
   /**
    * Constructor.
@@ -64,7 +64,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public ConsumerManager getConsumerManager()
+  public AbstractConsumerManager getConsumerManager()
   {
     return consumerManager_;
   }
@@ -104,7 +104,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
   {
     protected Integer         maxItems_;
     protected String          after_;
-    protected ConsumerManager consumerManager_;
+    protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -146,7 +146,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(ConsumerManager consumerManager)
+    public T withConsumerManager(AbstractConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       

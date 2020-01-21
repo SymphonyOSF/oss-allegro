@@ -18,6 +18,8 @@ package com.symphony.oss.allegro.api;
 
 import java.security.cert.X509Certificate;
 
+import javax.annotation.Nullable;
+
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
@@ -29,7 +31,6 @@ import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
-import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -348,8 +349,12 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   IFeed upsertFeed(UpsertFeedRequest request);
   
   /**
-   * Fetch a batch of objects from the given feed.
+   * Fetch objects from the given feed.
    * 
+   * This method makes a synchronous or asynchronous request depending on whether the consumer provided by the request object
+   * is a <code>ConsumerManager</code> or an <code>AsyncConsumerManager</code>
+   * 
+   * <h1>Synchronous Invocation</h1>
    * It is up to the server to decide how many objects to return, if there are more objects available than requested this does
    * NOT guarantee that the full number of objects requested will be returned.
    * 
@@ -357,8 +362,8 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * <code>
     allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
         .withName("myCalendarFeed")
-        .withMaxItems(10)
         .withConsumerManager(new ConsumerManager.Builder()
+            .withMaxItems(10)
             .withConsumer(Object.class, (object, trace) -&gt;
             {
               System.out.println(object);
@@ -368,24 +373,20 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
         );
    * </code>
    * 
-   * @param request The details of the request
-   */
-  void fetchFeedObjects(FetchFeedObjectsRequest request);
-
-  /**
-   * Subscribe to the given feed.
+   * In the case of a synchronous invocation this method returns <code>null</code>
    * 
-   * This method uses two thread pools to asynchronously fetch messages.
+   * <h1>Asynchronous Invocation</h1>
+   * This invocation style uses two thread pools to asynchronously fetch messages.
    * 
    * The start() method must be called on the returned subscriber to begin processing messages.
    * 
    * e.g.
    * <code>
-    IFugueLifecycleComponent subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
+    IFugueLifecycleComponent subscriber = allegroApi_.fetchFeedObjects(new SubscribeFeedObjectsRequest.Builder()
         .withName("myCalendarFeed")
-        .withSubscriberThreadPoolSize(10)
-        .withHandlerThreadPoolSize(90)
-        .withConsumerManager(new ConsumerManager.Builder()
+        .withConsumerManager(new AsyncConsumerManager.Builder()
+          .withSubscriberThreadPoolSize(10)
+          .withHandlerThreadPoolSize(90)
           .withConsumer(IToDoItem.class, (message, traceContext) -&gt;
           {
             log_.info(message.toString());
@@ -412,9 +413,55 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @param request The details of the request
    * 
-   * @return A subscriber controller, you must call the start() method on this object and the stop() method may be called for a graceful shutdown.
+   * @return If the invocation is asynchronous then a subscriber controller, you must call the start() method on this object and the stop()
+   * method may be called for a graceful shutdown. If the invocation is synchronous then the return value is <code>null</code> 
+   * 
    */
-  IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request);
+  @Nullable IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request);
+//
+//  /**
+//   * Subscribe to the given feed.
+//   * 
+//   * This method uses two thread pools to asynchronously fetch messages.
+//   * 
+//   * The start() method must be called on the returned subscriber to begin processing messages.
+//   * 
+//   * e.g.
+//   * <code>
+//    IFugueLifecycleComponent subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
+//        .withName("myCalendarFeed")
+//        .withSubscriberThreadPoolSize(10)
+//        .withHandlerThreadPoolSize(90)
+//        .withConsumerManager(new ConsumerManager.Builder()
+//          .withConsumer(IToDoItem.class, (message, traceContext) -&gt;
+//          {
+//            log_.info(message.toString());
+//          })
+//          .withUnprocessableMessageConsumer((item, trace, message, cause) -&gt;
+//          {
+//            log_.error("Failed to consume message: " + message + "\nPayload:" + item, cause);
+//          })
+//          .build()
+//        )
+//      .build()
+//    );
+//
+//    log_.info("Subscriber state: " + subscriber.getLifecycleState());
+//    subscriber.start();
+//    
+//    // some activity or a wait loop....
+//     
+//    
+//    log_.info("Stopping...");
+//    subscriber.stop();
+//    log_.info("Subscriber state: " + subscriber.getLifecycleState());
+//   * </code>
+//   * 
+//   * @param request The details of the request
+//   * 
+//   * @return A subscriber controller, you must call the start() method on this object and the stop() method may be called for a graceful shutdown.
+//   */
+//  IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request);
 
   /**
    * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called

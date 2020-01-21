@@ -27,7 +27,7 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 /* package */ class AllegroSubscription implements ISubscription<IAbstractStoredApplicationObject>
@@ -35,7 +35,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final ImmutableSet<FeedName>                                         subscriptionNames_;
 
-  public AllegroSubscription(SubscribeFeedObjectsRequest request, AllegroApi allegroApi)
+  public AllegroSubscription(FetchFeedObjectsRequest request, AllegroApi allegroApi)
   {
     subscriptionNames_ = ImmutableSet.of(new FeedName(request.getHash(allegroApi.getUserId())));
     

@@ -26,8 +26,7 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
  */
 public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
 {
-  private final ConsumerManager consumerManager_;
-  private final Integer         maxItems_;
+  private final AbstractConsumerManager consumerManager_;
   
   /**
    * Constructor.
@@ -37,25 +36,15 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
     super(builder);
     
     consumerManager_  = builder.consumerManager_;
-    maxItems_         = builder.maxItems_;
   }
   
   /**
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public ConsumerManager getConsumerManager()
+  public AbstractConsumerManager getConsumerManager()
   {
     return consumerManager_;
-  }
-  
-  /**
-   * 
-   * @return The maximum number of objects to return.
-   */
-  public Integer getMaxItems()
-  {
-    return maxItems_;
   }
 
   /**
@@ -91,7 +80,7 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
-    protected ConsumerManager consumerManager_;
+    protected AbstractConsumerManager consumerManager_;
     protected Integer         maxItems_;
     
     AbstractBuilder(Class<T> type)
@@ -106,7 +95,7 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(ConsumerManager consumerManager)
+    public T withConsumerManager(AbstractConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       

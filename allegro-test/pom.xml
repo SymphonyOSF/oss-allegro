@@ -1,0 +1,130 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.symphony.oss.allegro</groupId>
+    <artifactId>oss-allegro</artifactId>
+    <version>0.1.5-SNAPSHOT</version>
+  </parent>
+  <artifactId>allegro-test</artifactId>
+  
+  
+  <properties>
+    <canon.template.groupid>org.symphonyoss.s2.canon</canon.template.groupid>
+    <canon.template.java>canon-template-java</canon.template.java>
+    <canon.template.version>${canon.version}</canon.template.version>
+  </properties>
+  
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.symphonyoss.s2.canon</groupId>
+        <artifactId>canon-maven-plugin</artifactId>
+        <version>${canon.version}</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate-sources</goal>
+            </goals>
+            <configuration>
+              <srcDirs>src/main/canon</srcDirs>
+              <proformaCopyDir>src/main</proformaCopyDir>
+              <uriMapping>
+                <property>
+                 <name>https://models.oss.symphony.com/core.json</name>
+                 <value>../oss-models/core-model/src/main/resources/canon/core.json</value>
+                </property>
+                <property>
+                 <name>https://models.oss.symphony.com/object.json</name>
+                 <value>../oss-models/object-model/src/main/resources/canon/object.json</value>
+                </property>
+              </uriMapping>
+
+              <templateArtifacts>
+                <templateArtifact>
+                  <groupId>${canon.template.groupid}</groupId>
+                  <artifactId>${canon.template.java}</artifactId>
+                  <version>${canon.template.version}</version>
+                </templateArtifact>
+              </templateArtifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+    <pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>
+                      org.symphonyoss.s2.canon
+                    </groupId>
+                    <artifactId>
+                      canon-maven-plugin
+                    </artifactId>
+                    <versionRange>[0.2.3,)</versionRange>
+                    <goals>
+                      <goal>generate-sources</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <ignore />
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  
+  <dependencies>
+    <dependency>
+      <groupId>com.symphony.oss.allegro</groupId>
+      <version>${project.version}</version>
+      <artifactId>allegro-api</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <artifactId>object-model</artifactId>
+      <version>${oss.models.version}</version>
+    </dependency>
+    <!-- <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <artifactId>calendar-model</artifactId>
+      <version>${oss.models.version}</version>
+    </dependency> -->
+    
+  </dependencies>
+</project>

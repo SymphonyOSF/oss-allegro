@@ -34,7 +34,7 @@ public class FetchObjectVersionsRequest
   private final boolean         scanForwards_;
   private final Integer         maxItems_;
   private final String          after_;
-  private final ConsumerManager consumerManager_;
+  private final AbstractConsumerManager consumerManager_;
   
   /**
    * Constructor.
@@ -91,7 +91,7 @@ public class FetchObjectVersionsRequest
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public ConsumerManager getConsumerManager()
+  public AbstractConsumerManager getConsumerManager()
   {
     return consumerManager_;
   }
@@ -133,7 +133,7 @@ public class FetchObjectVersionsRequest
     protected boolean         scanForwards_ = true;
     protected Integer         maxItems_;
     protected String          after_;
-    protected ConsumerManager consumerManager_;
+    protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -203,7 +203,7 @@ public class FetchObjectVersionsRequest
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(ConsumerManager consumerManager)
+    public T withConsumerManager(AbstractConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       

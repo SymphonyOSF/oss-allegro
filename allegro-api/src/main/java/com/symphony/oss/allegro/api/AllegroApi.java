@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
+import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
+import org.symphonyoss.s2.canon.runtime.exception.NotImplementedException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
@@ -93,12 +95,13 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
+import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
-import com.symphony.oss.allegro.api.request.SubscribeFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
@@ -499,7 +502,17 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
-  public IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request)
+  public IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request)
+  {
+    if(request.getConsumerManager() instanceof ConsumerManager)
+      return fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
+    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+      return fetchFeedObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    else
+      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+  }
+  
+  private IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
   {
     IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
     {
@@ -522,15 +535,14 @@ public class AllegroApi implements IAllegroApi
         .withTraceContextTransactionFactory(traceContextFactory_)
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSubscription(request, this))
-        .withSubscriberThreadPoolSize(request.getSubscriberThreadPoolSize())
-        .withHandlerThreadPoolSize(request.getHandlerThreadPoolSize())
+        .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
+        .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
       .build();
     
     return subscriberManager;
   }
-  
-  @Override
-  public void fetchFeedObjects(FetchFeedObjectsRequest request)
+
+  private IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
   {
     Hash feedHash = request.getHash(getUserId());
     
@@ -541,7 +553,7 @@ public class AllegroApi implements IAllegroApi
       List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
           .withFeedHash(feedHash)
           .withCanonPayload(new FeedRequest.Builder()
-              .withMaxItems(request.getMaxItems() != null ? request.getMaxItems() : 1)
+              .withMaxItems(consumerManager.getMaxItems() != null ? consumerManager.getMaxItems() : 1)
               .build())
           .build()
           .execute(httpClient_);
@@ -593,7 +605,7 @@ public class AllegroApi implements IAllegroApi
               );
           ackCnt++;
           
-          request.getConsumerManager().consumeUnprocessable(message.getPayload(), trace, "Unprocessable message, aborted", e);
+          request.getConsumerManager().getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
         }
       }
       
@@ -609,6 +621,8 @@ public class AllegroApi implements IAllegroApi
     }
     
     request.getConsumerManager().closeConsumers();
+    
+    return null;
   }
 
   private IFeedObjectExtend createExtend(String receiptHandle, Long retryTime, TimeUnit timeUnit)
@@ -796,7 +810,7 @@ public class AllegroApi implements IAllegroApi
         }
         catch (RetryableConsumerException | FatalConsumerException e)
         {
-          request.getConsumerManager().consumeUnprocessable(lcmessage, trace, "Failed to process message", e);
+          request.getConsumerManager().getUnprocessableMessageConsumer().consume(lcmessage, trace, "Failed to process message", e);
         }
       }
     }
@@ -1402,6 +1416,21 @@ public class AllegroApi implements IAllegroApi
   @Override
   public void fetchPartitionObjects(FetchPartitionObjectsRequest request)
   {
+    if(request.getConsumerManager() instanceof ConsumerManager)
+      fetchPartitionObjects(request, (ConsumerManager)request.getConsumerManager());
+    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+      fetchPartitionObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    else
+      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+  }
+  
+  private void fetchPartitionObjects(FetchPartitionObjectsRequest request, AsyncConsumerManager consumerManager)
+  {
+    throw new NotImplementedException();
+  }
+
+  private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
+  {
     Hash partitionHash = request.getHash(getUserId());
     
     try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", partitionHash.toString()))
@@ -1409,7 +1438,7 @@ public class AllegroApi implements IAllegroApi
       ITraceContext trace = traceTransaction.open();
       
        String after = request.getAfter();
-       Integer limit = request.getMaxItems();
+       Integer limit = consumerManager.getMaxItems();
        
        int remainingItems = limit == null ? 0 : limit;
        
@@ -1437,7 +1466,7 @@ public class AllegroApi implements IAllegroApi
            }
            catch (RetryableConsumerException | FatalConsumerException e)
            {
-             request.getConsumerManager().consumeUnprocessable(item, trace, "Failed to process message", e);
+             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
            }
            remainingItems--;
          }
@@ -1493,7 +1522,7 @@ public class AllegroApi implements IAllegroApi
            }
            catch (RetryableConsumerException | FatalConsumerException e)
            {
-             request.getConsumerManager().consumeUnprocessable(item, trace, "Failed to process message", e);
+             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
            }
            remainingItems--;
          }
