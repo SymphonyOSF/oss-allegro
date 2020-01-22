@@ -16,17 +16,23 @@
 
 package com.symphony.oss.allegro.api.request;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import org.symphonyoss.s2.common.fault.FaultAccumulator;
+import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
+
+import com.google.common.collect.ImmutableList;
+
 /**
  * Request to fetch a partition.
  * 
  * @author Bruce Skingle
  *
  */
-public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
+public class FetchPartitionObjectsRequest
 {
-  private final boolean         scanForwards_;
-  private final String          after_;
-  private final String          sortKeyPrefix_;
+  private final ImmutableList<PartitionQuery> queryList_;
   private final AbstractConsumerManager consumerManager_;
   
   /**
@@ -34,39 +40,17 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
    */
   FetchPartitionObjectsRequest(AbstractBuilder<?,?> builder)
   {
-    super(builder);
-
-    scanForwards_     = builder.scanForwards_;
-    after_            = builder.after_;
-    sortKeyPrefix_    = builder.sortKeyPrefix_;
+    queryList_        = ImmutableList.copyOf(builder.queryList_);
     consumerManager_  = builder.consumerManager_;
   }
 
   /**
    * 
-   * @return The order of scan.
+   * @return The list of query specifications.
    */
-  public Boolean getScanForwards()
+  public ImmutableList<PartitionQuery> getQueryList()
   {
-    return scanForwards_;
-  }
-
-  /**
-   * 
-   * @return The paging marker to start from.
-   */
-  public String getAfter()
-  {
-    return after_;
-  }
-
-  /**
-   * 
-   * @return The required prefix for the sort key value of returned objects.
-   */
-  public String getSortKeyPrefix()
-  {
-    return sortKeyPrefix_;
+    return queryList_;
   }
 
   /**
@@ -109,11 +93,9 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionObjectsRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected boolean         scanForwards_ = true;
-    protected String          after_;
-    protected String          sortKeyPrefix_;
+    protected List<PartitionQuery>    queryList_ = new LinkedList<>();
     protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
@@ -124,41 +106,13 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
     /**
      * Set the direction of scan.
      * 
-     * @param scanForwards If true then scan forwards, else scan in the reverse order of sort keys.
+     * @param partitionQuery A query specification to fetch objects from a partition.
      * 
      * @return This (fluent method)
      */
-    public T withScanForwards(boolean scanForwards)
+    public T withQuery(PartitionQuery partitionQuery)
     {
-      scanForwards_ = scanForwards;
-      
-      return self();
-    }
-    
-    /**
-     * Set the after of the partition.
-     * 
-     * @param after The paging marker to start from.
-     * 
-     * @return This (fluent method)
-     */
-    public T withAfter(String after)
-    {
-      after_ = after;
-      
-      return self();
-    }
-    
-    /**
-     * Set the after of the partition.
-     * 
-     * @param sortKeyPrefix The required prefix for sort key value of returned objects.
-     * 
-     * @return This (fluent method)
-     */
-    public T withSortKeyPrefix(String sortKeyPrefix)
-    {
-      sortKeyPrefix_ = sortKeyPrefix;
+      queryList_.add(partitionQuery);
       
       return self();
     }
@@ -175,6 +129,15 @@ public class FetchPartitionObjectsRequest extends NamedUserIdObjectOrHashRequest
       consumerManager_ = consumerManager;
       
       return self();
+    }
+    
+    @Override
+    protected void validate(FaultAccumulator faultAccumulator)
+    {
+      super.validate(faultAccumulator);
+      
+      if(queryList_.isEmpty())
+        faultAccumulator.error("At least 1 query must be provided.");
     }
   }
 }

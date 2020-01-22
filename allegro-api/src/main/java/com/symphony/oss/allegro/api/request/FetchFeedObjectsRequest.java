@@ -81,7 +81,6 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected AbstractConsumerManager consumerManager_;
-    protected Integer         maxItems_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -101,21 +100,6 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
       
       return self();
     }
-
-    
-    /**
-     * Set the maximum number of objects to return.
-     * 
-     * @param maxItems The maximum number of objects to return.
-     * 
-     * @return This (fluent method)
-     */
-    public T withMaxItems(Integer maxItems)
-    {
-      maxItems_ = maxItems;
-      
-      return self();
-    }
     
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
@@ -125,9 +109,6 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
       // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
       if(consumerManager_ == null)
         consumerManager_ = new ConsumerManager.Builder().build();
-      
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
     }
   }
 }

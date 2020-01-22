@@ -19,6 +19,8 @@
 package com.symphony.oss.allegro.test;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
 import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
@@ -33,14 +35,17 @@ import com.symphony.oss.allegro.api.AllegroApi;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.Permission;
 import com.symphony.oss.allegro.api.ResourcePermissions;
+import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
+import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.allegro.test.canon.AllegroTestModel;
 import com.symphony.oss.allegro.test.canon.ITestItem;
 import com.symphony.oss.allegro.test.canon.TestItem;
@@ -146,6 +151,8 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
 
   private IFeed feed_;
 
+  private Set<Hash> partitionObjectBaseHashes_ = new HashSet<>();
+
 
   /**
    * Constructor.
@@ -220,23 +227,36 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
       for(int i=0 ; i<TEST_OBJECT_COUNT ; i++)
         createItem(i);
     }
+    
 
-    upsertFeed();
+
     
-    fetchAllFeedItems();
+    fetchPartition();
+    fetchAsyncPartition();
+//
+//    upsertFeed();
+//    
+//    fetchAllFeedItems();
     
     for(int i=0 ; i<TEST_UPDATE_COUNT ; i++)
       updateItems(i);
     
-    fetchUpdatedFeedItems();
+//    fetchUpdatedFeedItems();
     
-    for(int i=0 ; i<TEST_UPDATE_COUNT ; i++)
-      updateItems(i);
+//    Why do this again?
+//    for(int i=0 ; i<TEST_UPDATE_COUNT ; i++)
+//      updateItems(i);
+    
+    // This needs to be after updateItems()
+    fetchItems();
+    
+    fetchAsyncVersions(null);
+    
+    getVersions(null);
+    getVersions(2);
     
     fetchAsyncUpdatedFeedItems();
     
-    fetchItems();
-    getVersions();
     
     
     System.out.println();
@@ -246,6 +266,82 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     System.out.println("+------------------------+------------------------+------------------------+------------------------+");
   }
   
+  private void fetchAsyncPartition()
+  {
+    Set<Hash> remainingBaseHashes = new HashSet<>(partitionObjectBaseHashes_);
+    Set<Hash> unknownBaseHashes = new HashSet<>();
+    
+    IAllegroQueryManager queryManager = allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
+        .withQuery(new PartitionQuery.Builder()
+            .withName(PARTITION_NAME)
+            .build()
+            )
+        .withConsumerManager(new AsyncConsumerManager.Builder()
+            .withSubscriberThreadPoolSize(10)
+            .withHandlerThreadPoolSize(90)
+            .withConsumer(IStoredApplicationObject.class, (item, trace) ->
+            {
+              if(!remainingBaseHashes .remove(item.getBaseHash()))
+                unknownBaseHashes.add(item.getBaseHash());
+            })
+            .build()
+            )
+        .build()
+        );
+    
+    queryManager.start();
+    
+    try
+    {
+      queryManager.waitUntilIdle();
+    }
+    catch (InterruptedException e)
+    {
+      throw new IllegalStateException("Interrupted while waiting for query.", e);
+    }
+    
+//    System.out.println("Subscriber state: " + subscriber.getLifecycleState());
+//    subscriber.start();
+//    
+//    
+//    //TODO: fix this to exit when no more messages....
+//    
+//    try
+//    {
+//      Thread.sleep(40000);
+//    }
+//    catch(InterruptedException e)
+//    {
+//      throw new IllegalStateException("Sleep interrupted", e);
+//    }
+    
+    if(!remainingBaseHashes.isEmpty())
+      throw new IllegalStateException("Did not receive expected objects " + remainingBaseHashes);
+    
+    if(!unknownBaseHashes.isEmpty())
+      throw new IllegalStateException("Received unexpected objects " + unknownBaseHashes);
+  }
+
+  private void fetchPartition()
+  {
+    allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
+        .withQuery(new PartitionQuery.Builder()
+            .withName(PARTITION_NAME)
+            .build()
+            )
+        .withConsumerManager(new ConsumerManager.Builder()
+            .withConsumer(IStoredApplicationObject.class, (item, trace) ->
+            {
+              partitionObjectBaseHashes_ .add(item.getBaseHash());
+            })
+            .build()
+            )
+        .build()
+        );
+    
+    System.out.println("Read " + partitionObjectBaseHashes_.size() + " objects from partition.");
+  }
+
   private void fetchAsyncUpdatedFeedItems()
   {
     VersionConsumer consumer = new VersionConsumer(null, true);
@@ -361,8 +457,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
   private void fetchItems()
   {
     allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
-        .withName(PARTITION_NAME)
-        .withOwner(allegroApi_.getUserId())
+        .withQuery(new PartitionQuery.Builder()
+            .withName(PARTITION_NAME)
+            .build()
+            )
         .withConsumerManager(new ConsumerManager.Builder()
             .withMaxItems(10)
             .withConsumer(IStoredApplicationObject.class, (item, trace) ->
@@ -381,8 +479,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     try
     {
       allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
-          .withName(PARTITION_NAME)
-          .withOwner(allegroApi_.getUserId())
+          .withQuery(new PartitionQuery.Builder()
+              .withName(PARTITION_NAME)
+              .build()
+              )
           .withConsumerManager(new ConsumerManager.Builder()
               .withMaxItems(10)
               .withConsumer(ITestItem.class, (item, trace) ->
@@ -404,7 +504,7 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     }
   }
 
-  private void getVersions()
+  private void getVersions(Integer maxItems)
   {
     System.out.format("  %-50s %-50s %-50s %-50s %s%n",
         "BaseHash",
@@ -417,17 +517,64 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     VersionConsumer consumer = new VersionConsumer(baseHash_, false);
     
     allegroApi_.fetchObjectVersions(new FetchObjectVersionsRequest.Builder()
-        .withBaseHash(baseHash_)
-        .withMaxItems(10)
+        .withQuery(new VersionQuery.Builder()
+            .withBaseHash(baseHash_)
+            .build()
+            )
         .withConsumerManager(new ConsumerManager.Builder()
+            .withMaxItems(maxItems)
             .withConsumer(IStoredApplicationObject.class, consumer)
             .build()
             )
         .build()
         );
     
-    if(consumer.count_ != TEST_UPDATE_COUNT + 1)
-      throw new IllegalStateException("Expected " + TEST_UPDATE_COUNT + " object versions but found " + consumer.count_);
+    int expectedCount = maxItems == null ? TEST_UPDATE_COUNT + 1 : maxItems;
+    
+    if(consumer.count_ != expectedCount)
+      throw new IllegalStateException("Expected " + expectedCount + " object versions but found " + consumer.count_);
+  }
+
+  private void fetchAsyncVersions(Integer maxItems)
+  {
+    System.out.format("  %-50s %-50s %-50s %-50s %s%n",
+        "BaseHash",
+        "AbsoluteHash",
+        "PartitionHash",
+        "SortKey",
+        "CreatedDate"
+        );
+    
+    VersionConsumer consumer = new VersionConsumer(baseHash_, true);
+    
+    IAllegroQueryManager queryManager = allegroApi_.fetchObjectVersions(new FetchObjectVersionsRequest.Builder()
+        .withQuery(new VersionQuery.Builder()
+            .withBaseHash(baseHash_)
+            .withMaxItems(maxItems)
+            .build()
+            )
+        .withConsumerManager(new AsyncConsumerManager.Builder()
+            .withConsumer(IStoredApplicationObject.class, consumer)
+            .build()
+            )
+        .build()
+        );
+    
+    queryManager.start();
+    
+    try
+    {
+      queryManager.waitUntilIdle();
+    }
+    catch (InterruptedException e)
+    {
+      throw new IllegalStateException("Interrupted while waiting for query.", e);
+    }
+    
+    int expectedCount = maxItems == null ? TEST_UPDATE_COUNT + 1 : maxItems;
+    
+    if(consumer.count_ != expectedCount)
+      throw new IllegalStateException("Expected " + expectedCount + " object versions but found " + consumer.count_);
   }
   
   private class VersionConsumer implements ISimpleThreadSafeConsumer<IStoredApplicationObject>
@@ -445,16 +592,6 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     @Override
     public synchronized void consume(IStoredApplicationObject item, ITraceContext trace)
     {
-      count_++;
-      
-      System.out.format("  %-50s %-50s %-50s %-50s %s%n",
-          item.getBaseHash(),
-          item.getAbsoluteHash(),
-          item.getPartitionHash(),
-          item.getSortKey(),
-          item.getCreatedDate()
-          );
-      
       if(expectedBaseHash_ != null && !item.getBaseHash().equals(expectedBaseHash_))
         throw new IllegalStateException("Expected baseHash " + expectedBaseHash_ + " but received " + item.getBaseHash());
       
@@ -468,6 +605,16 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
         if(mainThread_ != Thread.currentThread())
           throw new IllegalStateException("Expected to be called from main thread but actually called from " + Thread.currentThread());
       }
+
+      count_++;
+      
+      System.out.format("  %-50s %-50s %-50s %-50s %s%n",
+          item.getBaseHash(),
+          item.getAbsoluteHash(),
+          item.getPartitionHash(),
+          item.getSortKey(),
+          item.getCreatedDate()
+          );
     }
     
   }
@@ -477,8 +624,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     UpdateConsumer consumer = new UpdateConsumer(updateCount);
     
     allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
-        .withName(PARTITION_NAME)
-        .withOwner(allegroApi_.getUserId())
+        .withQuery(new PartitionQuery.Builder()
+            .withName(PARTITION_NAME)
+            .build()
+            )
         .withConsumerManager(new ConsumerManager.Builder()
             .withMaxItems(10)
             .withConsumer(ITestItem.class, consumer)
@@ -541,8 +690,11 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     try
     {
       allegroApi.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
-        .withName(PARTITION_NAME)
-        .withOwner(allegroApi_.getUserId())
+          .withQuery(new PartitionQuery.Builder()
+              .withName(PARTITION_NAME)
+              .withOwner(userId_)
+              .build()
+              )
         .withConsumerManager(new ConsumerManager.Builder()
             .withMaxItems(10)
             .build())

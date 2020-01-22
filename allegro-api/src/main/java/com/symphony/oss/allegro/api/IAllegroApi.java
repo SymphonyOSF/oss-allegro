@@ -22,11 +22,11 @@ import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
-import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -204,8 +204,11 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * Fetch objects from a partition.
    * 
    * @param request   The request parameters.
+   * 
+   * @return If the invocation is asynchronous then a subscriber controller, you must call the start() method on this object and the stop()
+   * method may be called for a graceful shutdown. If the invocation is synchronous then the return value is <code>null</code>.
    */
-  void fetchPartitionObjects(FetchPartitionObjectsRequest request);
+  @Nullable IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request);
 
   /**
    * 
@@ -382,7 +385,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * e.g.
    * <code>
-    IFugueLifecycleComponent subscriber = allegroApi_.fetchFeedObjects(new SubscribeFeedObjectsRequest.Builder()
+    IAllegroQueryManager subscriber = allegroApi_.fetchFeedObjects(new SubscribeFeedObjectsRequest.Builder()
         .withName("myCalendarFeed")
         .withConsumerManager(new AsyncConsumerManager.Builder()
           .withSubscriberThreadPoolSize(10)
@@ -414,10 +417,10 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @param request The details of the request
    * 
    * @return If the invocation is asynchronous then a subscriber controller, you must call the start() method on this object and the stop()
-   * method may be called for a graceful shutdown. If the invocation is synchronous then the return value is <code>null</code> 
+   * method may be called for a graceful shutdown. If the invocation is synchronous then the return value is <code>null</code>. 
    * 
    */
-  @Nullable IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request);
+  @Nullable IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request);
 //
 //  /**
 //   * Subscribe to the given feed.
@@ -428,7 +431,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //   * 
 //   * e.g.
 //   * <code>
-//    IFugueLifecycleComponent subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
+//    IAllegroQueryManager subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
 //        .withName("myCalendarFeed")
 //        .withSubscriberThreadPoolSize(10)
 //        .withHandlerThreadPoolSize(90)
@@ -461,7 +464,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
 //   * 
 //   * @return A subscriber controller, you must call the start() method on this object and the stop() method may be called for a graceful shutdown.
 //   */
-//  IFugueLifecycleComponent subscribeToFeed(SubscribeFeedObjectsRequest request);
+//  IAllegroQueryManager subscribeToFeed(SubscribeFeedObjectsRequest request);
 
   /**
    * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
@@ -480,5 +483,5 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   String getKeyManagerToken();
 
-  void fetchObjectVersions(FetchObjectVersionsRequest request);
+  @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request);
 }

@@ -34,34 +34,22 @@ public class AsyncConsumerManager extends AbstractConsumerManager
 {
   //private static final Logger log_ = LoggerFactory.getLogger(AsyncConsumerManager.class);
   
-  private IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
-  private final int                       subscriberThreadPoolSize_;
-  private final int                       handlerThreadPoolSize_;
+  private final Integer                    subscriberThreadPoolSize_;
+  private final Integer                    handlerThreadPoolSize_;
   
   protected AsyncConsumerManager(AbstractBuilder<?,?> builder)
   {
     super(builder);
     
-    threadSafeUnprocessableMessageConsumer_ = builder.threadSafeUnprocessableMessageConsumer_;
     subscriberThreadPoolSize_       = builder.subscriberThreadPoolSize_;
     handlerThreadPoolSize_          = builder.handlerThreadPoolSize_;
   }
 
   /**
    * 
-   * @return The consumer to which unprocessable messages will be directed.
-   */
-  @Override
-  public IThreadSafeErrorConsumer<Object> getUnprocessableMessageConsumer()
-  {
-    return threadSafeUnprocessableMessageConsumer_;
-  }
-
-  /**
-   * 
    * @return The size of the subscriber thread pool.
    */
-  public int getSubscriberThreadPoolSize()
+  public Integer getSubscriberThreadPoolSize()
   {
     return subscriberThreadPoolSize_;
   }
@@ -70,7 +58,7 @@ public class AsyncConsumerManager extends AbstractConsumerManager
    * 
    * @return The size of the handler thread pool.
    */
-  public int getHandlerThreadPoolSize()
+  public Integer getHandlerThreadPoolSize()
   {
     return handlerThreadPoolSize_;
   }
@@ -85,9 +73,8 @@ public class AsyncConsumerManager extends AbstractConsumerManager
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractConsumerManager> extends AbstractConsumerManager.AbstractBuilder<T,B>
   {
-    protected IThreadSafeErrorConsumer<Object> threadSafeUnprocessableMessageConsumer_;
-    protected int                              subscriberThreadPoolSize_ = 1;
-    protected int                              handlerThreadPoolSize_    = 1;
+    protected Integer                              subscriberThreadPoolSize_;
+    protected Integer                              handlerThreadPoolSize_;
 
     AbstractBuilder(Class<T> type)
     {
@@ -103,8 +90,6 @@ public class AsyncConsumerManager extends AbstractConsumerManager
      */
     protected T withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
     {
-      threadSafeUnprocessableMessageConsumer_ = unprocessableMessageConsumer;
-      
       return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
     }
 
@@ -117,7 +102,7 @@ public class AsyncConsumerManager extends AbstractConsumerManager
      */
     protected T withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
     {
-      threadSafeUnprocessableMessageConsumer_ = new IThreadSafeErrorConsumer<Object>()
+      return super.withUnprocessableMessageConsumer(new IThreadSafeErrorConsumer<Object>()
       {
 
         @Override
@@ -128,9 +113,7 @@ public class AsyncConsumerManager extends AbstractConsumerManager
 
         @Override
         public void close(){}
-      };
-      
-      return super.withUnprocessableMessageConsumer(threadSafeUnprocessableMessageConsumer_);
+      });
     }
 
     /**
@@ -144,7 +127,7 @@ public class AsyncConsumerManager extends AbstractConsumerManager
      * 
      * @return This (fluent method)
      */
-    public T withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
+    public T withSubscriberThreadPoolSize(Integer subscriberThreadPoolSize)
     {
       subscriberThreadPoolSize_ = subscriberThreadPoolSize;
       
@@ -161,7 +144,7 @@ public class AsyncConsumerManager extends AbstractConsumerManager
      * 
      * @return This (fluent method)
      */
-    public T withHandlerThreadPoolSize(int handlerThreadPoolSize)
+    public T withHandlerThreadPoolSize(Integer handlerThreadPoolSize)
     {
       handlerThreadPoolSize_ = handlerThreadPoolSize;
       
@@ -173,11 +156,11 @@ public class AsyncConsumerManager extends AbstractConsumerManager
     {
       super.validate(faultAccumulator);
       
-      if(subscriberThreadPoolSize_ < 1)
-        faultAccumulator.error("SubscriberThreadPoolSize must be at least 1.");
+      if(subscriberThreadPoolSize_!=null && subscriberThreadPoolSize_ < 1)
+        faultAccumulator.error("SubscriberThreadPoolSize must be at least 1 or not set.");
       
-      if(handlerThreadPoolSize_ < 1)
-        faultAccumulator.error("HandlerThreadPoolSize must be at least 1.");
+      if(handlerThreadPoolSize_!=null && handlerThreadPoolSize_ < 1)
+        faultAccumulator.error("HandlerThreadPoolSize must be at least 1 or not set.");
     }
   }
   

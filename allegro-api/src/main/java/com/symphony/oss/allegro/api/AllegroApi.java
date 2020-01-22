@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
@@ -71,7 +72,6 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fault.TransientTransactionFault;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
-import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
@@ -95,6 +95,9 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.query.AsyncPartitionQueryListManager;
+import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
+import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
@@ -102,8 +105,10 @@ import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
+import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
@@ -502,7 +507,7 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
-  public IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request)
+  public IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request)
   {
     if(request.getConsumerManager() instanceof ConsumerManager)
       return fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
@@ -512,7 +517,7 @@ public class AllegroApi implements IAllegroApi
       throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
   }
   
-  private IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
+  private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
   {
     IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
     {
@@ -542,7 +547,7 @@ public class AllegroApi implements IAllegroApi
     return subscriberManager;
   }
 
-  private IFugueLifecycleComponent fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
+  private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
   {
     Hash feedHash = request.getHash(getUserId());
     
@@ -1414,130 +1419,305 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
-  public void fetchPartitionObjects(FetchPartitionObjectsRequest request)
+  public IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request)
   {
     if(request.getConsumerManager() instanceof ConsumerManager)
+    {
       fetchPartitionObjects(request, (ConsumerManager)request.getConsumerManager());
+      
+      return null;
+    }
     else if(request.getConsumerManager() instanceof AsyncConsumerManager)
-      fetchPartitionObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    {
+      return fetchPartitionObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    }
     else
+    {
       throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+    }
   }
   
-  private void fetchPartitionObjects(FetchPartitionObjectsRequest request, AsyncConsumerManager consumerManager)
+  private IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request, AsyncConsumerManager consumerManager)
   {
-    throw new NotImplementedException();
+
+    AsyncPartitionQueryListManager subscriberManager = new AsyncPartitionQueryListManager.Builder()
+        .withAllegroApi(this)
+        .withHttpClient(httpClient_)
+        .withObjectApiClient(objectApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withRequest(request)
+        .withConsumerManager(consumerManager)
+      .build();
+    
+    return subscriberManager;
+    
+//    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+//    {
+//      @Override
+//      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+//      {
+//        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+//      }
+//
+//      @Override
+//      public void close()
+//      {
+//        request.getConsumerManager().getUnprocessableMessageConsumer().close();
+//      }
+//    };
+//
+//    throw new NotImplementedException();
+////    AsyncPartitionQueryListManager subscriberManager = new AsyncPartitionQueryListManager.Builder()
+////        .withHttpClient(httpClient_)
+////        .withObjectApiClient(objectApiClient_)
+////        .withTraceContextTransactionFactory(traceContextFactory_)
+////        .withRequest(request)
+////        .withConsumerManager(consumerManager)
+////      .build();
+////    
+////    return subscriberManager;
   }
 
   private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
   {
-    Hash partitionHash = request.getHash(getUserId());
-    
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchSequence", partitionHash.toString()))
+    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+        .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
     {
-      ITraceContext trace = traceTransaction.open();
-      
-       String after = request.getAfter();
-       Integer limit = consumerManager.getMaxItems();
-       
-       int remainingItems = limit == null ? 0 : limit;
-       
-       do
-       {
-         PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_.newPartitionsPartitionHashPageGetHttpRequestBuilder()
-             .withPartitionHash(partitionHash)
-             .withAfter(after)
-             .withSortKeyPrefix(request.getSortKeyPrefix())
-             .withScanForwards(request.getScanForwards())
-             ;
-         
-         if(limit != null)
-           pageRequest.withLimit(remainingItems);
-         
-         IPageOfStoredApplicationObject page = pageRequest
-             .build()
-             .execute(httpClient_);
-         
-         for(IAbstractStoredApplicationObject item : page.getData())
-         {
-           try
-           {
-             request.getConsumerManager().consume(item, trace, this);
-           }
-           catch (RetryableConsumerException | FatalConsumerException e)
-           {
-             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
-           }
-           remainingItems--;
-         }
-         
-         after = null;
-         IPagination pagination = page.getPagination();
-         
-         if(pagination != null)
-         {
-           ICursors cursors = pagination.getCursors();
-           
-           if(cursors != null)
-             after = cursors.getAfter();
-         }
-       } while(after != null && (limit==null || remainingItems>0));
+      ITraceContext parentTrace = parentTraceTransaction.open();
+
+      Integer limit           = consumerManager.getMaxItems();
+      int     remainingItems  = limit == null ? 0 : limit;
+
+      for (PartitionQuery query : request.getQueryList())
+      {
+        if (limit != null && remainingItems <= 0)
+          break;
+
+        Hash    partitionHash = query.getHash(getUserId());
+        String  after         = query.getAfter();
+
+        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchPartitionObjects",
+            partitionHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+
+          do
+          {
+            PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
+                .newPartitionsPartitionHashPageGetHttpRequestBuilder()
+                  .withPartitionHash(partitionHash)
+                  .withAfter(after)
+                  .withSortKeyPrefix(query.getSortKeyPrefix())
+                  .withScanForwards(query.getScanForwards());
+
+            if (limit != null)
+              pageRequest.withLimit(remainingItems);
+
+            IPageOfStoredApplicationObject page = pageRequest
+                .build()
+                .execute(httpClient_);
+
+            for (IAbstractStoredApplicationObject item : page.getData())
+            {
+              try
+              {
+                request.getConsumerManager().consume(item, trace, this);
+              }
+              catch (RetryableConsumerException | FatalConsumerException e)
+              {
+                request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace,
+                    "Failed to process message", e);
+              }
+              remainingItems--;
+            }
+
+            after = null;
+            IPagination pagination = page.getPagination();
+
+            if (pagination != null)
+            {
+              ICursors cursors = pagination.getCursors();
+
+              if (cursors != null)
+                after = cursors.getAfter();
+            }
+          } while (after != null && (limit == null || remainingItems > 0));
+        }
+      }
     }
   }
   
   @Override
-  public void fetchObjectVersions(FetchObjectVersionsRequest request)
+  public @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
   {
-    Hash baseHash = request.getBaseHash(getUserId());
-    
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchObjectVersions", baseHash.toString()))
+    if(request.getConsumerManager() instanceof ConsumerManager)
     {
-      ITraceContext trace = traceTransaction.open();
+      fetchObjectVersions(request, (ConsumerManager)request.getConsumerManager());
       
-       String after = request.getAfter();
-       Integer limit = request.getMaxItems();
-       
-       int remainingItems = limit == null ? 0 : limit;
-       
-       do
-       {
-         ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
-             .withObjectHash(baseHash)
-             .withAfter(after)
-             .withScanForwards(request.getScanForwards())
-             ;
-         
-         if(limit != null)
-           pageRequest.withLimit(remainingItems);
-         
-         IPageOfStoredApplicationObject page = pageRequest
-             .build()
-             .execute(httpClient_);
-         
-         for(IStoredApplicationObject item : page.getData())
-         {
-           try
-           {
-             request.getConsumerManager().consume(item, trace, this);
-           }
-           catch (RetryableConsumerException | FatalConsumerException e)
-           {
-             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
-           }
-           remainingItems--;
-         }
-         
-         after = null;
-         IPagination pagination = page.getPagination();
-         
-         if(pagination != null)
-         {
-           ICursors cursors = pagination.getCursors();
-           
-           if(cursors != null)
-             after = cursors.getAfter();
-         }
-       } while(after != null && (limit==null || remainingItems>0));
+      return null;
+    }
+    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+    {
+      return fetchObjectVersions(request, (AsyncConsumerManager)request.getConsumerManager());
+    }
+    else
+    {
+      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+    }
+  }
+  
+  private IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request, AsyncConsumerManager consumerManager)
+  {
+
+//    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+//    {
+//      @Override
+//      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+//      {
+//        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+//      }
+//
+//      @Override
+//      public void close()
+//      {
+//        request.getConsumerManager().getUnprocessableMessageConsumer().close();
+//      }
+//    };
+    
+    AsyncVersionQueryListManager subscriberManager = new AsyncVersionQueryListManager.Builder()
+        .withAllegroApi(this)
+        .withHttpClient(httpClient_)
+        .withObjectApiClient(objectApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+//        .withUnprocessableMessageConsumer(unprocessableConsumer)
+//        .withSubscription(new AllegroSubscription(request, this))
+//        .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
+//        .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
+        .withRequest(request)
+        .withConsumerManager(consumerManager)
+      .build();
+    
+    return subscriberManager;
+  }
+
+  private void fetchObjectVersions(FetchObjectVersionsRequest request, ConsumerManager consumerManager)
+  {
+//    Hash baseHash = request.getBaseHash(getUserId());
+//    
+//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchObjectVersions", baseHash.toString()))
+//    {
+//      ITraceContext trace = traceTransaction.open();
+//      
+//       String after = request.getAfter();
+//       Integer limit = request.getMaxItems();
+//       
+//       int remainingItems = limit == null ? 0 : limit;
+//       
+//       do
+//       {
+//         ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
+//             .withObjectHash(baseHash)
+//             .withAfter(after)
+//             .withScanForwards(request.getScanForwards())
+//             ;
+//         
+//         if(limit != null)
+//           pageRequest.withLimit(remainingItems);
+//         
+//         IPageOfStoredApplicationObject page = pageRequest
+//             .build()
+//             .execute(httpClient_);
+//         
+//         for(IStoredApplicationObject item : page.getData())
+//         {
+//           try
+//           {
+//             request.getConsumerManager().consume(item, trace, this);
+//           }
+//           catch (RetryableConsumerException | FatalConsumerException e)
+//           {
+//             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
+//           }
+//           remainingItems--;
+//         }
+//         
+//         after = null;
+//         IPagination pagination = page.getPagination();
+//         
+//         if(pagination != null)
+//         {
+//           ICursors cursors = pagination.getCursors();
+//           
+//           if(cursors != null)
+//             after = cursors.getAfter();
+//         }
+//       } while(after != null && (limit==null || remainingItems>0));
+//    }
+    
+    
+    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
+    {
+      ITraceContext parentTrace = parentTraceTransaction.open();
+
+      Integer limit           = consumerManager.getMaxItems();
+      int     remainingItems  = limit == null ? 0 : limit;
+
+      for (VersionQuery query : request.getQueryList())
+      {
+        if (limit != null && remainingItems <= 0)
+          break;
+
+        Hash    baseHash      = query.getBaseHash();
+        String  after         = query.getAfter();
+
+        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchObjectVersions",
+            baseHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+
+          do
+          {
+            ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
+                .withObjectHash(baseHash)
+                .withAfter(after)
+                .withScanForwards(query.getScanForwards())
+                ;
+
+            if (limit != null)
+              pageRequest.withLimit(remainingItems);
+
+            IPageOfStoredApplicationObject page = pageRequest
+                .build()
+                .execute(httpClient_);
+
+            for (IAbstractStoredApplicationObject item : page.getData())
+            {
+              try
+              {
+                request.getConsumerManager().consume(item, trace, this);
+              }
+              catch (RetryableConsumerException | FatalConsumerException e)
+              {
+                request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace,
+                    "Failed to process message", e);
+              }
+              remainingItems--;
+            }
+
+            after = null;
+            IPagination pagination = page.getPagination();
+
+            if (pagination != null)
+            {
+              ICursors cursors = pagination.getCursors();
+
+              if (cursors != null)
+                after = cursors.getAfter();
+            }
+          } while (after != null && (limit == null || remainingItems > 0));
+        }
+      }
     }
   }
   
