@@ -123,6 +123,14 @@ public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQuery
           log_.error("Failed to process query", e);
         }
         
+        try
+        {
+          queryManager.waitUntilIdle();
+        }
+        catch (InterruptedException e)
+        {
+          throw new IllegalStateException("Interrupted", e);
+        }
         synchronized(remainingQueryManagers_)
         {
           if(remainingQueryManagers_.remove(queryManager))

@@ -38,6 +38,7 @@ import com.symphony.oss.allegro.api.ResourcePermissions;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
+import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -346,8 +347,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
   {
     VersionConsumer consumer = new VersionConsumer(null, true);
     
-    IFugueLifecycleComponent subscriber = allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
-        .withName(FEED_NAME)
+    IAllegroQueryManager subscriber = allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
+        .withQuery(new FeedQuery.Builder()
+            .withName(FEED_NAME)
+            .build())
         .withConsumerManager(new AsyncConsumerManager.Builder()
             .withSubscriberThreadPoolSize(10)
             .withHandlerThreadPoolSize(90)
@@ -388,7 +391,9 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
       consumer = new VersionConsumer(null, false);
       
       allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
-          .withName(FEED_NAME)
+          .withQuery(new FeedQuery.Builder()
+              .withName(FEED_NAME)
+              .build())
           .withConsumerManager(new ConsumerManager.Builder()
               .withConsumer(IStoredApplicationObject.class, consumer)
               .build())
@@ -416,7 +421,9 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
       consumer = new VersionConsumer(null, false);
       
       allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
-          .withName(FEED_NAME)
+          .withQuery(new FeedQuery.Builder()
+              .withName(FEED_NAME)
+              .build())
           .withConsumerManager(new ConsumerManager.Builder()
               .withConsumer(IStoredApplicationObject.class, consumer)
               .build())
@@ -459,10 +466,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
         .withQuery(new PartitionQuery.Builder()
             .withName(PARTITION_NAME)
+            .withMaxItems(10)
             .build()
             )
         .withConsumerManager(new ConsumerManager.Builder()
-            .withMaxItems(10)
             .withConsumer(IStoredApplicationObject.class, (item, trace) ->
             {              
               if(baseHash_ == null)
@@ -481,10 +488,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
       allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
           .withQuery(new PartitionQuery.Builder()
               .withName(PARTITION_NAME)
+              .withMaxItems(10)
               .build()
               )
           .withConsumerManager(new ConsumerManager.Builder()
-              .withMaxItems(10)
               .withConsumer(ITestItem.class, (item, trace) ->
               {
                 System.out.println("Object:  " + item.getStoredApplicationObject().getAbsoluteHash());
@@ -519,10 +526,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     allegroApi_.fetchObjectVersions(new FetchObjectVersionsRequest.Builder()
         .withQuery(new VersionQuery.Builder()
             .withBaseHash(baseHash_)
+            .withMaxItems(maxItems)
             .build()
             )
         .withConsumerManager(new ConsumerManager.Builder()
-            .withMaxItems(maxItems)
             .withConsumer(IStoredApplicationObject.class, consumer)
             .build()
             )
@@ -626,10 +633,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
     allegroApi_.fetchPartitionObjects(new FetchPartitionObjectsRequest.Builder()
         .withQuery(new PartitionQuery.Builder()
             .withName(PARTITION_NAME)
+            .withMaxItems(10)
             .build()
             )
         .withConsumerManager(new ConsumerManager.Builder()
-            .withMaxItems(10)
             .withConsumer(ITestItem.class, consumer)
             .build()
             )
@@ -693,10 +700,10 @@ public class ApiIntegrationTest extends CommandLineHandler implements Runnable
           .withQuery(new PartitionQuery.Builder()
               .withName(PARTITION_NAME)
               .withOwner(userId_)
+              .withMaxItems(10)
               .build()
               )
         .withConsumerManager(new ConsumerManager.Builder()
-            .withMaxItems(10)
             .build())
         .build()
         );

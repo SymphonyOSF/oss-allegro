@@ -19,6 +19,8 @@
 package com.symphony.oss.allegro.api.query;
 
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
@@ -37,15 +39,16 @@ public abstract class AbstractAsyncQueryManager implements Runnable
   private final AsyncConsumerManager consumerManager_;
   private final ThreadPoolExecutor   handlerExecutor_;
 
-  private int                        remainingItems_;
-  private boolean                    runnable_ = true;
-  private boolean                    running_  = true;
+  private final AtomicInteger        remainingItems_;
+  private final AtomicBoolean        runnable_     = new AtomicBoolean(true);
+  private final AtomicBoolean        running_      = new AtomicBoolean(true);
+  private final AtomicInteger        handlerCount_ = new AtomicInteger(0);
 
   protected AbstractAsyncQueryManager(IAllegroApi allegroApi, int remainingItems, AsyncConsumerManager consumerManager,
       ThreadPoolExecutor handlerExecutor)
   {
     allegroApi_ = allegroApi;
-    remainingItems_ = remainingItems;
+    remainingItems_ = new AtomicInteger(remainingItems);
     consumerManager_ = consumerManager;
     handlerExecutor_ = handlerExecutor;
   }
@@ -55,32 +58,29 @@ public abstract class AbstractAsyncQueryManager implements Runnable
   {
     executeQuery();
       
-    synchronized(this)
-    {
-      running_ = false;
-    }
+    running_.set(false);
   }
 
   protected abstract void executeQuery();
 
-  synchronized boolean isRunning()
-  {
-    return running_;
-  }
+//  synchronized boolean isRunning()
+//  {
+//    return running_;
+//  }
 
-  protected synchronized boolean isRunnable()
+  protected boolean isRunnable()
   {
-    return runnable_;
+    return runnable_.get();
   }
   
-  protected synchronized int getRemainingItems()
+  protected int getRemainingItems()
   {
-    return remainingItems_;
+    return remainingItems_.get();
   }
   
-  protected synchronized void stop()
+  protected void stop()
   {
-    runnable_ = false;
+    runnable_.set(false);
   }
 
   protected String handle(IPageOfStoredApplicationObject page, ITraceContext trace)
@@ -89,10 +89,18 @@ public abstract class AbstractAsyncQueryManager implements Runnable
     {
       IStoredApplicationObject item = page.getData().get(i);
       
+      handlerCount_.incrementAndGet();
+      
       Runnable task = () -> {
         try
         {
           consumerManager_.consume(item, trace, allegroApi_);
+          
+          synchronized(handlerCount_)
+          {
+            handlerCount_.decrementAndGet();
+            handlerCount_.notifyAll();
+          }
         }
         catch(RuntimeException | RetryableConsumerException | FatalConsumerException e)
         {
@@ -112,10 +120,7 @@ public abstract class AbstractAsyncQueryManager implements Runnable
         task.run();
       }
 
-      synchronized(this)
-      {
-        remainingItems_--;
-      }
+      remainingItems_.decrementAndGet();
     }
 
     String after = null;
@@ -130,5 +135,14 @@ public abstract class AbstractAsyncQueryManager implements Runnable
     }
     
     return after;
+  }
+
+  protected void waitUntilIdle() throws InterruptedException
+  {
+    synchronized(handlerCount_)
+    {
+      while(handlerCount_.get() > 0)
+        handlerCount_.wait();
+    }
   }
 }

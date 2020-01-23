@@ -100,6 +100,7 @@ import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
+import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -510,11 +511,19 @@ public class AllegroApi implements IAllegroApi
   public IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request)
   {
     if(request.getConsumerManager() instanceof ConsumerManager)
-      return fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
+    {
+      fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
+      
+      return null;
+    }
     else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+    {
       return fetchFeedObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    }
     else
+    {
       throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+    }
   }
   
   private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
@@ -547,87 +556,94 @@ public class AllegroApi implements IAllegroApi
     return subscriberManager;
   }
 
-  private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
+  private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
   {
-    Hash feedHash = request.getHash(getUserId());
-    
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeed", feedHash.toString()))
+    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
     {
-      ITraceContext trace = traceTransaction.open();
-      
-      List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
-          .withFeedHash(feedHash)
-          .withCanonPayload(new FeedRequest.Builder()
-              .withMaxItems(consumerManager.getMaxItems() != null ? consumerManager.getMaxItems() : 1)
-              .build())
-          .build()
-          .execute(httpClient_);
-      
-      FeedRequest.Builder builder = new FeedRequest.Builder()
-          .withMaxItems(0)
-          .withWaitTimeSeconds(0);
-      int ackCnt = 0;
-      
-      for(IFeedObject message : messages)
-      {
-        try
-        {
-          request.getConsumerManager().consume(message.getPayload(), trace, this);
-            
-          builder.withDelete(new FeedObjectDelete.Builder()
-              .withReceiptHandle(message.getReceiptHandle())
-              .build()
-              );
-          ackCnt++;
-        }
-        catch (TransientTransactionFault e)
-        {
-          log_.warn("Transient processing failure, will retry (forever)", e);
-          builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
-          ackCnt++;
-        }
-        catch(RetryableConsumerException e)
-        {
-          log_.warn("Transient processing failure, will retry (forever)", e);
-          builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
-          ackCnt++;
-        }
-        catch (RuntimeException  e)
-        {
-          log_.warn("Unexpected processing failure, will retry (forever)", e);
-          builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
-          ackCnt++;
-        }
-        catch (FatalConsumerException e)
-        {
-          log_.error("Unprocessable message, aborted", e);
+      ITraceContext parentTrace = parentTraceTransaction.open();
 
-          trace.trace("MESSAGE_IS_UNPROCESSABLE");
-          
-          builder.withDelete(new FeedObjectDelete.Builder()
-              .withReceiptHandle(message.getReceiptHandle())
-              .build()
-              );
-          ackCnt++;
-          
-          request.getConsumerManager().getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
-        }
-      }
-      
-      if(ackCnt>0)
+      for (FeedQuery query : request.getQueryList())
       {
-        // Delete (ACK) the consumed messages
-        messages = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
-            .withFeedHash(feedHash)
-            .withCanonPayload(builder.build())
-            .build()
-            .execute(httpClient_);
+        Hash feedHash = query.getHash(getUserId());
+        
+        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchFeed", feedHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+          
+          List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+              .withFeedHash(feedHash)
+              .withCanonPayload(new FeedRequest.Builder()
+                  .withMaxItems(query.getMaxItems() != null ? query.getMaxItems() : 1)
+                  .build())
+              .build()
+              .execute(httpClient_);
+          
+          FeedRequest.Builder builder = new FeedRequest.Builder()
+              .withMaxItems(0)
+              .withWaitTimeSeconds(0);
+          int ackCnt = 0;
+          
+          for(IFeedObject message : messages)
+          {
+            try
+            {
+              request.getConsumerManager().consume(message.getPayload(), trace, this);
+                
+              builder.withDelete(new FeedObjectDelete.Builder()
+                  .withReceiptHandle(message.getReceiptHandle())
+                  .build()
+                  );
+              ackCnt++;
+            }
+            catch (TransientTransactionFault e)
+            {
+              log_.warn("Transient processing failure, will retry (forever)", e);
+              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+              ackCnt++;
+            }
+            catch(RetryableConsumerException e)
+            {
+              log_.warn("Transient processing failure, will retry (forever)", e);
+              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+              ackCnt++;
+            }
+            catch (RuntimeException  e)
+            {
+              log_.warn("Unexpected processing failure, will retry (forever)", e);
+              builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
+              ackCnt++;
+            }
+            catch (FatalConsumerException e)
+            {
+              log_.error("Unprocessable message, aborted", e);
+    
+              trace.trace("MESSAGE_IS_UNPROCESSABLE");
+              
+              builder.withDelete(new FeedObjectDelete.Builder()
+                  .withReceiptHandle(message.getReceiptHandle())
+                  .build()
+                  );
+              ackCnt++;
+              
+              request.getConsumerManager().getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
+            }
+          }
+          
+          if(ackCnt>0)
+          {
+            // Delete (ACK) the consumed messages
+            messages = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+                .withFeedHash(feedHash)
+                .withCanonPayload(builder.build())
+                .build()
+                .execute(httpClient_);
+          }
+        }
       }
     }
     
     request.getConsumerManager().closeConsumers();
-    
-    return null;
   }
 
   private IFeedObjectExtend createExtend(String receiptHandle, Long retryTime, TimeUnit timeUnit)
@@ -1485,11 +1501,11 @@ public class AllegroApi implements IAllegroApi
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
 
-      Integer limit           = consumerManager.getMaxItems();
-      int     remainingItems  = limit == null ? 0 : limit;
-
       for (PartitionQuery query : request.getQueryList())
       {
+        Integer limit           = query.getMaxItems();
+        int     remainingItems  = limit == null ? 0 : limit;
+        
         if (limit != null && remainingItems <= 0)
           break;
 
@@ -1521,7 +1537,7 @@ public class AllegroApi implements IAllegroApi
             {
               try
               {
-                request.getConsumerManager().consume(item, trace, this);
+                consumerManager.consume(item, trace, this);
               }
               catch (RetryableConsumerException | FatalConsumerException e)
               {
@@ -1660,11 +1676,11 @@ public class AllegroApi implements IAllegroApi
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
 
-      Integer limit           = consumerManager.getMaxItems();
-      int     remainingItems  = limit == null ? 0 : limit;
-
       for (VersionQuery query : request.getQueryList())
       {
+        Integer limit           = query.getMaxItems();
+        int     remainingItems  = limit == null ? 0 : limit;
+        
         if (limit != null && remainingItems <= 0)
           break;
 

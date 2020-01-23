@@ -16,7 +16,13 @@
 
 package com.symphony.oss.allegro.api.request;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
+import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Request to fetch a partition.
@@ -24,8 +30,9 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
  * @author Bruce Skingle
  *
  */
-public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
+public class FetchFeedObjectsRequest
 {
+  private final ImmutableList<FeedQuery> queryList_;
   private final AbstractConsumerManager consumerManager_;
   
   /**
@@ -33,9 +40,17 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
    */
   FetchFeedObjectsRequest(AbstractBuilder<?,?> builder)
   {
-    super(builder);
-    
+    queryList_        = ImmutableList.copyOf(builder.queryList_);
     consumerManager_  = builder.consumerManager_;
+  }
+
+  /**
+   * 
+   * @return The list of query specifications.
+   */
+  public ImmutableList<FeedQuery> getQueryList()
+  {
+    return queryList_;
   }
   
   /**
@@ -78,13 +93,28 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends BaseAbstractBuilder<T,B>
   {
+    protected List<FeedQuery>         queryList_ = new LinkedList<>();
     protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
       super(type);
+    }
+    
+    /**
+     * Set the direction of scan.
+     * 
+     * @param feedQuery A query specification to fetch objects from a feed.
+     * 
+     * @return This (fluent method)
+     */
+    public T withQuery(FeedQuery feedQuery)
+    {
+      queryList_.add(feedQuery);
+      
+      return self();
     }
     
     /**
@@ -109,6 +139,9 @@ public class FetchFeedObjectsRequest extends NamedUserIdObjectOrHashRequest
       // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
       if(consumerManager_ == null)
         consumerManager_ = new ConsumerManager.Builder().build();
+      
+      if(queryList_.isEmpty())
+        faultAccumulator.error("At least 1 query must be provided.");
     }
   }
 }
