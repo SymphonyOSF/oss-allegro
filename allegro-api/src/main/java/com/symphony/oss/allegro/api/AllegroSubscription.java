@@ -18,6 +18,9 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.naming.Name;
@@ -27,6 +30,7 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
@@ -37,7 +41,12 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
   public AllegroSubscription(FetchFeedObjectsRequest request, AllegroApi allegroApi)
   {
-    subscriptionNames_ = ImmutableSet.of(new FeedName(request.getHash(allegroApi.getUserId())));
+    Set<FeedName> names = new HashSet<>();
+    
+    for(FeedQuery query : request.getQueryList())
+      names.add(new FeedName(query.getHash(allegroApi.getUserId())));
+    
+    subscriptionNames_ = ImmutableSet.copyOf(names);
     
     consumer_ = new IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject>()
     {

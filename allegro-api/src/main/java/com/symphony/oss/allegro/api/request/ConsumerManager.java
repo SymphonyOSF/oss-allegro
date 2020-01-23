@@ -18,15 +18,11 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.fugue.pipeline.IConsumer;
 import org.symphonyoss.s2.fugue.pipeline.IErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.IRetryableConsumer;
 import org.symphonyoss.s2.fugue.pipeline.ISimpleErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.ISimpleRetryableConsumer;
-
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager.AbstractBuilder;
 
 /**
  * Single Threaded Manager of Consumers.
@@ -64,22 +60,9 @@ import com.symphony.oss.allegro.api.request.AbstractConsumerManager.AbstractBuil
  */
 public class ConsumerManager extends AbstractConsumerManager
 {
-  private final Integer         maxItems_;
-  
   ConsumerManager(AbstractBuilder<?,?> builder)
   {
     super(builder);
-
-    maxItems_         = builder.maxItems_;
-  }
-  
-  /**
-   * 
-   * @return The maximum number of objects to return.
-   */
-  public Integer getMaxItems()
-  {
-    return maxItems_;
   }
   
   /**
@@ -92,34 +75,9 @@ public class ConsumerManager extends AbstractConsumerManager
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractConsumerManager> extends AbstractConsumerManager.AbstractBuilder<T,B>
   {
-    protected Integer         maxItems_;
-    
     AbstractBuilder(Class<T> type)
     {
       super(type);
-    }
-    
-    /**
-     * Set the maximum number of objects to return.
-     * 
-     * @param maxItems The maximum number of objects to return.
-     * 
-     * @return This (fluent method)
-     */
-    public T withMaxItems(Integer maxItems)
-    {
-      maxItems_ = maxItems;
-      
-      return self();
-    }
-    
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-      
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
     }
   }
   

@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.symphonyoss.s2.canon.runtime.exception.NotImplementedException;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.fugue.config.Configuration;
 import org.symphonyoss.s2.fugue.naming.Name;
@@ -36,6 +37,7 @@ import org.symphonyoss.s2.fugue.pubsub.AbstractPullSubscriberManager;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
@@ -46,6 +48,7 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
  *
  */
 /* package */ class AllegroSubscriberManager extends AbstractPullSubscriberManager<IAbstractStoredApplicationObject, AllegroSubscriberManager>
+implements IAllegroQueryManager
 {
   private static final Logger       log_         = LoggerFactory.getLogger(AllegroSubscriberManager.class);
 
@@ -71,8 +74,8 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
   {
     private ObjectHttpModelClient objectApiClient_;
     private CloseableHttpClient   httpClient_;
-    private int                   subscriberThreadPoolSize_ = 1;
-    private int                   handlerThreadPoolSize_    = 1;
+    private int                   subscriberThreadPoolSize_ = 1; // TODO: default to number of subscriptions
+    private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
 
     /**
      * Constructor.
@@ -176,5 +179,17 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
      
      for(AllegroSubscriber subscriber : subscribers_)
        subscriber.close();
+  }
+
+  @Override
+  public boolean isIdle()
+  {
+    throw new NotImplementedException();
+  }
+
+  @Override
+  public void waitUntilIdle() throws InterruptedException
+  {
+    throw new NotImplementedException();
   }
 }

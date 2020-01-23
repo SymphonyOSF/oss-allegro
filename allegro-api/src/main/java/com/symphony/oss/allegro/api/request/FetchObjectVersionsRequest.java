@@ -16,11 +16,13 @@
 
 package com.symphony.oss.allegro.api.request;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-import org.symphonyoss.s2.common.hash.Hash;
 
-import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Request to fetch versions of a logical object by its baseHash.
@@ -30,10 +32,7 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
  */
 public class FetchObjectVersionsRequest
 {
-  private final Hash            basehash_;
-  private final boolean         scanForwards_;
-  private final Integer         maxItems_;
-  private final String          after_;
+  private final ImmutableList<VersionQuery> queryList_;
   private final AbstractConsumerManager consumerManager_;
   
   /**
@@ -41,50 +40,18 @@ public class FetchObjectVersionsRequest
    */
   FetchObjectVersionsRequest(AbstractBuilder<?,?> builder)
   {
-    basehash_ = builder.basehash_;
-    scanForwards_     = builder.scanForwards_;
-    maxItems_         = builder.maxItems_;
-    after_            = builder.after_;
+
+    queryList_        = ImmutableList.copyOf(builder.queryList_);
     consumerManager_  = builder.consumerManager_;
   }
-  
-  /**
-   * Return the basehash of the required object.
-   * 
-   * @param defaultOwner The default value for the owner element of the ID.
-   * 
-   * @return The basehash of the required object.
-   */
-  public Hash getBaseHash(PodAndUserId defaultOwner)
-  {
-    return basehash_;
-  }
 
   /**
    * 
-   * @return The order of scan.
+   * @return The list of query specifications.
    */
-  public Boolean getScanForwards()
+  public ImmutableList<VersionQuery> getQueryList()
   {
-    return scanForwards_;
-  }
-  
-  /**
-   * 
-   * @return The maximum number of objects to return.
-   */
-  public Integer getMaxItems()
-  {
-    return maxItems_;
-  }
-
-  /**
-   * 
-   * @return The paging marker to start from.
-   */
-  public String getAfter()
-  {
-    return after_;
+    return queryList_;
   }
 
   /**
@@ -129,10 +96,7 @@ public class FetchObjectVersionsRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchObjectVersionsRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected Hash            basehash_;
-    protected boolean         scanForwards_ = true;
-    protected Integer         maxItems_;
-    protected String          after_;
+    protected List<VersionQuery>      queryList_ = new LinkedList<>();
     protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
@@ -141,57 +105,15 @@ public class FetchObjectVersionsRequest
     }
     
     /**
-     * Set the basehash of the ID object.
-     * 
-     * @param basehash The basehash of the ID object. 
-     * 
-     * @return This (fluent method)
-     */
-    public T withBaseHash(Hash basehash)
-    {
-      basehash_ = basehash;
-      
-      return self();
-    }
-    
-    /**
      * Set the direction of scan.
      * 
-     * @param scanForwards If true then scan forwards, else scan in the reverse order of sort keys.
+     * @param versionQuery A query specification to fetch object versions.
      * 
      * @return This (fluent method)
      */
-    public T withScanForwards(boolean scanForwards)
+    public T withQuery(VersionQuery versionQuery)
     {
-      scanForwards_ = scanForwards;
-      
-      return self();
-    }
-    
-    /**
-     * Set the after of the partition.
-     * 
-     * @param after The paging marker to start from.
-     * 
-     * @return This (fluent method)
-     */
-    public T withAfter(String after)
-    {
-      after_ = after;
-      
-      return self();
-    }
-    
-    /**
-     * Set the maximum number of objects to return.
-     * 
-     * @param maxItems The maximum number of objects to return.
-     * 
-     * @return This (fluent method)
-     */
-    public T withMaxItems(Integer maxItems)
-    {
-      maxItems_ = maxItems;
+      queryList_.add(versionQuery);
       
       return self();
     }
@@ -215,10 +137,8 @@ public class FetchObjectVersionsRequest
     {
       super.validate(faultAccumulator);
       
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
-      
-      faultAccumulator.checkNotNull(basehash_, "BaseHash");
+      if(queryList_.isEmpty())
+        faultAccumulator.error("At least 1 query must be provided.");
     }
   }
 }

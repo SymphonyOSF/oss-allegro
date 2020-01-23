@@ -130,7 +130,7 @@ public abstract class AbstractConsumerManager
         public void close(){}
       };
 
-    private IErrorConsumer<Object> unprocessableMessageConsumer_ = new IErrorConsumer<Object>()
+    private IErrorConsumer<Object> unprocessableMessageConsumer_ = new IThreadSafeErrorConsumer<Object>()
         {
 
           @Override
@@ -381,6 +381,8 @@ public abstract class AbstractConsumerManager
 
   /**
    * Close all consumers.
+   * 
+   * TODO: rename to close and implement AutoClosable.
    */
   public void closeConsumers()
   {

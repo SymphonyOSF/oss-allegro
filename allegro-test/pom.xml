@@ -36,6 +36,10 @@
                  <value>../oss-models/core-model/src/main/resources/canon/core.json</value>
                 </property>
                 <property>
+                 <name>https://models.oss.symphony.com/crypto.json</name>
+                 <value>../oss-models/crypto-model/src/main/resources/canon/crypto.json</value>
+                </property>
+                <property>
                  <name>https://models.oss.symphony.com/object.json</name>
                  <value>../oss-models/object-model/src/main/resources/canon/object.json</value>
                 </property>
@@ -125,6 +129,17 @@
       <artifactId>calendar-model</artifactId>
       <version>${oss.models.version}</version>
     </dependency> -->
+    
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <artifactId>allegro-model</artifactId>
+      <version>${oss.models.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.symphonyoss.s2.fugue</groupId>
+      <artifactId>fugue-launch</artifactId>
+    </dependency>
     
   </dependencies>
 </project>
