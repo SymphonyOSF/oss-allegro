@@ -30,7 +30,7 @@
             <configuration>
               <srcDirs>src/main/canon</srcDirs>
               <proformaCopyDir>src/main</proformaCopyDir>
-              <uriMapping>
+              <!-- <uriMapping>
                 <property>
                  <name>https://models.oss.symphony.com/core.json</name>
                  <value>../oss-models/core-model/src/main/resources/canon/core.json</value>
@@ -43,7 +43,7 @@
                  <name>https://models.oss.symphony.com/object.json</name>
                  <value>../oss-models/object-model/src/main/resources/canon/object.json</value>
                 </property>
-              </uriMapping>
+              </uriMapping> -->
 
               <templateArtifacts>
                 <templateArtifact>
