@@ -77,7 +77,6 @@
   
   <modules>
     <module>allegro-api</module>
-    <module>allegro-test</module>
   </modules>
 
   <repositories>
