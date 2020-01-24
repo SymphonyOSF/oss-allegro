@@ -341,22 +341,28 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), storedApplicationObject.getEncryptedPayload());
     
     IEntity entity = modelRegistry_.parseOne(plainText.getReader());
+    ApplicationObjectPayload payload;
     
     if(entity instanceof ApplicationObjectPayload)
     {
-      ApplicationObjectPayload payload = (ApplicationObjectPayload)entity;
-      
-      payload.setStoredApplicationObject(storedApplicationObject);
-      
-      AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
-      
-      if(header != null)
-        header.setStoredApplicationObject(storedApplicationObject);
-      
-      return payload;
+      payload = (ApplicationObjectPayload)entity;
+
     }
+    else
+    {
+      payload = new ApplicationObjectPayload(entity.getJsonObject(), modelRegistry_);
+    }
+    
+    payload.setStoredApplicationObject(storedApplicationObject);
+    
+    AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
+    
+    if(header != null)
+      header.setStoredApplicationObject(storedApplicationObject);
+    
+    return payload;
           
-    throw new IllegalArgumentException("Decrypted payload is " + entity.getCanonType() + " not IApplicationPayload.");
+    //throw new IllegalArgumentException("Decrypted payload is " + entity.getCanonType() + " not IApplicationPayload.");
   }
 
   @Override

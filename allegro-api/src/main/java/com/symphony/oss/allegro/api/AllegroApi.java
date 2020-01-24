@@ -26,7 +26,6 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -59,7 +58,6 @@ import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
-import org.symphonyoss.s2.canon.runtime.exception.NotImplementedException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
@@ -101,6 +99,7 @@ import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FeedQuery;
+import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -142,10 +141,11 @@ import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
 import com.symphony.oss.models.internal.km.canon.KmInternalModel;
+import com.symphony.oss.models.internal.pod.canon.AckId;
+import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.internal.pod.canon.IMessageEnvelope;
 import com.symphony.oss.models.internal.pod.canon.IPodInfo;
 import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
-import com.symphony.oss.models.internal.pod.canon.ITokenHolder;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
@@ -220,7 +220,6 @@ public class AllegroApi implements IAllegroApi
 
   private PodAndUserId                          internalUserId_;
   private PodId                                 podId_;
-  private Map<String, String>                   serviceTokenMap_ = new HashMap<>();
 
   private final Supplier<IAccountInfo>          accountInfoProvider_;
   private final Supplier<X509Certificate>       podCertProvider_;
@@ -228,6 +227,11 @@ public class AllegroApi implements IAllegroApi
   private final ITraceContextTransactionFactory traceContextFactory_;
 
   private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
+
+  
+  private AllegroDatafeedClient datafeedClient_;
+
+  private ServiceTokenManager serviceTokenManager_;
   
   /**
    * Constructor.
@@ -379,24 +383,11 @@ public class AllegroApi implements IAllegroApi
     
     log_.info("userId_ = " + userId_);
     
+    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, httpClient_);
+    
+    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, httpClient_, builder.podUrl_);
+    
     log_.info("allegroApi constructor done.");
-    
-    //TODO: DELETE DEBUG CODE
-    
-//    System.err.println("datafeed2 token: " + getServiceToken("datafeed2"));
-//    
-//    List<com.symphony.oss.models.internal.pod.canon.IFeed> feeds = podInternalApiClient_.newDatafeed2ApiV1FeedsGetHttpRequestBuilder()
-//      .build()
-//      .execute(httpClient_)
-//      ;
-//    
-//    System.err.println("FEEDS:");
-//    for(com.symphony.oss.models.internal.pod.canon.IFeed feed : feeds)
-//    {
-//      System.err.println("Feed: " + feed);
-//    }
-//    System.err.println("DONE FEEDS:");
-    //TODO: end delete debug
   }
   
   /**
@@ -418,23 +409,6 @@ public class AllegroApi implements IAllegroApi
     String chatAppName = "allegro";
     String chatAppVersion = getVersion();
     return String.format("%s-%s-%s-%s", chatAppName, chatAppVersion, osName, osVersion);
-  }
-  
-  public String getServiceToken(String serviceId)
-  {
-    List<ITokenHolder> tokenContainers = podInternalApiClient_.newSettingsWebApiV1TokensGetHttpRequestBuilder()
-      .build()
-      .execute(httpClient_)
-      ;
-    
-    serviceTokenMap_.clear();
-    
-    for(ITokenHolder tokenContainer : tokenContainers)
-    {
-      serviceTokenMap_.put(tokenContainer.getService(), tokenContainer.getToken());
-    }
-    
-    return serviceTokenMap_.get(serviceId);
   }
   
   @Override
@@ -834,6 +808,29 @@ public class AllegroApi implements IAllegroApi
           request.getConsumerManager().getUnprocessableMessageConsumer().consume(lcmessage, trace, "Failed to process message", e);
         }
       }
+    }
+  }
+  
+  @Override
+  public FeedId createMessageFeed()
+  {
+    return datafeedClient_.createFeed();
+  }
+  
+  @Override
+  public List<FeedId> listMessageFeeds()
+  {
+    return datafeedClient_.listFeeds();
+  }
+  
+  @Override
+  public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
+  {
+    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeedMessagesRequest", request.getFeedId().toString()))
+    {
+      ITraceContext trace = traceTransaction.open();
+      
+      return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager(), this, trace);
     }
   }
 

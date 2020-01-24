@@ -17,6 +17,7 @@
 package com.symphony.oss.allegro.api;
 
 import java.security.cert.X509Certificate;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -27,6 +28,7 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
+import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -37,6 +39,8 @@ import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.internal.pod.canon.AckId;
+import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
@@ -57,12 +61,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   
   /** Permission value for read access */
   static final int   PERMISSION_READ       = 1<<0;
-  
-//  /** Permission value for write access */
-//  static final int   PERMISSION_WRITE      = 1<<1;
-//  
-//  /** Permission value for insert access */
-//  static final int   PERMISSION_INSERT     = 1<<2;
   
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
   static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
@@ -96,27 +94,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @throws NotFoundException      If the object does not exist.
    */
   String getMessage(String messageId);
-// 
-
-//  /**
-//   * Fetch recent messages from a thread (conversation).
-//   * 
-//   * This implementation retrieves messages from the object store.
-//   * 
-//   * @param request   A request object containing the threadId and other parameters.
-//   * 
-//   */
-//  void fetchRecentMessages(FetchRecentMessagesRequest request);
-//
-//  /**
-//   * Fetch messages from a thread (conversation) in either forwards or reverse sequence.
-//   * 
-//   * This implementation retrieves messages from the object store.
-//   * 
-//   * @param request   A request object containing the threadId and other parameters.
-//   * 
-//   */
-//  void fetchMessages(FetchMessagesRequest request);
 
   /**
    * Fetch recent messages from a thread (conversation).
@@ -153,52 +130,11 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   void store(IAbstractStoredApplicationObject object);
 
-//  /**
-//   * Store the given ID.
-//   * 
-//   * @param id A IFundamentalId to be stored.
-//   * 
-//   * @return The Fundamental Object wrapping this ID.
-//   */
-//  IFundamentalObject store(IFundamentalId id);
-//
-//  /**
-//   * Fetch a page of items from the given sequence.
-//   * 
-//   * @param sequenceId  The Hash identifier for a sequence.
-//   * @param limit       An optional limit for the maximum number of items to return.
-//   * @param after       A cursor indicating where in the sequence to start for continuation requests.
-//   *  
-//   * @return  A page of objects from the given sequence.
-//   */
-//  IPageOfFundamentalObject fetchSequencePage(IFundamentalId sequenceId, @Nullable Integer limit, String after);
-//
-//  /**
-//   * Open (deserialize and decrypt if necessary) the given object, storing wrapped keys from the key manager if necessary.
-//   * 
-//   * @param item A FundamentalObject.
-//   * @param threadId The thread ID of the message thread to which this object belongs.
-//   * 
-//   * @return The typed contents of the given object.
-//   */
-//  IEntity open(IFundamentalObject item, ThreadId threadId);
-
   /**
    * 
    * @return A new builder for a chat message.
    */
   ChatMessage.Builder newChatMessageBuilder();
-
-//  /**
-//   * Fetch objects from a sequence.
-//   * 
-//   * @param request   The request parameters.
-//   * @param consumer  A consumer to receive returned objects.
-//   * 
-//   * @deprecated Use <code>fetchSequence(request.withConsumer(type, consumer)</code> instead.
-//   */
-//  @Deprecated
-//  void fetchSequence(FetchSequenceRequest request, Consumer<IFundamentalObject> consumer);
 
   /**
    * Fetch objects from a partition.
@@ -421,50 +357,6 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    */
   @Nullable IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request);
-//
-//  /**
-//   * Subscribe to the given feed.
-//   * 
-//   * This method uses two thread pools to asynchronously fetch messages.
-//   * 
-//   * The start() method must be called on the returned subscriber to begin processing messages.
-//   * 
-//   * e.g.
-//   * <code>
-//    IAllegroQueryManager subscriber = allegroApi_.subscribeToFeed(new SubscribeFeedObjectsRequest.Builder()
-//        .withName("myCalendarFeed")
-//        .withSubscriberThreadPoolSize(10)
-//        .withHandlerThreadPoolSize(90)
-//        .withConsumerManager(new ConsumerManager.Builder()
-//          .withConsumer(IToDoItem.class, (message, traceContext) -&gt;
-//          {
-//            log_.info(message.toString());
-//          })
-//          .withUnprocessableMessageConsumer((item, trace, message, cause) -&gt;
-//          {
-//            log_.error("Failed to consume message: " + message + "\nPayload:" + item, cause);
-//          })
-//          .build()
-//        )
-//      .build()
-//    );
-//
-//    log_.info("Subscriber state: " + subscriber.getLifecycleState());
-//    subscriber.start();
-//    
-//    // some activity or a wait loop....
-//     
-//    
-//    log_.info("Stopping...");
-//    subscriber.stop();
-//    log_.info("Subscriber state: " + subscriber.getLifecycleState());
-//   * </code>
-//   * 
-//   * @param request The details of the request
-//   * 
-//   * @return A subscriber controller, you must call the start() method on this object and the stop() method may be called for a graceful shutdown.
-//   */
-//  IAllegroQueryManager subscribeToFeed(SubscribeFeedObjectsRequest request);
 
   /**
    * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
@@ -483,5 +375,37 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    */
   String getKeyManagerToken();
 
+  /**
+   * Fetch versions of the given logical object, by its baseHash.
+   * 
+   * @param request Request parameters.
+   * 
+   * @return an IAllegroQueryManager if this is an asynchronous request otherwise null.
+   */
   @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request);
+
+  /**
+   * Create a new message feed.
+   * 
+   * There is a limit to the number of feeds which any one user may create.
+   * 
+   * @return The ID of the new feed.
+   */
+  FeedId createMessageFeed();
+
+  /**
+   * List all currently active message feeds for the calling user.
+   * 
+   * @return A list of FeedIds for all currently active message feeds for the calling user.
+   */
+  List<FeedId> listMessageFeeds();
+
+  /**
+   * Fetch messages from a message feed (Datafeed 2.0 feed).
+   * 
+   * @param request Request parameters.
+   * 
+   * @return The AckId which should be passed to the next request.
+   */
+  @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
 }

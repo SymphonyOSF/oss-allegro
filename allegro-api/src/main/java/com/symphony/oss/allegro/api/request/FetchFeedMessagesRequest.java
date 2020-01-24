@@ -17,47 +17,46 @@
 package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
+import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
+
+import com.symphony.oss.models.internal.pod.canon.AckId;
+import com.symphony.oss.models.internal.pod.canon.FeedId;
 
 /**
- * Request to fetch a partition.
+ * A request object for message feed requests.
  * 
  * @author Bruce Skingle
  *
  */
-public class FetchThreadObjectsRequest extends ThreadRequest
+public class FetchFeedMessagesRequest
 {
-  private final Integer         maxItems_;
-  private final String          after_;
+  private final FeedId                  feedId_;
+  private final AckId                   ackId_;
   private final AbstractConsumerManager consumerManager_;
   
-  /**
-   * Constructor.
-   */
-  FetchThreadObjectsRequest(AbstractBuilder<?,?> builder)
+  FetchFeedMessagesRequest(AbstractBuilder<?,?> builder)
   {
-    super(builder);
-
-    maxItems_         = builder.maxItems_;
-    after_            = builder.after_;
+    feedId_ = builder.feedId_;
+    ackId_ = builder.ackId_;
     consumerManager_  = builder.consumerManager_;
   }
-  
+
   /**
    * 
-   * @return The maximum number of objects to return.
+   * @return The thread ID.
    */
-  public Integer getMaxItems()
+  public FeedId getFeedId()
   {
-    return maxItems_;
+    return feedId_;
   }
 
   /**
    * 
-   * @return The paging marker to start from.
+   * @return The thread ID.
    */
-  public String getAfter()
+  public AckId getAckId()
   {
-    return after_;
+    return ackId_;
   }
 
   /**
@@ -75,7 +74,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, FetchThreadObjectsRequest>
+  public static class Builder extends AbstractBuilder<Builder, FetchFeedMessagesRequest>
   {
     /**
      * Constructor.
@@ -86,9 +85,9 @@ public class FetchThreadObjectsRequest extends ThreadRequest
     }
 
     @Override
-    protected FetchThreadObjectsRequest construct()
+    protected FetchFeedMessagesRequest construct()
     {
-      return new FetchThreadObjectsRequest(this);
+      return new FetchFeedMessagesRequest(this);
     }
   }
 
@@ -100,11 +99,11 @@ public class FetchThreadObjectsRequest extends ThreadRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ThreadRequest> extends ThreadRequest.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedMessagesRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected Integer         maxItems_;
-    protected String          after_;
-    protected AbstractConsumerManager consumerManager_;
+    private FeedId                  feedId_;
+    private AckId                   ackId_;
+    private AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -112,29 +111,29 @@ public class FetchThreadObjectsRequest extends ThreadRequest
     }
     
     /**
-     * Set the after of the partition.
+     * Set the feedId.
      * 
-     * @param after The paging marker to start from.
+     * @param feedId The feedId.
      * 
      * @return This (fluent method)
      */
-    public T withAfter(String after)
+    public T withFeedId(FeedId feedId)
     {
-      after_ = after;
+      feedId_ = feedId;
       
       return self();
     }
     
     /**
-     * Set the maximum number of objects to return.
+     * Set the ackId.
      * 
-     * @param maxItems The maximum number of objects to return.
+     * @param ackId The ackId.
      * 
      * @return This (fluent method)
      */
-    public T withMaxItems(Integer maxItems)
+    public T withAckId(AckId ackId)
     {
-      maxItems_ = maxItems;
+      ackId_ = ackId;
       
       return self();
     }
@@ -157,11 +156,9 @@ public class FetchThreadObjectsRequest extends ThreadRequest
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-
-      faultAccumulator.checkNotNull(consumerManager_, "Consumer Manager");
       
-      if(maxItems_ != null && maxItems_ < 1)
-        faultAccumulator.error("maxItems must be at least 1, or not set.");
+      faultAccumulator.checkNotNull(feedId_, "Feed ID");
+      faultAccumulator.checkNotNull(consumerManager_, "Consumer Manager");
     }
   }
 }

@@ -7,6 +7,43 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-01-24 Release 0.1.7
+Release 0.1.7 was made including all of the changes below.
+
+
+## 2020-01-24 Initial Implementation of Datafeed 2.0 Client
+Methods have been added to access DataFeed 2.0, this is an initial implementation there is more work to be done.
+
+```java
+// List all available feeds for the calling user
+List<FeedId> feedIds = allegroApi_.listMessageFeeds();
+
+// Create a feed
+FeedId feedId = allegroApi_.createMessageFeed();
+
+// Read a feed - only single threaded (synchronous) calls are implemented at this time.
+AckId ackId = null;
+
+while(true)
+{
+  ackId = allegroApi_.fetchFeedMessages(new FetchFeedMessagesRequest.Builder()
+      .withFeedId(feedId)
+      .withAckId(ackId)
+      .withConsumerManager(new ConsumerManager.Builder()
+        .withConsumer(IReceivedChatMessage.class, (item, trace) ->
+        {
+          System.out.println(item.getPresentationML());
+        })
+        .build()
+      )
+      .build()
+      );
+}
+```
+
+At this time we cannot detect the expiry of datafeed credentials so they cannot be autor renewed and a feed will probably fail after
+10 minutes or so.
+
 ## 2020-01-20 Async Processing !!!BREAKING CHANGE!!!
 The way in which asyncronous processing of results has changed.
 
@@ -131,17 +168,6 @@ In the case of a feed query, being idle indicates that there is no more data ava
 but more data could become available at any time. 
 
 These methods are most likely to be useful in test scenarios.
-
-## 2020-01-20 Added allegro-test Module
-ApiIntegrationTest is intended to be a test suite which exercises every aspect of the API although it does
-not yet have complete coverage.
-
-It can be executed against a local in-memory server, a locally running AWS server or a deployed server.
-
-It is intended to be a clean sheet repeatable integration test but the API does not yet support some of the delete methods
-needed to make this possible.
-
-The **--REPEAT true** flag can be passed to run the test a second time.
 
 ## 2020-01-20 Added fetchObjectVersions
 This method returns all versions of a base object.
