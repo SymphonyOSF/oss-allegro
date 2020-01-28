@@ -111,13 +111,14 @@ import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
-import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
-import com.symphony.oss.models.allegro.canon.ReceivedMaestroMessage;
-import com.symphony.oss.models.allegro.canon.ReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.ReceivedMaestroMessage;
+import com.symphony.oss.models.allegro.canon.facade.ReceivedSocialMessage;
 import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
@@ -216,7 +217,6 @@ public class AllegroApi implements IAllegroApi
   private final ChatHttpModelClient             chatApiClient_;
   private final ObjectHttpModelClient           objectApiClient_;
   private final PodAndUserId                    userId_;
-  private final PemPrivateKey                   rsaPemCredential_;
 
   private PodAndUserId                          internalUserId_;
   private PodId                                 podId_;
@@ -378,8 +378,6 @@ public class AllegroApi implements IAllegroApi
     messageTramnsformer_= new V4MessageTransformer(clientType_);
     
     agentEncryptionHandler_ = new EncryptionHandler(cryptoClient_);
-    
-    rsaPemCredential_ = builder.rsaPemCredential_;
     
     log_.info("userId_ = " + userId_);
     
@@ -562,7 +560,7 @@ public class AllegroApi implements IAllegroApi
           {
             try
             {
-              request.getConsumerManager().consume(message.getPayload(), trace, this);
+              consumerManager.consume(message.getPayload(), trace, this);
                 
               builder.withDelete(new FeedObjectDelete.Builder()
                   .withReceiptHandle(message.getReceiptHandle())
@@ -600,7 +598,7 @@ public class AllegroApi implements IAllegroApi
                   );
               ackCnt++;
               
-              request.getConsumerManager().getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
+              consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
             }
           }
           
@@ -617,7 +615,7 @@ public class AllegroApi implements IAllegroApi
       }
     }
     
-    request.getConsumerManager().closeConsumers();
+    consumerManager.closeConsumers();
   }
 
   private IFeedObjectExtend createExtend(String receiptHandle, Long retryTime, TimeUnit timeUnit)
@@ -1708,11 +1706,11 @@ public class AllegroApi implements IAllegroApi
             {
               try
               {
-                request.getConsumerManager().consume(item, trace, this);
+                consumerManager.consume(item, trace, this);
               }
               catch (RetryableConsumerException | FatalConsumerException e)
               {
-                request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace,
+                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
                     "Failed to process message", e);
               }
               remainingItems--;
@@ -1828,7 +1826,7 @@ public class AllegroApi implements IAllegroApi
         .build();
   }
   
-  private IReceivedChatMessage buildMaestroMessage(IMaestroMessage message)
+  private IReceivedMaestroMessage buildMaestroMessage(IMaestroMessage message)
   {
     ReceivedMaestroMessage.Builder builder = new ReceivedMaestroMessage.Builder()
         .withMessageId(message.getMessageId())

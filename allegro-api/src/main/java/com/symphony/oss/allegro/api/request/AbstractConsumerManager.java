@@ -43,6 +43,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.symphony.oss.allegro.api.IFundamentalOpener;
+import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
@@ -160,7 +161,7 @@ public abstract class AbstractConsumerManager
       consumerMap_.put(type, consumer);
       consumerTypeList_.add(type);
 
-      if(IChatMessage.class.isAssignableFrom(type))
+      if(IAbstractReceivedChatMessage.class.isAssignableFrom(type))
         hasChatTypes_ = true;
       
       if(IApplicationObjectPayload.class.isAssignableFrom(type))

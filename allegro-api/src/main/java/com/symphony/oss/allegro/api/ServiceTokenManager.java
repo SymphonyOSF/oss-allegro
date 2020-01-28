@@ -38,29 +38,13 @@ class ServiceTokenManager
   private final CloseableHttpClient        httpClient_;
 
   private Map<String, String>              serviceTokenMap_ = new HashMap<>();
-//  private Map<String, Jwt<Claims>>              serviceJwtMap_   = new HashMap<>();
+  private Map<String, Long>                expiryMap_       = new HashMap<>();
   private JwtParser                        jwtParser_       = new DefaultJwtParser();
   
   ServiceTokenManager(PodInternalHttpModelClient podInternalApiClient, CloseableHttpClient httpClient)
   {
     podInternalApiClient_ = podInternalApiClient;
     httpClient_ = httpClient;
-    
-    List<ITokenHolder> tokenContainers = podInternalApiClient_.newSettingsWebApiV1TokensGetHttpRequestBuilder()
-        .build()
-        .execute(httpClient_)
-        ;
-      
-      serviceTokenMap_.clear();
-      
-      for(ITokenHolder tokenContainer : tokenContainers)
-      {
-        serviceTokenMap_.put(tokenContainer.getService(), tokenContainer.getToken());
-        
-//        Claims claims = decodeTokenClaims(tokenContainer.getToken());
-//        
-//        System.err.print(claims.getExpiration());
-      }
   }
   
   private Claims decodeTokenClaims(String token)
@@ -68,14 +52,39 @@ class ServiceTokenManager
     String[] splitToken = token.split("\\.");
     String unsignedToken = splitToken[0] + "." + splitToken[1] + ".";
 
-    DefaultJwtParser parser = new DefaultJwtParser();
-    Jwt<?, ?> jwt = parser.parse(unsignedToken);
+    Jwt<?, ?> jwt = jwtParser_.parse(unsignedToken);
     Claims claims = (Claims) jwt.getBody();
     return claims;
   }
 
-  String getServiceToken(String serviceId)
+  synchronized String getServiceToken(String serviceId)
   {
+    Long expiry = expiryMap_.get(serviceId);
+    
+    if(expiry == null || System.currentTimeMillis() > expiry)
+    {
+      List<ITokenHolder> tokenContainers = podInternalApiClient_.newSettingsWebApiV1TokensGetHttpRequestBuilder()
+          .build()
+          .execute(httpClient_)
+          ;
+        
+      serviceTokenMap_.clear();
+      
+      long defaultExpiry = System.currentTimeMillis() + 1000 * 60 * 4; // 5 mins, less 1 min grace
+      
+      for(ITokenHolder tokenContainer : tokenContainers)
+      {
+        serviceTokenMap_.put(tokenContainer.getService(), tokenContainer.getToken());
+        
+        Claims claims = decodeTokenClaims(tokenContainer.getToken());
+        
+        if(claims.getExpiration() != null)
+          expiryMap_.put(tokenContainer.getService(), claims.getExpiration().getTime() - 60000); // less 1 min grace
+        else
+          expiryMap_.put(tokenContainer.getService(), defaultExpiry);
+      }
+    }
+    
     return serviceTokenMap_.get(serviceId);
   }
 }

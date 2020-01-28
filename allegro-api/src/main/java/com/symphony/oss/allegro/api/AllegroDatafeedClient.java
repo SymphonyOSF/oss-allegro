@@ -58,8 +58,6 @@ public class AllegroDatafeedClient
     modelRegistry_ = modelRegistry;
     httpClient_ = httpClient;
     
-    datafeed2Token_ = serviceTokenManager_.getServiceToken("datafeed2");
-    
     IAuthenticationProvider datafeed2JwtGenerator  = new IAuthenticationProvider()
     {
       @Override
@@ -76,6 +74,8 @@ public class AllegroDatafeedClient
   
   List<FeedId> listFeeds()
   {
+    refreshTokenIfNecessary();
+    
     List<IFeed> feeds = datafeed2ApiClient_.newDatafeed2ApiV1FeedsGetHttpRequestBuilder()
       .build()
       .execute(httpClient_)
@@ -91,8 +91,15 @@ public class AllegroDatafeedClient
     return feedIds;
   }
   
+  private void refreshTokenIfNecessary()
+  {
+    datafeed2Token_ = serviceTokenManager_.getServiceToken("datafeed2");
+  }
+
   FeedId createFeed()
   { 
+    refreshTokenIfNecessary();
+    
     IFeed feed = datafeed2ApiClient_.newDatafeed2ApiV1FeedsPostHttpRequestBuilder()
         .build()
         .execute(httpClient_)
@@ -103,6 +110,8 @@ public class AllegroDatafeedClient
   
   AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, IFundamentalOpener opener, ITraceContext trace)
   {
+    refreshTokenIfNecessary();
+    
     IAckIdObject canonPayload = new AckIdObject.Builder()
         .withAckId(ackId)
         .build();

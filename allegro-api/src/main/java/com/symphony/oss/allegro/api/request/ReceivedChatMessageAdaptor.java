@@ -20,9 +20,9 @@ package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 
-import com.symphony.oss.models.allegro.canon.IReceivedMaestroMessage;
-import com.symphony.oss.models.allegro.canon.IReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedSocialMessage;
 
 /**
  * A consumer adaptor for ReceivedChatMessages.
