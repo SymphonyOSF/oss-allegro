@@ -7,6 +7,9 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-01-28 Release 0.1.9
+Release 0.1.9 was made including all of the changes below.
+
 ## 2020-01-28 Paginated Partition Queries
 A new method to make paginated queries from a partition has been added which is intended for use by a UI which wished
 to implement a paged view of the data in a partition.
