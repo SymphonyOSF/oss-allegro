@@ -1461,32 +1461,6 @@ public class AllegroApi implements IAllegroApi
       .build();
     
     return subscriberManager;
-    
-//    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-//    {
-//      @Override
-//      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
-//      {
-//        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
-//      }
-//
-//      @Override
-//      public void close()
-//      {
-//        request.getConsumerManager().getUnprocessableMessageConsumer().close();
-//      }
-//    };
-//
-//    throw new NotImplementedException();
-////    AsyncPartitionQueryListManager subscriberManager = new AsyncPartitionQueryListManager.Builder()
-////        .withHttpClient(httpClient_)
-////        .withObjectApiClient(objectApiClient_)
-////        .withTraceContextTransactionFactory(traceContextFactory_)
-////        .withRequest(request)
-////        .withConsumerManager(consumerManager)
-////      .build();
-////    
-////    return subscriberManager;
   }
 
   private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
@@ -1536,7 +1510,7 @@ public class AllegroApi implements IAllegroApi
               }
               catch (RetryableConsumerException | FatalConsumerException e)
               {
-                request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace,
+                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
                     "Failed to process message", e);
               }
               remainingItems--;
@@ -1556,6 +1530,32 @@ public class AllegroApi implements IAllegroApi
         }
       }
     }
+  }
+  
+
+  @Override
+  public PartitionObjectPage fetchPartitionObjectPage(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+    Integer       limit           = query.getMaxItems();
+    int           remainingItems  = limit == null ? 0 : limit;
+    String        after           = query.getAfter();
+
+    PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
+        .newPartitionsPartitionHashPageGetHttpRequestBuilder()
+          .withPartitionHash(partitionHash)
+          .withAfter(after)
+          .withSortKeyPrefix(query.getSortKeyPrefix())
+          .withScanForwards(query.getScanForwards());
+
+    if (limit != null)
+      pageRequest.withLimit(remainingItems);
+
+    IPageOfStoredApplicationObject page = pageRequest
+        .build()
+        .execute(httpClient_);
+    
+    return new PartitionObjectPage(this, partitionHash, query, page);
   }
   
   @Override
@@ -2071,6 +2071,14 @@ public class AllegroApi implements IAllegroApi
             .withSocialMessage(message)
             ;
             
+        if(context.getEntityJson().isObject())
+        {
+          ImmutableJsonObject obj = (ImmutableJsonObject)JacksonAdaptor.adapt(context.getEntityJson()).immutify();
+          
+          builder.withEntityJson(new EntityJson(obj, modelRegistry_));
+        }
+        else if(context.getEntityJson().isTextual())
+        {
             String      encryptedEntityJson = context.getEntityJson().asText();
             
             if(encryptedEntityJson != null)
@@ -2079,10 +2087,11 @@ public class AllegroApi implements IAllegroApi
               
               builder.withEntityJson(new EntityJson(parseOneJsonObject(jsonString), modelRegistry_));
             }
+        }
             
-            return builder
-              .build()
-              ;
+        return builder
+          .build()
+          ;
       }
       catch(IOException e)
       {

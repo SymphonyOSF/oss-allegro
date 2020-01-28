@@ -7,6 +7,33 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-01-28 Paginated Partition Queries
+A new method to make paginated queries from a partition has been added which is intended for use by a UI which wished
+to implement a paged view of the data in a partition.
+A paginated query takes a single Query (allows for some number of objects to be retrieved from a single Partition):
+
+```java
+IObjectPage page = allegroApi_.fetchPartitionObjectPage(new PartitionQuery.Builder()
+      .withName(PARTITION_NAME)
+      .withMaxItems(FETCH_PARTITION_PAGE_SIZE)
+      .build()
+      );
+```
+
+The resulting page object allows you to to retrieve the data rows in the page and to fetch the next and previous pages:
+
+```java
+for(IStoredApplicationObject item : page.getData())
+{
+  IApplicationObjectPayload payload = allegroApi_.open(item);
+  
+  System.out.println(item.getAbsoluteHash() + " " + item.getCanonType() + " " + payload.getCanonType());
+}
+
+page = page.fetchNextPage();
+```
+
+
 ## 2020-01-24 Release 0.1.7
 Release 0.1.7 was made including all of the changes below.
 

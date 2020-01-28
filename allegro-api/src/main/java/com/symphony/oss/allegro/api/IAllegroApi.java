@@ -33,6 +33,7 @@ import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -145,6 +146,17 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * method may be called for a graceful shutdown. If the invocation is synchronous then the return value is <code>null</code>.
    */
   @Nullable IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request);
+
+  /**
+   * Fetch a page of objects from the given partition.
+   * 
+   * The returned IObjectPage allows the next and previous pages to be fetched.
+   * 
+   * @param query The query parameters for the objects required.
+   * 
+   * @return  A page of objects.
+   */
+  IObjectPage fetchPartitionObjectPage(PartitionQuery query);
 
   /**
    * 
