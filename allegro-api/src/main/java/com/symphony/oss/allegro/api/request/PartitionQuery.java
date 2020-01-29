@@ -114,6 +114,7 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends PartitionQuery> extends NamedUserIdObjectOrHashRequest.AbstractBuilder<T,B>
   {
     protected boolean         scanForwards_ = true;
+    protected String          before_;
     protected String          after_;
     protected String          sortKeyPrefix_;
     protected Integer         maxItems_;
@@ -138,7 +139,7 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     }
     
     /**
-     * Set the after of the partition.
+     * Set the continuation token for a paged query.
      * 
      * @param after The paging marker to start from.
      * 
@@ -147,6 +148,22 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     public T withAfter(String after)
     {
       after_ = after;
+      
+      return self();
+    }
+    
+    /**
+     * Set the continuation token for a reverse paged query.
+     * This call implies withScanForwards(false).
+     * 
+     * @param before The paging marker to start from.
+     * 
+     * @return This (fluent method)
+     */
+    public T withBefore(String before)
+    {
+      before_ = before;
+      scanForwards_ = false;
       
       return self();
     }
@@ -183,6 +200,8 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
+      
+      faultAccumulator.checkValueCount("Before and After", 0, 1, before_, after_);
       
       if(maxItems_ != null && maxItems_ < 1)
         faultAccumulator.error("maxItems must be at least 1, or not set.");

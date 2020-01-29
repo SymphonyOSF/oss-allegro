@@ -140,6 +140,12 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
   /**
    * Fetch objects from a partition.
    * 
+   * If this method is called with a query which was created with .withScanForwards(false), then the rows will be returned
+   * in descending order of sort key (i.e. reverse sequence). If the call includes an AsyncConsumerManager then the order
+   * of processing is indeterminate, but if a (synchronous) ConsumerManager is passed then the objects will be observed
+   * in the forwards or reverse sequence depending on whether .withScanForwards(true) or .withScanForwards(false)
+   * was used respectively.
+   * 
    * @param request   The request parameters.
    * 
    * @return If the invocation is asynchronous then a subscriber controller, you must call the start() method on this object and the stop()
@@ -151,6 +157,13 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * Fetch a page of objects from the given partition.
    * 
    * The returned IObjectPage allows the next and previous pages to be fetched.
+   * 
+   * Because this method is intended to be called in a paged context, the rows provided by the 
+   * getData() method on the returned IObjectPage will always be in the forwards order (ascending order of sort key)
+   * regardless of whether the query was specified with .withScanForwards(false) or .withBefore(String).
+   * 
+   * If such a query were made via fetchPartitionObjects(FetchPartitionObjectsRequest request) then the rows would
+   * be returned in the reverse sequence.
    * 
    * @param query The query parameters for the objects required.
    * 

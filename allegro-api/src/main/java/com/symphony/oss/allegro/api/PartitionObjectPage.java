@@ -18,6 +18,7 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -28,6 +29,7 @@ import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContext;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
+import com.google.common.collect.ImmutableList;
 import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.models.core.canon.ICursors;
@@ -76,9 +78,24 @@ class PartitionObjectPage implements IObjectPage
     query_          = query;
     after_          = after;
     before_         = before;
-    data_           = page.getData(); // Actually an ImmutableList.
+    data_           = initData(query, page);
   }
   
+  private List<IStoredApplicationObject> initData(PartitionQuery query, IPageOfStoredApplicationObject page)
+  {
+    if(query.getScanForwards())
+      return page.getData(); // Actually an ImmutableList.;
+    
+    List<IStoredApplicationObject> list = new ArrayList<>(page.getData().size());
+    
+    for(int i=page.getData().size() - 1 ; i>=0 ; i--)
+    {
+      list.add(page.getData().get(i));
+    }
+    
+    return ImmutableList.copyOf(list);
+  }
+
   @Override
   public @Nullable PartitionObjectPage  fetchNextPage()
   {
