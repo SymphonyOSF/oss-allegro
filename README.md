@@ -7,6 +7,26 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-01-31 Added BigDecimal as a type to core model
+BigDecimal values can now be added to models by reference to a typedef in the Core model.
+An example of this can be seen in the Calendar example model [calendar.json](https://github.com/SymphonyOSF/oss-allegro-examples/blob/master/calendar/src/main/canon/calendar.json#L35)
+and the example program [CreateToDoItemInTwoStages.java](https://github.com/SymphonyOSF/oss-allegro-examples/blob/master/calendar/src/main/java/com/symphony/s2/allegro/examples/calendar/CreateToDoItemInTwoStages.java#L119)
+
+## 2020-01-31 Encrypted Payload Can Now be Created Separately
+It is now possible to create a stand alone **IEncryptedApplicationPayloadAndHeader** or **IEncryptedApplicationPayload**
+and to create an **IStoredApplicationObject** separately containing the already encrypted payload.
+
+The example program [CreateToDoItemInTwoStages.java](https://github.com/SymphonyOSF/oss-allegro-examples/blob/master/calendar/src/main/java/com/symphony/s2/allegro/examples/calendar/CreateToDoItemInTwoStages.java) illustrates this.
+
+## 2020-01-31 ApplicationObjectBuilders Return interfaces
+ApplicationObjectBuilder.build() and ApplicationObjectUpdater.build() now return IStoredApplicationObject instead of StoredApplicationObject.
+
+ApplicationObjectDeleter.build() now returns IDeletedApplicationObject instead of DeletedApplicationObject.
+
+## 2020-01-29 Paged Partition Queries Return Rows in Order
+Paged Partition queries now always return retrieved rows in ascending order of sort key, even when calling
+<code>IObjectPage.fetchPrevPage()</code>.
+
 ## 2020-01-28 Release 0.1.9
 Release 0.1.9 was made including all of the changes below.
 

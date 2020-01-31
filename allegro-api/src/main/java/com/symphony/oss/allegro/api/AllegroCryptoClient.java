@@ -322,7 +322,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   
 
   @Override
-  public void encrypt(EncryptablePayloadbuilder<?> builder)
+  public void encrypt(EncryptablePayloadbuilder<?,?> builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     

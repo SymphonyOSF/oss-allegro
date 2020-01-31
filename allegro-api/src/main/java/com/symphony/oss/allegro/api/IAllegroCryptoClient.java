@@ -53,7 +53,7 @@ public interface IAllegroCryptoClient
 
   List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens);
 
-  void encrypt(EncryptablePayloadbuilder<?> builder);
+  void encrypt(EncryptablePayloadbuilder<?,?> builder);
 
   IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject);
 

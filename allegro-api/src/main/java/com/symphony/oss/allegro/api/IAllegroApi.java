@@ -27,6 +27,8 @@ import org.symphonyoss.s2.common.fluent.IFluent;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
@@ -176,6 +178,26 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @return The pod ID of the pod we are connected to.
    */
   PodId getPodId();
+  
+  /**
+   * Create a new EncryptedApplicationPayloadBuilder.
+   * 
+   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadBuilder.
+   */
+  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
+  
+  /**
+   * Create a new EncryptedApplicationPayloadAndHeaderBuilder.
+   * 
+   * This can be used to build an encrypted payload and header which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadAndHeaderBuilder.
+   */
+  EncryptedApplicationPayloadAndHeaderBuilder newEncryptedApplicationPayloadAndHeaderBuilder();
   
   /**
    * Create a new ApplicationObjectBuilder.

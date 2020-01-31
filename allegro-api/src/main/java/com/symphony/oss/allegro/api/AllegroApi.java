@@ -55,6 +55,7 @@ import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
+import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
@@ -151,8 +152,12 @@ import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
 import com.symphony.oss.models.object.canon.DeletionType;
+import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
+import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
@@ -166,6 +171,7 @@ import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
 import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IDeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
@@ -928,6 +934,18 @@ public class AllegroApi implements IAllegroApi
 //  }
   
   @Override
+  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
+  {
+    return new EncryptedApplicationPayloadBuilder();
+  }
+  
+  @Override
+  public EncryptedApplicationPayloadAndHeaderBuilder newEncryptedApplicationPayloadAndHeaderBuilder()
+  {
+    return new EncryptedApplicationPayloadAndHeaderBuilder();
+  }
+
+  @Override
   public ApplicationObjectBuilder newApplicationObjectBuilder()
   {
     return new ApplicationObjectBuilder();
@@ -955,9 +973,8 @@ public class AllegroApi implements IAllegroApi
    *
    * @param <T> The concrete type for fluent methods.
    */
-  abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T>> extends EntityBuilder<T, StoredApplicationObject>
+  abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
   {
-    protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
     protected IApplicationObjectPayload payload_;
     
     EncryptablePayloadbuilder(Class<T> type)
@@ -974,11 +991,39 @@ public class AllegroApi implements IAllegroApi
       return payload_;
     }
 
+    public abstract ThreadId getThreadId();
+
+    abstract T withEncryptedPayload(EncryptedData value);
+
+    abstract T withCipherSuiteId(CipherSuiteId value);
+
+    abstract T withRotationId(RotationId value);
+  }
+  
+  /**
+   * Super class for AppplicationObject builder and updater.
+   * 
+   * @author Bruce Skingle
+   *
+   * @param <T> The concrete type for fluent methods.
+   */
+  abstract class BaseEncryptedApplicationPayloadBuilder<T extends BaseEncryptedApplicationPayloadBuilder<T,B,P>, B extends IEncryptedApplicationPayload, P extends EncryptedApplicationPayload.AbstractEncryptedApplicationPayloadBuilder<?,?>> extends EncryptablePayloadbuilder<T, B>
+  {
+    protected final P  builder_;
+    
+    BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder)
+    {
+      super(type);
+      builder_ = builder;
+    }
+
+    @Override
     public ThreadId getThreadId()
     {
       return builder_.getThreadId();
     }
 
+    @Override
     T withEncryptedPayload(
         EncryptedData value)
     {
@@ -987,6 +1032,7 @@ public class AllegroApi implements IAllegroApi
       return self();
     }
 
+    @Override
     T withCipherSuiteId(
         CipherSuiteId value)
     {
@@ -995,11 +1041,152 @@ public class AllegroApi implements IAllegroApi
       return self();
     }
 
+    @Override
     T withRotationId(RotationId value)
     {
       builder_.withRotationId(value);
       
       return self();
+    }
+
+    /**
+     * Set the object payload (which is to be encrypted).
+     * 
+     * @param payload The object payload (which is to be encrypted).
+     * 
+     * @return This (fluent method).
+     */
+    public T withPayload(IApplicationObjectPayload payload)
+    {
+      payload_ = payload;
+      
+      return self();
+    }
+    
+    @Override
+    public ImmutableJsonObject getJsonObject()
+    {
+      return builder_.getJsonObject();
+    }
+
+    @Override
+    public String getCanonType()
+    {
+      return builder_.getCanonType();
+    }
+
+    @Override
+    public Integer getCanonMajorVersion()
+    {
+      return builder_.getCanonMajorVersion();
+    }
+
+    @Override
+    public Integer getCanonMinorVersion()
+    {
+      return builder_.getCanonMinorVersion();
+    }
+
+    @Override
+    protected void populateAllFields(List<Object> result)
+    {
+      builder_.populateAllFields(result);
+    }
+    
+    @Override
+    protected void validate()
+    {
+      if(getThreadId() == null)
+        throw new IllegalStateException("ThreadId is required.");
+      
+      if(payload_ == null)
+        throw new IllegalStateException("Payload is required.");
+      
+      cryptoClient_.encrypt(this);
+      
+      super.validate();
+    }
+  }
+  
+  /**
+   * Builder for an EncryptedApplicationPayload.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class EncryptedApplicationPayloadBuilder extends BaseEncryptedApplicationPayloadBuilder<EncryptedApplicationPayloadBuilder, IEncryptedApplicationPayload, EncryptedApplicationPayload.Builder>
+  {
+    EncryptedApplicationPayloadBuilder()
+    {
+      super(EncryptedApplicationPayloadBuilder.class, new EncryptedApplicationPayload.Builder());
+    }
+
+    /**
+     * Set the id of the thread with whose content key this object will be encrypted.
+     * 
+     * @param threadId The id of the thread with whose content key this object will be encrypted.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationPayloadBuilder withThreadId(ThreadId threadId)
+    {
+      builder_.withThreadId(threadId);
+      
+      return self();
+    }
+
+    @Override
+    protected IEncryptedApplicationPayload construct()
+    {
+      return builder_.build();
+    }
+  }
+  
+  /**
+   * Builder for an EncryptedApplicationPayload plus header.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class EncryptedApplicationPayloadAndHeaderBuilder extends BaseEncryptedApplicationPayloadBuilder<EncryptedApplicationPayloadAndHeaderBuilder, IEncryptedApplicationPayloadAndHeader, EncryptedApplicationPayloadAndHeader.Builder>
+  {
+    EncryptedApplicationPayloadAndHeaderBuilder()
+    {
+      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder());
+    }
+
+    /**
+     * Set the id of the thread with whose content key this object will be encrypted.
+     * 
+     * @param threadId The id of the thread with whose content key this object will be encrypted.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationPayloadAndHeaderBuilder withThreadId(ThreadId threadId)
+    {
+      builder_.withThreadId(threadId);
+      
+      return self();
+    }
+
+    /**
+     * Set the unencrypted header for this object.
+     * 
+     * @param header The unencrypted header for this object.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationPayloadAndHeaderBuilder withHeader(IApplicationObjectHeader header)
+    {
+      builder_.withHeader(header);
+      
+      return self();
+    }
+
+    @Override
+    protected IEncryptedApplicationPayloadAndHeader construct()
+    {
+      return builder_.build();
     }
   }
   
@@ -1010,8 +1197,10 @@ public class AllegroApi implements IAllegroApi
    *
    * @param <T> The concrete type for fluent methods.
    */
-  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadbuilder<T>
+  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadbuilder<T, IStoredApplicationObject>
   {
+    protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
+    
     BaseApplicationObjectBuilder(Class<T> type)
     {
       super(type);
@@ -1030,6 +1219,38 @@ public class AllegroApi implements IAllegroApi
         .withPrevHash(existing.getAbsoluteHash())
         .withPrevSortKey(existing.getSortKey())
         ;
+    }
+
+    @Override
+    public ThreadId getThreadId()
+    {
+      return builder_.getThreadId();
+    }
+
+    @Override
+    T withEncryptedPayload(
+        EncryptedData value)
+    {
+      builder_.withEncryptedPayload(value);
+      
+      return self();
+    }
+
+    @Override
+    T withCipherSuiteId(
+        CipherSuiteId value)
+    {
+      builder_.withCipherSuiteId(value);
+      
+      return self();
+    }
+
+    @Override
+    T withRotationId(RotationId value)
+    {
+      builder_.withRotationId(value);
+      
+      return self();
     }
 
     /**
@@ -1141,12 +1362,17 @@ public class AllegroApi implements IAllegroApi
       if(getThreadId() == null)
         throw new IllegalStateException("ThreadId is required.");
       
-      if(payload_ == null)
-        throw new IllegalStateException("Payload is required.");
-      
       builder_.withOwner(getUserId());
       
-      cryptoClient_.encrypt(this);
+      if(payload_ == null)
+      {
+        if(builder_.getEncryptedPayload() == null)
+          throw new IllegalStateException("One of Payload or EncryptedPayload is required.");
+      }
+      else
+      {
+        cryptoClient_.encrypt(this);
+      }
       
       super.validate();
     }
@@ -1221,18 +1447,48 @@ public class AllegroApi implements IAllegroApi
       return self();
     }
     
-    @Override
-    protected StoredApplicationObject construct()
+    /**
+     * Set the already encrypted object payload and header.
+     * 
+     * @param payload The encrypted object payload and header.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectBuilder withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
     {
-      // Nasty cast here, can't easily be avoided and it's quite safe but nonetheless.....
-      return (StoredApplicationObject) builder_.build();
+      withHeader(payload.getHeader());
+
+      return withEncryptedPayload(payload);
+    }
+    
+    /**
+     * Set the already encrypted object payload.
+     * 
+     * @param payload The encrypted object payload.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectBuilder withEncryptedPayload(IEncryptedApplicationPayload payload)
+    {
+      withEncryptedPayload(payload.getEncryptedPayload());
+      withRotationId(payload.getRotationId());
+      withCipherSuiteId(payload.getCipherSuiteId());
+      withThreadId(payload.getThreadId());
+      
+      return self();
+    }
+    
+    @Override
+    protected IStoredApplicationObject construct()
+    {
+      return builder_.build();
     }
   }
     
   @Override
   public void delete(IApplicationObjectPayload existingObject, DeletionType deletionType)
   {
-    DeletedApplicationObject deletedObject = newApplicationObjectDeleter(existingObject)
+    IDeletedApplicationObject deletedObject = newApplicationObjectDeleter(existingObject)
       .withDeletionType(deletionType)
       .build()
       ;
@@ -1275,12 +1531,44 @@ public class AllegroApi implements IAllegroApi
       builder_.withPrevHash(existingObject.getStoredApplicationObject().getAbsoluteHash());
       builder_.withPrevSortKey(existingObject.getStoredApplicationObject().getSortKey());
     }
+    
+    /**
+     * Set the already encrypted object payload and header.
+     * 
+     * @param payload The encrypted object payload and header.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectUpdater withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
+    {
+      withHeader(payload.getHeader());
+
+      return withEncryptedPayload(payload);
+    }
+    
+    /**
+     * Set the already encrypted object payload.
+     * 
+     * @param payload The encrypted object payload.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectUpdater withEncryptedPayload(IEncryptedApplicationPayload payload)
+    {
+      if(!builder_.getThreadId().equals(payload.getThreadId()))
+        throw new IllegalArgumentException("The threadId of an object cannot be changed. The object being updated has thread ID " + builder_.getThreadId());
+      
+      withEncryptedPayload(payload.getEncryptedPayload());
+      withRotationId(payload.getRotationId());
+      withCipherSuiteId(payload.getCipherSuiteId());
+      
+      return self();
+    }
 
     @Override
-    protected StoredApplicationObject construct()
+    protected IStoredApplicationObject construct()
     {
-      // Nasty cast here, can't easily be avoided and it's quite safe but nonetheless.....
-      return (StoredApplicationObject) builder_.build();
+      return builder_.build();
     }
   }
   
@@ -1293,7 +1581,7 @@ public class AllegroApi implements IAllegroApi
    * @author Bruce Skingle
    *
    */
-  public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDeleter, DeletedApplicationObject>
+  public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDeleter, IDeletedApplicationObject>
   {
     private DeletedApplicationObject.Builder builder_;
     
@@ -1422,10 +1710,9 @@ public class AllegroApi implements IAllegroApi
     }
 
     @Override
-    protected DeletedApplicationObject construct()
+    protected IDeletedApplicationObject construct()
     {
-      // Nasty cast here, can't easily be avoided and it's quite safe but nonetheless.....
-      return (DeletedApplicationObject) builder_.build();
+      return builder_.build();
     }
   }
   
