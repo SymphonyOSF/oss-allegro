@@ -958,7 +958,7 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
-  public ApplicationObjectDeleter newApplicationObjectDeleter(IApplicationObjectPayload existingObject)
+  public ApplicationObjectDeleter newApplicationObjectDeleter(IStoredApplicationObject existingObject)
   {
     return new ApplicationObjectDeleter(existingObject);
   }
@@ -1484,9 +1484,9 @@ public class AllegroApi implements IAllegroApi
       return builder_.build();
     }
   }
-    
+  
   @Override
-  public void delete(IApplicationObjectPayload existingObject, DeletionType deletionType)
+  public void delete(IStoredApplicationObject existingObject, DeletionType deletionType)
   {
     IDeletedApplicationObject deletedObject = newApplicationObjectDeleter(existingObject)
       .withDeletionType(deletionType)
@@ -1588,13 +1588,23 @@ public class AllegroApi implements IAllegroApi
     /**
      * Constructor.
      * 
-     * @param existingObject An existing Application Object for which a new version is to be created. 
+     * @param existingObject An existing Application Object for which is to be deleted. 
      */
     public ApplicationObjectDeleter(IApplicationObjectPayload existingObject)
     {
-      super(ApplicationObjectDeleter.class, existingObject.getStoredApplicationObject());
+      this(existingObject.getStoredApplicationObject());
+    }
+    
+    /**
+     * Constructor.
+     * 
+     * @param existingObject An existing Application Object for which is to be deleted. 
+     */
+    public ApplicationObjectDeleter(IStoredApplicationObject existingObject)
+    {
+      super(ApplicationObjectDeleter.class, existingObject);
       
-      IStoredApplicationObject existing = existingObject.getStoredApplicationObject();
+      IStoredApplicationObject existing = existingObject;
       
       builder_ = new DeletedApplicationObject.Builder()
           .withPartitionHash(existing.getPartitionHash())
@@ -1606,7 +1616,7 @@ public class AllegroApi implements IAllegroApi
           .withPrevSortKey(existing.getSortKey())
           ;
     }
-    
+
     /**
      * Set the deletion type.
      * 

@@ -7,6 +7,12 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-02-04 Deletion now takes IStoredApplicationObject !!!BREAKING CHANGE!!!
+The signature of the delete method is now IAllegroApi.delete(IStoredApplicationObject item, DeletionType deletionType);
+
+Previously this method took an IApplicationObjectPayload, call the getStoredApplicationObject() method on that object
+to call the new method.
+
 ## 2020-01-31 Added BigDecimal as a type to core model
 BigDecimal values can now be added to models by reference to a typedef in the Core model.
 An example of this can be seen in the Calendar example model [calendar.json](https://github.com/SymphonyOSF/oss-allegro-examples/blob/master/calendar/src/main/canon/calendar.json#L35)

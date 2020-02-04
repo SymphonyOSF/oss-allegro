@@ -49,6 +49,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
 
 /**
@@ -222,7 +223,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * 
    * @return A new ApplicationObjectDeleter to delete the given object.
    */
-  ApplicationObjectDeleter newApplicationObjectDeleter(IApplicationObjectPayload existingObject);
+  ApplicationObjectDeleter newApplicationObjectDeleter(IStoredApplicationObject existingObject);
   
   /**
    * Fetch the meta-data for a sequence, or create it if it does not exist.
@@ -303,7 +304,7 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @param item          An existing object which is to be deleted.
    * @param deletionType  The type of deletion to be performed.
    */
-  void delete(IApplicationObjectPayload item, DeletionType deletionType);
+  void delete(IStoredApplicationObject item, DeletionType deletionType);
 
   /**
    * Upsert (insert or update as necessary) a feed with the given details. A feed is identified by a user ID and name tuple,
