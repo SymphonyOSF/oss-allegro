@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.fluent.IFluent;
+import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
@@ -456,4 +457,8 @@ public interface IAllegroApi extends IFluent<IAllegroApi>, IFundamentalOpener
    * @return The AckId which should be passed to the next request.
    */
   @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
+
+  IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash);
+
+  IStoredApplicationObject fetchCurrent(Hash absoluteHash);
 }

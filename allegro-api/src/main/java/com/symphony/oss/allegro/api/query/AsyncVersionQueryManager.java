@@ -29,7 +29,7 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.VersionQuery;
-import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 
@@ -77,7 +77,7 @@ public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
         if (query_.getMaxItems() != null)
           pageRequest.withLimit(getRemainingItems());
 
-        IPageOfStoredApplicationObject page = pageRequest
+        IPageOfAbstractStoredApplicationObject page = pageRequest
             .build()
             .execute(httpClient_);
 

@@ -59,6 +59,7 @@ import org.symphonyoss.s2.canon.runtime.IEntity;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
+import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
@@ -159,6 +160,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
@@ -1856,6 +1858,32 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
+  public IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash)
+  {
+    return fetch(absoluteHash, false);
+  }
+  
+  @Override
+  public IStoredApplicationObject fetchCurrent(Hash absoluteHash)
+  {
+    IAbstractStoredApplicationObject result = fetch(absoluteHash, true);
+    
+    if(result instanceof IStoredApplicationObject)
+      return (IStoredApplicationObject)result;
+    
+    throw new ServerErrorException("Unexpected result of type " + result.getCanonType());
+  }
+  
+  private IAbstractStoredApplicationObject fetch(Hash objectHash, boolean currentVersion)
+  {
+    return objectApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
+        .withObjectHash(objectHash)
+        .withCurrentVersion(currentVersion)
+        .build()
+        .execute(httpClient_);
+  }
+  
+  @Override
   public @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
   {
     if(request.getConsumerManager() instanceof ConsumerManager)
@@ -1876,31 +1904,11 @@ public class AllegroApi implements IAllegroApi
   
   private IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request, AsyncConsumerManager consumerManager)
   {
-
-//    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-//    {
-//      @Override
-//      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
-//      {
-//        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
-//      }
-//
-//      @Override
-//      public void close()
-//      {
-//        request.getConsumerManager().getUnprocessableMessageConsumer().close();
-//      }
-//    };
-    
     AsyncVersionQueryListManager subscriberManager = new AsyncVersionQueryListManager.Builder()
         .withAllegroApi(this)
         .withHttpClient(httpClient_)
         .withObjectApiClient(objectApiClient_)
         .withTraceContextTransactionFactory(traceContextFactory_)
-//        .withUnprocessableMessageConsumer(unprocessableConsumer)
-//        .withSubscription(new AllegroSubscription(request, this))
-//        .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
-//        .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
         .withRequest(request)
         .withConsumerManager(consumerManager)
       .build();
@@ -1910,59 +1918,6 @@ public class AllegroApi implements IAllegroApi
 
   private void fetchObjectVersions(FetchObjectVersionsRequest request, ConsumerManager consumerManager)
   {
-//    Hash baseHash = request.getBaseHash(getUserId());
-//    
-//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("fetchObjectVersions", baseHash.toString()))
-//    {
-//      ITraceContext trace = traceTransaction.open();
-//      
-//       String after = request.getAfter();
-//       Integer limit = request.getMaxItems();
-//       
-//       int remainingItems = limit == null ? 0 : limit;
-//       
-//       do
-//       {
-//         ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
-//             .withObjectHash(baseHash)
-//             .withAfter(after)
-//             .withScanForwards(request.getScanForwards())
-//             ;
-//         
-//         if(limit != null)
-//           pageRequest.withLimit(remainingItems);
-//         
-//         IPageOfStoredApplicationObject page = pageRequest
-//             .build()
-//             .execute(httpClient_);
-//         
-//         for(IStoredApplicationObject item : page.getData())
-//         {
-//           try
-//           {
-//             request.getConsumerManager().consume(item, trace, this);
-//           }
-//           catch (RetryableConsumerException | FatalConsumerException e)
-//           {
-//             request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, "Failed to process message", e);
-//           }
-//           remainingItems--;
-//         }
-//         
-//         after = null;
-//         IPagination pagination = page.getPagination();
-//         
-//         if(pagination != null)
-//         {
-//           ICursors cursors = pagination.getCursors();
-//           
-//           if(cursors != null)
-//             after = cursors.getAfter();
-//         }
-//       } while(after != null && (limit==null || remainingItems>0));
-//    }
-    
-    
     try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
         .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
     {
@@ -1995,7 +1950,7 @@ public class AllegroApi implements IAllegroApi
             if (limit != null)
               pageRequest.withLimit(remainingItems);
 
-            IPageOfStoredApplicationObject page = pageRequest
+            IPageOfAbstractStoredApplicationObject page = pageRequest
                 .build()
                 .execute(httpClient_);
 

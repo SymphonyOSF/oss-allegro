@@ -18,6 +18,7 @@
 
 package com.symphony.oss.allegro.api.query;
 
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -30,8 +31,9 @@ import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 public abstract class AbstractAsyncQueryManager implements Runnable
 {
@@ -85,9 +87,19 @@ public abstract class AbstractAsyncQueryManager implements Runnable
 
   protected String handle(IPageOfStoredApplicationObject page, ITraceContext trace)
   {
-    for(int i=0 ; i<page.getData().size() ; i++)
+    return handle(page.getData(), page.getPagination(), trace);
+  }
+
+  protected String handle(IPageOfAbstractStoredApplicationObject page, ITraceContext trace)
+  {
+    return handle(page.getData(), page.getPagination(), trace);
+  }
+
+  private String handle(List<? extends IAbstractStoredApplicationObject> data, IPagination pagination, ITraceContext trace)
+  {
+    for(int i=0 ; i<data.size() ; i++)
     {
-      IStoredApplicationObject item = page.getData().get(i);
+      IAbstractStoredApplicationObject item = data.get(i);
       
       handlerCount_.incrementAndGet();
       
@@ -109,7 +121,7 @@ public abstract class AbstractAsyncQueryManager implements Runnable
         }
       };
       
-      if(i < page.getData().size() - 1)
+      if(i < data.size() - 1)
       {
         handlerExecutor_.submit(task);
       }
@@ -124,7 +136,6 @@ public abstract class AbstractAsyncQueryManager implements Runnable
     }
 
     String after = null;
-    IPagination pagination = page.getPagination();
 
     if (pagination != null)
     {
