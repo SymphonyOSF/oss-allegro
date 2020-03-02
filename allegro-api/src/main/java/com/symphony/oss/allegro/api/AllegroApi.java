@@ -98,6 +98,7 @@ import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.allegro.api.query.AsyncPartitionQueryListManager;
 import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
+import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FeedQuery;
@@ -2059,6 +2060,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private int mediaEncryptionOff(int msgFeatures) {
     int featureMask = 1 << MEIDA_ENCRYPTION_ORDINAL;
     return msgFeatures & ~featureMask;
+  }
+  
+
+  void consume(AbstractConsumerManager consumerManager, IFeedObject message, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
+  {
+    consumerManager.consume(message.getPayload(), trace, this);
   }
 
   /**

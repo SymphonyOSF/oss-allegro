@@ -70,6 +70,7 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
+import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FeedQuery;
@@ -410,7 +411,7 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
           {
             try
             {
-              consumerManager.consume(message.getPayload(), trace, this);
+              consume(consumerManager, message.getPayload(), trace);
                 
               builder.withDelete(new FeedObjectDelete.Builder()
                   .withReceiptHandle(message.getReceiptHandle())
@@ -467,6 +468,13 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
     
     consumerManager.closeConsumers();
   }
+
+  void consume(AbstractConsumerManager consumerManager, Object payload, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
+  {
+    consumerManager.consume(payload, trace, null);
+  }
+
+
 
   private IFeedObjectExtend createExtend(String receiptHandle, Long retryTime, TimeUnit timeUnit)
   {

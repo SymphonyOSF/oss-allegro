@@ -23,6 +23,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
@@ -286,42 +288,45 @@ public abstract class AbstractConsumerManager
    * @throws FatalConsumerException       If thrown by the called consumer
    * @throws RetryableConsumerException   If thrown by the called consumer
    */
-  public void consume(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
+  public void consume(Object object, ITraceContext traceContext, @Nullable IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
   {
-    if(consumeChatTypes(object, traceContext, opener))
-      return;
-    
-    IStoredApplicationObject storedApplicationObject = null;
-    
-    if(object instanceof IStoredApplicationObject)
+    if(opener != null)
     {
-      storedApplicationObject = (IStoredApplicationObject) object;
-    }
-//    else if(object instanceof IEnvelope)
-//    {
-//      applicationPayload = ((IEnvelope)object).getPayload();
-//    }
-    
-    if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
-    {
-      if(hasChatTypes_ || hasApplicationTypes_)
+      if(consumeChatTypes(object, traceContext, opener))
+        return;
+      
+      IStoredApplicationObject storedApplicationObject = null;
+      
+      if(object instanceof IStoredApplicationObject)
       {
-        try
+        storedApplicationObject = (IStoredApplicationObject) object;
+      }
+  //    else if(object instanceof IEnvelope)
+  //    {
+  //      applicationPayload = ((IEnvelope)object).getPayload();
+  //    }
+      
+      if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
+      {
+        if(hasChatTypes_ || hasApplicationTypes_)
         {
-          IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
-          
-          if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
-            return;
-          
-          if(hasApplicationTypes_)
+          try
           {
-            if(consume(applicationObjectPayload, traceContext))
+            IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
+            
+            if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
               return;
+            
+            if(hasApplicationTypes_)
+            {
+              if(consume(applicationObjectPayload, traceContext))
+                return;
+            }
           }
-        }
-        catch(PermissionDeniedException e)
-        {
-          // can't decrypt
+          catch(PermissionDeniedException e)
+          {
+            // can't decrypt
+          }
         }
       }
     }
