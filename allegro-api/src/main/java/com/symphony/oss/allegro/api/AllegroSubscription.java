@@ -39,7 +39,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final ImmutableSet<FeedName>                                         subscriptionNames_;
 
-  public AllegroSubscription(FetchFeedObjectsRequest request, AllegroApi allegroApi)
+  public AllegroSubscription(FetchFeedObjectsRequest request, IAllegroBaseApi allegroApi)
   {
     Set<FeedName> names = new HashSet<>();
     

@@ -302,7 +302,7 @@ public abstract class AbstractConsumerManager
 //      applicationPayload = ((IEnvelope)object).getPayload();
 //    }
     
-    if(storedApplicationObject != null)
+    if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
     {
       if(hasChatTypes_ || hasApplicationTypes_)
       {
