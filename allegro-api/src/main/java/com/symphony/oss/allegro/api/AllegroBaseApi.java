@@ -18,17 +18,19 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.HostnameVerifier;
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
+import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
@@ -63,7 +66,7 @@ import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
-import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
+import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
@@ -80,16 +83,13 @@ import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
-import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
-import com.symphony.oss.models.crypto.canon.CryptoModel;
+import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
-import com.symphony.oss.models.internal.km.canon.KmInternalModel;
-import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -105,7 +105,6 @@ import com.symphony.oss.models.object.canon.facade.IFeedObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
-import com.symphony.oss.models.pod.canon.PodModel;
 
 public abstract class AllegroBaseApi implements IAllegroBaseApi
 {
@@ -166,9 +165,12 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
+  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroBaseApi>
   extends BaseAbstractBuilder<T, B>
   {
+    protected PrivateKey                    rsaCredential_;
+
+    protected PemPrivateKey                 rsaPemCredential_;
     protected CipherSuiteId                 cipherSuiteId_;
     protected ICipherSuite                  cipherSuite_;
     protected CloseableHttpClient           httpclient_;
@@ -191,6 +193,58 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
       {
         throw new IllegalArgumentException("Invalid default URL", e);
       }
+    }
+    
+    public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
+    {
+      rsaPemCredential_ = rsaPemCredential;
+      
+      return self();
+    }
+    
+    public T withRsaPemCredential(String rsaPemCredential)
+    {
+      checkCredentialNotNull(rsaPemCredential);
+      
+      rsaPemCredential_ = PemPrivateKey.newBuilder().build(rsaPemCredential);
+      
+      return self();
+    }
+    
+    private void checkCredentialNotNull(Object credential)
+    {
+      if(credential == null)
+        throw new IllegalArgumentException("Credential is required");
+    }
+
+    public T withRsaCredential(PrivateKey rsaCredential)
+    {
+      checkCredentialNotNull(rsaCredential);
+      
+      rsaCredential_ = rsaCredential;
+      
+      return self();
+    }
+    
+    public T withRsaPemCredentialFile(String rsaPemCredentialFile)
+    {
+      checkCredentialNotNull(rsaPemCredentialFile);
+      
+      File file = new File(rsaPemCredentialFile);
+      
+      if(!file.canRead())
+        throw new IllegalArgumentException("Credential file is unreadable");
+      
+      try
+      {
+        rsaPemCredential_ = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
+      }
+      catch (IOException e)
+      {
+        throw new IllegalArgumentException("Unable to read credential file.", e);
+      }
+      
+      return self();
     }
     
     public T withCipherSuite(String cipherSuiteId)
@@ -282,6 +336,11 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
       }
       
       httpclient_ = httpBuilder.build();
+      
+      if(rsaCredential_ == null && rsaPemCredential_ == null)
+        faultAccumulator.error("rsaCredential is required");
+      
+      rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
     }
     
     private void configureTrust(HttpClientBuilder httpBuilder)
@@ -620,15 +679,27 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
   @Override
   public IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return fetch(absoluteHash, false);
   }
-
+  
   @Override
   public IStoredApplicationObject fetchCurrent(Hash absoluteHash)
   {
-    // TODO Auto-generated method stub
-    return null;
+    IAbstractStoredApplicationObject result = fetch(absoluteHash, true);
+    
+    if(result instanceof IStoredApplicationObject)
+      return (IStoredApplicationObject)result;
+    
+    throw new ServerErrorException("Unexpected result of type " + result.getCanonType());
+  }
+  
+  private IAbstractStoredApplicationObject fetch(Hash objectHash, boolean currentVersion)
+  {
+    return objectApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
+        .withObjectHash(objectHash)
+        .withCurrentVersion(currentVersion)
+        .build()
+        .execute(httpClient_);
   }
 
   @Override

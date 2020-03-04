@@ -33,6 +33,22 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     userId_ = builder.userId_;
   }
   
+  public static class Builder extends AbstractBuilder<Builder, IAllegroMultiTenantApi>
+  {
+
+    public Builder()
+    {
+      super(Builder.class);
+    }
+
+    @Override
+    protected IAllegroMultiTenantApi construct()
+    {
+      return new AllegroMultiTenantApi(this);
+    }
+    
+  }
+  
   /**
    * The builder implementation.
    * 
@@ -46,7 +62,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
+  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
   extends AllegroBaseApi.AbstractBuilder<T, B>
   {
     protected PodAndUserId                    userId_;
@@ -55,13 +71,27 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super(type);
     }
+    
+    public T withUserId(PodAndUserId userId)
+    {
+      userId_ = userId;
+      
+      return self();
+    }
+    
+    public T withUserId(long userId)
+    {
+      userId_ = PodAndUserId.newBuilder().build(userId);
+      
+      return self();
+    }
 
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
       
-      faultAccumulator.checkNotNull(userId_, "USer ID");
+      faultAccumulator.checkNotNull(userId_, "User ID");
     }
   }
 

@@ -1549,31 +1549,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return new PartitionObjectPage(this, partitionHash, query, page);
   }
   
-  @Override
-  public IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash)
-  {
-    return fetch(absoluteHash, false);
-  }
   
-  @Override
-  public IStoredApplicationObject fetchCurrent(Hash absoluteHash)
-  {
-    IAbstractStoredApplicationObject result = fetch(absoluteHash, true);
-    
-    if(result instanceof IStoredApplicationObject)
-      return (IStoredApplicationObject)result;
-    
-    throw new ServerErrorException("Unexpected result of type " + result.getCanonType());
-  }
-  
-  private IAbstractStoredApplicationObject fetch(Hash objectHash, boolean currentVersion)
-  {
-    return objectApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-        .withObjectHash(objectHash)
-        .withCurrentVersion(currentVersion)
-        .build()
-        .execute(httpClient_);
-  }
   
   @Override
   public @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
@@ -2084,9 +2060,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
   extends AllegroBaseApi.AbstractBuilder<T, B>
   {
-    private PrivateKey                      rsaCredential_;
-
-    protected PemPrivateKey                 rsaPemCredential_;
     protected URL                           podUrl_;
     protected String                        userName_;
 
@@ -2122,68 +2095,14 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       
       return self();
     }
-    
-    public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
-    {
-      rsaPemCredential_ = rsaPemCredential;
-      
-      return self();
-    }
-    
-    public T withRsaPemCredential(String rsaPemCredential)
-    {
-      checkCredentialNotNull(rsaPemCredential);
-      
-      rsaPemCredential_ = PemPrivateKey.newBuilder().build(rsaPemCredential);
-      
-      return self();
-    }
-    
-    private void checkCredentialNotNull(Object credential)
-    {
-      if(credential == null)
-        throw new IllegalArgumentException("Credential is required");
-    }
-
-    public T withRsaCredential(PrivateKey rsaCredential)
-    {
-      checkCredentialNotNull(rsaCredential);
-      
-      rsaCredential_ = rsaCredential;
-      
-      return self();
-    }
-    
-    public T withRsaPemCredentialFile(String rsaPemCredentialFile)
-    {
-      checkCredentialNotNull(rsaPemCredentialFile);
-      
-      File file = new File(rsaPemCredentialFile);
-      
-      if(!file.canRead())
-        throw new IllegalArgumentException("Credential file is unreadable");
-      
-      try
-      {
-        rsaPemCredential_ = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
-      }
-      catch (IOException e)
-      {
-        throw new IllegalArgumentException("Unable to read credential file.", e);
-      }
-      
-      return self();
-    }
 
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-      
-      if(rsaCredential_ == null && rsaPemCredential_ == null)
-        faultAccumulator.error("rsaCredential is required");
-      
-      rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+
+      faultAccumulator.checkNotNull(podUrl_, "Pod URL");
+      faultAccumulator.checkNotNull(userName_, "User Name");
     }
   }
   
