@@ -23,14 +23,18 @@ import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
+import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
-import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.pod.canon.IUserV2;
 
 /**
@@ -39,7 +43,7 @@ import com.symphony.oss.models.pod.canon.IUserV2;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroMultiTenantApi, IFundamentalOpener
+public interface IAllegroApi extends IAllegroMultiTenantApi
 {
 //  /** Permission value for no access */
 //  static final int   PERMISSION_NONE       = 0;
@@ -148,4 +152,41 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IFundamentalOpener
    * @return The AckId which should be passed to the next request.
    */
   @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
+  
+  /**
+   * Create a new EncryptedApplicationPayloadBuilder.
+   * 
+   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadBuilder.
+   */
+  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
+  
+  /**
+   * Create a new EncryptedApplicationPayloadAndHeaderBuilder.
+   * 
+   * This can be used to build an encrypted payload and header which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadAndHeaderBuilder.
+   */
+  EncryptedApplicationPayloadAndHeaderBuilder newEncryptedApplicationPayloadAndHeaderBuilder();
+  
+  /**
+   * Create a new ApplicationObjectBuilder.
+   * 
+   * @return A new ApplicationObjectBuilder.
+   */
+  ApplicationObjectBuilder newApplicationObjectBuilder();
+  
+  /**
+   * Create a new ApplicationObjectBuilder to create a new version of the given object.
+   * 
+   * @param existingObject An existing application object for which a new version is to be created.
+   * 
+   * @return A new ApplicationObjectBuilder to create a new version of the given object.
+   */
+  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
+  
 }

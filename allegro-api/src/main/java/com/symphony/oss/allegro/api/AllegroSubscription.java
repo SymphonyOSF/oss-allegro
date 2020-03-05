@@ -54,8 +54,8 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
       public void consume(IAbstractStoredApplicationObject item, ITraceContext trace)
           throws RetryableConsumerException, FatalConsumerException
       {
-        allegroApi.consume(request.getConsumerManager(), item, trace);
-//        request.getConsumerManager().consume(item, trace, allegroApi);
+//        allegroApi.consume(request.getConsumerManager(), item, trace);
+        request.getConsumerManager().consume(item, trace, allegroApi);
       }
 
       @Override

@@ -35,6 +35,7 @@ import org.symphonyoss.s2.fugue.FugueLifecycleState;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.api.AllegroBaseApi;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
@@ -209,7 +210,7 @@ public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQuery
     Q extends AbstractAsyncQueryManager, 
     B extends AbstractAsyncQueryListManager<B,Q>> extends BaseAbstractBuilder<T,B>
   {
-    protected IAllegroApi                     allegroApi_;
+    protected AllegroBaseApi                  allegroApi_;
     protected ITraceContextTransactionFactory traceFactory_;
     protected ObjectHttpModelClient           objectApiClient_;
     protected CloseableHttpClient             httpClient_;
@@ -227,7 +228,7 @@ public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQuery
      * 
      * @return This (fluent method).
      */
-    public T withAllegroApi(IAllegroApi allegroApi)
+    public T withAllegroApi(AllegroBaseApi allegroApi)
     {
       allegroApi_ = allegroApi;
       

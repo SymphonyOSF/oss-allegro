@@ -19,14 +19,10 @@ package com.symphony.oss.allegro.api;
 import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
-import org.symphonyoss.s2.common.fluent.IFluent;
 import org.symphonyoss.s2.common.hash.Hash;
 
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
-import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
+import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
+import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
@@ -38,7 +34,6 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
@@ -105,40 +100,11 @@ public interface IAllegroBaseApi
   IObjectPage fetchPartitionObjectPage(PartitionQuery query);
   
   /**
-   * Create a new EncryptedApplicationPayloadBuilder.
+   * Create a new EncryptedApplicationObjectBuilder.
    * 
-   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
-   * or elsewhere
-   * 
-   * @return A new EncryptedApplicationPayloadBuilder.
+   * @return A new EncryptedApplicationObjectBuilder.
    */
-  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
-  
-  /**
-   * Create a new EncryptedApplicationPayloadAndHeaderBuilder.
-   * 
-   * This can be used to build an encrypted payload and header which can be sent to a server end point to be stored in the object store 
-   * or elsewhere
-   * 
-   * @return A new EncryptedApplicationPayloadAndHeaderBuilder.
-   */
-  EncryptedApplicationPayloadAndHeaderBuilder newEncryptedApplicationPayloadAndHeaderBuilder();
-  
-  /**
-   * Create a new ApplicationObjectBuilder.
-   * 
-   * @return A new ApplicationObjectBuilder.
-   */
-  ApplicationObjectBuilder newApplicationObjectBuilder();
-  
-  /**
-   * Create a new ApplicationObjectBuilder to create a new version of the given object.
-   * 
-   * @param existingObject An existing application object for which a new version is to be created.
-   * 
-   * @return A new ApplicationObjectBuilder to create a new version of the given object.
-   */
-  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
+  EncryptedApplicationObjectBuilder newEncryptedApplicationObjectBuilder();
   
   /**
    * Create a new ApplicationObjectDeleter to delete the given object.
@@ -178,7 +144,7 @@ public interface IAllegroBaseApi
    * 
    * @throws NotFoundException      If the object does not exist.
    */
-  IStoredApplicationObject fetchCurrent(Hash absoluteHash);
+  IStoredApplicationObject fetchCurrent(Hash baseHash);
 
   /**
    * Delete the given object.

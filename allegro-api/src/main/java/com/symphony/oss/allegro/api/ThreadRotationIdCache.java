@@ -24,6 +24,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.symphony.oss.models.chat.canon.ICryptoRotationInfo;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.internal.pod.canon.ICryptoRotationInfoResponse;
@@ -74,9 +75,14 @@ class ThreadRotationIdCache
         .build()
         .execute(httpclient_);
     
-    return rotationInfo
+    ICryptoRotationInfo info = rotationInfo
         .getData().get(0)
-        .getCryptoRotationInfo()
+        .getCryptoRotationInfo();
+    
+    if(info == null)
+      return null; //TODO: fix this
+    
+    return info
         .getAcceptedRotationId();
   }
 }

@@ -23,8 +23,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
@@ -44,9 +42,8 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.symphony.oss.allegro.api.IFundamentalOpener;
+import com.symphony.oss.allegro.api.AllegroDecryptor;
 import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
@@ -288,32 +285,32 @@ public abstract class AbstractConsumerManager
    * @throws FatalConsumerException       If thrown by the called consumer
    * @throws RetryableConsumerException   If thrown by the called consumer
    */
-  public void consume(Object object, ITraceContext traceContext, @Nullable IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
+  public void consume(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
-    if(opener != null)
+    if(consumeChatTypes(object, traceContext, opener))
+      return;
+    
+    IStoredApplicationObject storedApplicationObject = null;
+    
+    if(object instanceof IStoredApplicationObject)
     {
-      if(consumeChatTypes(object, traceContext, opener))
-        return;
-      
-      IStoredApplicationObject storedApplicationObject = null;
-      
-      if(object instanceof IStoredApplicationObject)
+      storedApplicationObject = (IStoredApplicationObject) object;
+    }
+//    else if(object instanceof IEnvelope)
+//    {
+//      applicationPayload = ((IEnvelope)object).getPayload();
+//    }
+    
+    if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
+    {
+      if(hasChatTypes_ || hasApplicationTypes_)
       {
-        storedApplicationObject = (IStoredApplicationObject) object;
-      }
-  //    else if(object instanceof IEnvelope)
-  //    {
-  //      applicationPayload = ((IEnvelope)object).getPayload();
-  //    }
-      
-      if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
-      {
-        if(hasChatTypes_ || hasApplicationTypes_)
+        try
         {
-          try
+          IApplicationObjectPayload applicationObjectPayload = opener.decryptObject(storedApplicationObject);
+          
+          if(applicationObjectPayload != null)
           {
-            IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
-            
             if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
               return;
             
@@ -323,10 +320,10 @@ public abstract class AbstractConsumerManager
                 return;
             }
           }
-          catch(PermissionDeniedException e)
-          {
-            // can't decrypt
-          }
+        }
+        catch(PermissionDeniedException e)
+        {
+          // can't decrypt
         }
       }
     }
@@ -335,20 +332,23 @@ public abstract class AbstractConsumerManager
       defaultConsumer_.consume(object, traceContext);
   }
   
-  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
+  private boolean consumeChatTypes(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {
       IReceivedChatMessage chatMessage = opener.decryptChatMessage((ILiveCurrentMessage) object);
-          
-      try
+
+      if(chatMessage != null)
       {
-        consume(chatMessage, traceContext);
-        return true;
-      }
-      catch(IllegalArgumentException e)
-      {
-        // Ignore
+        try
+        {
+          consume(chatMessage, traceContext);
+          return true;
+        }
+        catch(IllegalArgumentException e)
+        {
+          // Ignore
+        }
       }
     }
     

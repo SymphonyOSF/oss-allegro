@@ -26,6 +26,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 
@@ -48,12 +50,14 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
 import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
+import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fault.TransientTransactionFault;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
@@ -67,11 +71,8 @@ import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.io.Files;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectDeleter;
-import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
-import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
+import com.symphony.oss.allegro.api.query.AsyncPartitionQueryListManager;
+import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
 import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
@@ -80,12 +81,18 @@ import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
+import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
+import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
+import com.symphony.oss.models.core.canon.HashType;
+import com.symphony.oss.models.core.canon.ICursors;
+import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
@@ -93,20 +100,37 @@ import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
+import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
 import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IDeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.facade.SortKey;
+import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 
-public abstract class AllegroBaseApi implements IAllegroBaseApi
+/**
+ * Super class of AllegroMultiTenantApi and AllegroApi.
+ * 
+ * @author Bruce Skingle
+ *
+ */
+public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroBaseApi
 {
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
   private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);
@@ -337,10 +361,13 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
       
       httpclient_ = httpBuilder.build();
       
-      if(rsaCredential_ == null && rsaPemCredential_ == null)
-        faultAccumulator.error("rsaCredential is required");
-      
-      rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+      if(rsaCredential_ == null)
+      {
+        if(rsaPemCredential_ == null)
+          faultAccumulator.error("rsaCredential is required");
+        
+        rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+      }
     }
     
     private void configureTrust(HttpClientBuilder httpBuilder)
@@ -630,51 +657,547 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
   @Override
   public IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request)
   {
-    // TODO Auto-generated method stub
-    return null;
+    if(request.getConsumerManager() instanceof ConsumerManager)
+    {
+      fetchPartitionObjects(request, (ConsumerManager)request.getConsumerManager());
+      
+      return null;
+    }
+    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+    {
+      return fetchPartitionObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+    }
+    else
+    {
+      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+    }
+  }
+  
+  private IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request, AsyncConsumerManager consumerManager)
+  {
+
+    AsyncPartitionQueryListManager subscriberManager = new AsyncPartitionQueryListManager.Builder()
+        .withAllegroApi(this)
+        .withHttpClient(httpClient_)
+        .withObjectApiClient(objectApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withRequest(request)
+        .withConsumerManager(consumerManager)
+      .build();
+    
+    return subscriberManager;
+  }
+
+  private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
+  {
+    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+        .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
+    {
+      ITraceContext parentTrace = parentTraceTransaction.open();
+
+      for (PartitionQuery query : request.getQueryList())
+      {
+        Integer limit           = query.getMaxItems();
+        int     remainingItems  = limit == null ? 0 : limit;
+        
+        if (limit != null && remainingItems <= 0)
+          break;
+
+        Hash    partitionHash = query.getHash(getUserId());
+        String  after         = query.getAfter();
+
+        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchPartitionObjects",
+            partitionHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+
+          do
+          {
+            PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
+                .newPartitionsPartitionHashPageGetHttpRequestBuilder()
+                  .withPartitionHash(partitionHash)
+                  .withAfter(after)
+                  .withSortKeyPrefix(query.getSortKeyPrefix())
+                  .withScanForwards(query.getScanForwards());
+
+            if (limit != null)
+              pageRequest.withLimit(remainingItems);
+
+            IPageOfStoredApplicationObject page = pageRequest
+                .build()
+                .execute(httpClient_);
+
+            for (IAbstractStoredApplicationObject item : page.getData())
+            {
+              try
+              {
+                consumerManager.consume(item, trace, this);
+              }
+              catch (RetryableConsumerException | FatalConsumerException e)
+              {
+                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
+                    "Failed to process message", e);
+              }
+              remainingItems--;
+            }
+
+            after = null;
+            IPagination pagination = page.getPagination();
+
+            if (pagination != null)
+            {
+              ICursors cursors = pagination.getCursors();
+
+              if (cursors != null)
+                after = cursors.getAfter();
+            }
+          } while (after != null && (limit == null || remainingItems > 0));
+        }
+      }
+    }
+  }
+  
+
+  @Override
+  public PartitionObjectPage fetchPartitionObjectPage(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+    Integer       limit           = query.getMaxItems();
+    int           remainingItems  = limit == null ? 0 : limit;
+    String        after           = query.getAfter();
+
+    PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
+        .newPartitionsPartitionHashPageGetHttpRequestBuilder()
+          .withPartitionHash(partitionHash)
+          .withAfter(after)
+          .withSortKeyPrefix(query.getSortKeyPrefix())
+          .withScanForwards(query.getScanForwards());
+
+    if (limit != null)
+      pageRequest.withLimit(remainingItems);
+
+    IPageOfStoredApplicationObject page = pageRequest
+        .build()
+        .execute(httpClient_);
+    
+    return new PartitionObjectPage(this, partitionHash, query, page);
   }
 
   @Override
-  public IObjectPage fetchPartitionObjectPage(PartitionQuery query)
+  public EncryptedApplicationObjectBuilder newEncryptedApplicationObjectBuilder()
   {
-    // TODO Auto-generated method stub
-    return null;
+    return new EncryptedApplicationObjectBuilder();
   }
-
-  @Override
-  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
+  
+  /**
+   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
+   * version is to be created.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDeleter, IDeletedApplicationObject>
   {
-    // TODO Auto-generated method stub
-    return null;
-  }
+    private DeletedApplicationObject.Builder builder_;
+    
+    /**
+     * Constructor.
+     * 
+     * @param existingObject An existing Application Object for which is to be deleted. 
+     */
+    public ApplicationObjectDeleter(IApplicationObjectPayload existingObject)
+    {
+      this(existingObject.getStoredApplicationObject());
+    }
+    
+    /**
+     * Constructor.
+     * 
+     * @param existingObject An existing Application Object for which is to be deleted. 
+     */
+    public ApplicationObjectDeleter(IStoredApplicationObject existingObject)
+    {
+      super(ApplicationObjectDeleter.class, existingObject);
+      
+      IStoredApplicationObject existing = existingObject;
+      
+      builder_ = new DeletedApplicationObject.Builder()
+          .withPartitionHash(existing.getPartitionHash())
+          .withSortKey(existing.getSortKey())
+          .withOwner(getUserId())
+          .withPurgeDate(existing.getPurgeDate())
+          .withBaseHash(existing.getBaseHash())
+          .withPrevHash(existing.getAbsoluteHash())
+          .withPrevSortKey(existing.getSortKey())
+          ;
+    }
 
-  @Override
-  public EncryptedApplicationPayloadAndHeaderBuilder newEncryptedApplicationPayloadAndHeaderBuilder()
-  {
-    // TODO Auto-generated method stub
-    return null;
-  }
+    /**
+     * Set the deletion type.
+     * 
+     * @param value The deletion type.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectDeleter withDeletionType(DeletionType value)
+    {
+      builder_.withDeletionType(value);
+      
+      return self();
+    }
+    
+    /**
+     * Set the purge date for this object.
+     * 
+     * This is meaningless in the case of a physical delete but makes sense for a Logical Delete.
+     * 
+     * @param purgeDate The date after which this object may be deleted by the system.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectDeleter withPurgeDate(Instant purgeDate)
+    {
+      builder_.withPurgeDate(purgeDate);
+      
+      return self();
+    }
 
-  @Override
-  public ApplicationObjectBuilder newApplicationObjectBuilder()
-  {
-    // TODO Auto-generated method stub
-    return null;
-  }
+    @Override
+    public ImmutableJsonObject getJsonObject()
+    {
+      return builder_.getJsonObject();
+    }
 
-  @Override
-  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject)
-  {
-    // TODO Auto-generated method stub
-    return null;
-  }
+    @Override
+    public String getCanonType()
+    {
+      return builder_.getCanonType();
+    }
 
+    @Override
+    public Integer getCanonMajorVersion()
+    {
+      return builder_.getCanonMajorVersion();
+    }
+
+    @Override
+    public Integer getCanonMinorVersion()
+    {
+      return builder_.getCanonMinorVersion();
+    }
+
+    @Override
+    protected void populateAllFields(List<Object> result)
+    {
+      builder_.populateAllFields(result);
+    }
+    
+    /**
+     * Set the sort key for the object.
+     * 
+     * @param sortKey The sort key to be attached to this object within its partition.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectDeleter withSortKey(SortKey sortKey)
+    {
+      builder_.withSortKey(sortKey);
+      
+      return self();
+    }
+    
+    /**
+     * Set the sort key for the object.
+     * 
+     * @param sortKey The sort key to be attached to this object within its partition.
+     * 
+     * @return This (fluent method).
+     */
+    public ApplicationObjectDeleter withSortKey(String sortKey)
+    {
+      builder_.withSortKey(sortKey);
+      
+      return self();
+    }
+    
+    @Override
+    protected void validate()
+    {
+      if(builder_.getHashType() == null)
+        builder_.withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
+      
+      if(builder_.getDeletionType() == null)
+        throw new IllegalStateException("DeletionType is required.");
+      
+      builder_.withOwner(getUserId());
+      
+      super.validate();
+    }
+
+    @Override
+    protected IDeletedApplicationObject construct()
+    {
+      return builder_.build();
+    }
+  }
+  
   @Override
   public ApplicationObjectDeleter newApplicationObjectDeleter(IStoredApplicationObject existingObject)
   {
-    // TODO Auto-generated method stub
-    return null;
+    return new ApplicationObjectDeleter(existingObject);
   }
+
+  /**
+   * Super class for ApplicationObject builders which take an already encrypted payload.
+   * 
+   * @author Bruce Skingle
+   *
+   * @param <T> The concrete type for fluent methods.
+   */
+  abstract class BaseEncryptedApplicationObjectBuilder<T extends BaseEncryptedApplicationObjectBuilder<T>> extends EntityBuilder<T, IStoredApplicationObject>
+  {
+    protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
+    
+    BaseEncryptedApplicationObjectBuilder(Class<T> type)
+    {
+      super(type);
+    }
+    
+    BaseEncryptedApplicationObjectBuilder(Class<T> type,
+        IStoredApplicationObject existing)
+    {
+      super(type);
+      
+      builder_.withPartitionHash(existing.getPartitionHash())
+        .withSortKey(existing.getSortKey())
+        .withOwner(getUserId())
+        .withPurgeDate(existing.getPurgeDate())
+        .withBaseHash(existing.getBaseHash())
+        .withPrevHash(existing.getAbsoluteHash())
+        .withPrevSortKey(existing.getSortKey())
+        ;
+    }
+
+    /**
+     * Set the unencrypted header for this object.
+     * 
+     * @param header The unencrypted header for this object.
+     * 
+     * @return This (fluent method).
+     */
+    public T withHeader(IApplicationObjectHeader header)
+    {
+      builder_.withHeader(header);
+      
+      return self();
+    }
+
+    /**
+     * Set the purge date for this object.
+     * 
+     * @param purgeDate The date after which this object may be deleted by the system.
+     * 
+     * @return This (fluent method).
+     */
+    public T withPurgeDate(Instant purgeDate)
+    {
+      builder_.withPurgeDate(purgeDate);
+      
+      return self();
+    }
+    
+    @Override
+    public ImmutableJsonObject getJsonObject()
+    {
+      return builder_.getJsonObject();
+    }
+
+    @Override
+    public String getCanonType()
+    {
+      return builder_.getCanonType();
+    }
+
+    @Override
+    public Integer getCanonMajorVersion()
+    {
+      return builder_.getCanonMajorVersion();
+    }
+
+    @Override
+    public Integer getCanonMinorVersion()
+    {
+      return builder_.getCanonMinorVersion();
+    }
+
+    @Override
+    protected void populateAllFields(List<Object> result)
+    {
+      builder_.populateAllFields(result);
+    }
+    
+    /**
+     * Set the sort key for the object.
+     * 
+     * @param sortKey The sort key to be attached to this object within its partition.
+     * 
+     * @return This (fluent method).
+     */
+    public T withSortKey(SortKey sortKey)
+    {
+      builder_.withSortKey(sortKey);
+      
+      return self();
+    }
+    
+    /**
+     * Set the sort key for the object.
+     * 
+     * @param sortKey The sort key to be attached to this object within its partition.
+     * 
+     * @return This (fluent method).
+     */
+    public T withSortKey(String sortKey)
+    {
+      builder_.withSortKey(sortKey);
+      
+      return self();
+    }
+    
+    @Override
+    protected void validate()
+    {
+      if(builder_.getHashType() == null)
+        builder_.withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
+
+      builder_.withOwner(getUserId());
+      
+      super.validate();
+    }
+  }
+  
+  /**
+   * Builder for Application Objects.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class EncryptedApplicationObjectBuilder extends BaseEncryptedApplicationObjectBuilder<EncryptedApplicationObjectBuilder>
+  {
+    EncryptedApplicationObjectBuilder()
+    {
+      super(EncryptedApplicationObjectBuilder.class);
+    }
+
+    /**
+     * Set the id of the thread with whose content key this object will be encrypted.
+     * 
+     * @param threadId The id of the thread with whose content key this object will be encrypted.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withThreadId(ThreadId threadId)
+    {
+      builder_.withThreadId(threadId);
+      
+      return self();
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partitionHash The Hash of the partition.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withPartition(Hash partitionHash)
+    {
+      builder_.withPartitionHash(partitionHash);
+      
+      return self();
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partitionId The ID of the partition.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withPartition(PartitionId partitionId)
+    {
+      builder_.withPartitionHash(partitionId.getId(getUserId()).getHash());
+      
+      return self();
+    }
+    
+    /**
+     * Set the partition key for the object from the given partition.
+     * 
+     * @param partition A partition object.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withPartition(IPartition partition)
+    {
+      builder_.withPartitionHash(partition.getId().getHash());
+      
+      return self();
+    }
+    
+    /**
+     * Set the already encrypted object payload and header.
+     * 
+     * @param payload The encrypted object payload and header.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
+    {
+      withHeader(payload.getHeader());
+
+      return withEncryptedPayload(payload);
+    }
+    
+    /**
+     * Set the already encrypted object payload.
+     * 
+     * @param payload The encrypted object payload.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectBuilder withEncryptedPayload(IEncryptedApplicationPayload payload)
+    {
+      builder_.withEncryptedPayload(payload.getEncryptedPayload());
+      builder_.withRotationId(payload.getRotationId());
+      builder_.withCipherSuiteId(payload.getCipherSuiteId());
+      builder_.withThreadId(payload.getThreadId());
+      
+      return self();
+    }
+    
+//    @Override
+//    protected void validate()
+//    {
+//      if(builder_.getEncryptedPayload() == null ||
+//          builder_.getRotationId() == null ||
+//          builder_.getCipherSuiteId() == null ||
+//          builder_.getThreadId() == null
+//          )
+//        throw new IllegalStateException("EncryptedPayload is required.");
+//      
+//      super.validate();
+//    }
+    
+    @Override
+    protected IStoredApplicationObject construct()
+    {
+      return builder_.build();
+    }
+  }
+  
+  
+  
 
   @Override
   public IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash)
@@ -703,17 +1226,114 @@ public abstract class AllegroBaseApi implements IAllegroBaseApi
   }
 
   @Override
-  public void delete(IStoredApplicationObject item, DeletionType deletionType)
+  public void delete(IStoredApplicationObject existingObject, DeletionType deletionType)
   {
-    // TODO Auto-generated method stub
+    IDeletedApplicationObject deletedObject = newApplicationObjectDeleter(existingObject)
+      .withDeletionType(deletionType)
+      .build()
+      ;
     
+    store(deletedObject);
   }
 
   @Override
-  public IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
+  public @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
   {
-    // TODO Auto-generated method stub
-    return null;
+    if(request.getConsumerManager() instanceof ConsumerManager)
+    {
+      fetchObjectVersions(request, (ConsumerManager)request.getConsumerManager());
+      
+      return null;
+    }
+    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+    {
+      return fetchObjectVersions(request, (AsyncConsumerManager)request.getConsumerManager());
+    }
+    else
+    {
+      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+    }
+  }
+  
+  private IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request, AsyncConsumerManager consumerManager)
+  {
+    AsyncVersionQueryListManager subscriberManager = new AsyncVersionQueryListManager.Builder()
+        .withAllegroApi(this)
+        .withHttpClient(httpClient_)
+        .withObjectApiClient(objectApiClient_)
+        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withRequest(request)
+        .withConsumerManager(consumerManager)
+      .build();
+    
+    return subscriberManager;
   }
 
+  private void fetchObjectVersions(FetchObjectVersionsRequest request, ConsumerManager consumerManager)
+  {
+    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
+    {
+      ITraceContext parentTrace = parentTraceTransaction.open();
+
+      for (VersionQuery query : request.getQueryList())
+      {
+        Integer limit           = query.getMaxItems();
+        int     remainingItems  = limit == null ? 0 : limit;
+        
+        if (limit != null && remainingItems <= 0)
+          break;
+
+        Hash    baseHash      = query.getBaseHash();
+        String  after         = query.getAfter();
+
+        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchObjectVersions",
+            baseHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+
+          do
+          {
+            ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
+                .withObjectHash(baseHash)
+                .withAfter(after)
+                .withScanForwards(query.getScanForwards())
+                ;
+
+            if (limit != null)
+              pageRequest.withLimit(remainingItems);
+
+            IPageOfAbstractStoredApplicationObject page = pageRequest
+                .build()
+                .execute(httpClient_);
+
+            for (IAbstractStoredApplicationObject item : page.getData())
+            {
+              try
+              {
+                consumerManager.consume(item, trace, this);
+              }
+              catch (RetryableConsumerException | FatalConsumerException e)
+              {
+                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
+                    "Failed to process message", e);
+              }
+              remainingItems--;
+            }
+
+            after = null;
+            IPagination pagination = page.getPagination();
+
+            if (pagination != null)
+            {
+              ICursors cursors = pagination.getCursors();
+
+              if (cursors != null)
+                after = cursors.getAfter();
+            }
+          } while (after != null && (limit == null || remainingItems > 0));
+        }
+      }
+    }
+  }
 }

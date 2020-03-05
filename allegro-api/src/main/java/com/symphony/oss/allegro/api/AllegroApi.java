@@ -16,52 +16,23 @@
 
 package com.symphony.oss.allegro.api;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
-import javax.annotation.Nullable;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLContext;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.methods.RequestBuilder;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.TrustAllStrategy;
-import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntity;
-import org.symphonyoss.s2.canon.runtime.IEntityFactory;
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
-import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
-import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
-import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.IJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
@@ -69,15 +40,10 @@ import org.symphonyoss.s2.common.dom.json.MutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
 import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fault.TransientTransactionFault;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
-import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.Chime;
@@ -91,27 +57,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
-import com.symphony.oss.allegro.api.query.AsyncPartitionQueryListManager;
-import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
-import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
-import com.symphony.oss.allegro.api.request.ConsumerManager;
-import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
-import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
-import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
-import com.symphony.oss.allegro.api.request.PartitionQuery;
-import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
-import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
-import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -127,11 +79,7 @@ import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
-import com.symphony.oss.models.core.canon.CoreHttpModelClient;
-import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.HashType;
-import com.symphony.oss.models.core.canon.ICursors;
-import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -140,8 +88,6 @@ import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
-import com.symphony.oss.models.crypto.canon.PemPrivateKey;
-import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
 import com.symphony.oss.models.internal.km.canon.KmInternalModel;
@@ -153,30 +99,12 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
-import com.symphony.oss.models.object.canon.FeedRequest;
-import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
-import com.symphony.oss.models.object.canon.IFeed;
-import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
-import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
-import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
-import com.symphony.oss.models.object.canon.ObjectModel;
-import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
-import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
-import com.symphony.oss.models.object.canon.UserPermissionsRequest;
-import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
-import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
-import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IDeletedApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IFeedObject;
-import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
@@ -644,12 +572,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject)
   {
     return new ApplicationObjectUpdater(existingObject);
-  }
-  
-  @Override
-  public ApplicationObjectDeleter newApplicationObjectDeleter(IStoredApplicationObject existingObject)
-  {
-    return new ApplicationObjectDeleter(existingObject);
   }
 
   /**
@@ -1179,16 +1101,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
   }
   
-  @Override
-  public void delete(IStoredApplicationObject existingObject, DeletionType deletionType)
-  {
-    IDeletedApplicationObject deletedObject = newApplicationObjectDeleter(existingObject)
-      .withDeletionType(deletionType)
-      .build()
-      ;
-    
-    store(deletedObject);
-  }
+
   
   /**
    * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
@@ -1266,392 +1179,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
   }
   
-
-  
-  /**
-   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
-   * version is to be created.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDeleter, IDeletedApplicationObject>
-  {
-    private DeletedApplicationObject.Builder builder_;
-    
-    /**
-     * Constructor.
-     * 
-     * @param existingObject An existing Application Object for which is to be deleted. 
-     */
-    public ApplicationObjectDeleter(IApplicationObjectPayload existingObject)
-    {
-      this(existingObject.getStoredApplicationObject());
-    }
-    
-    /**
-     * Constructor.
-     * 
-     * @param existingObject An existing Application Object for which is to be deleted. 
-     */
-    public ApplicationObjectDeleter(IStoredApplicationObject existingObject)
-    {
-      super(ApplicationObjectDeleter.class, existingObject);
-      
-      IStoredApplicationObject existing = existingObject;
-      
-      builder_ = new DeletedApplicationObject.Builder()
-          .withPartitionHash(existing.getPartitionHash())
-          .withSortKey(existing.getSortKey())
-          .withOwner(getUserId())
-          .withPurgeDate(existing.getPurgeDate())
-          .withBaseHash(existing.getBaseHash())
-          .withPrevHash(existing.getAbsoluteHash())
-          .withPrevSortKey(existing.getSortKey())
-          ;
-    }
-
-    /**
-     * Set the deletion type.
-     * 
-     * @param value The deletion type.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withDeletionType(DeletionType value)
-    {
-      builder_.withDeletionType(value);
-      
-      return self();
-    }
-    
-    /**
-     * Set the purge date for this object.
-     * 
-     * This is meaningless in the case of a physical delete but makes sense for a Logical Delete.
-     * 
-     * @param purgeDate The date after which this object may be deleted by the system.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withPurgeDate(Instant purgeDate)
-    {
-      builder_.withPurgeDate(purgeDate);
-      
-      return self();
-    }
-
-    @Override
-    public ImmutableJsonObject getJsonObject()
-    {
-      return builder_.getJsonObject();
-    }
-
-    @Override
-    public String getCanonType()
-    {
-      return builder_.getCanonType();
-    }
-
-    @Override
-    public Integer getCanonMajorVersion()
-    {
-      return builder_.getCanonMajorVersion();
-    }
-
-    @Override
-    public Integer getCanonMinorVersion()
-    {
-      return builder_.getCanonMinorVersion();
-    }
-
-    @Override
-    protected void populateAllFields(List<Object> result)
-    {
-      builder_.populateAllFields(result);
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withSortKey(SortKey sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withSortKey(String sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    @Override
-    protected void validate()
-    {
-      if(builder_.getHashType() == null)
-        builder_.withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
-      
-      if(builder_.getDeletionType() == null)
-        throw new IllegalStateException("DeletionType is required.");
-      
-      builder_.withOwner(getUserId());
-      
-      super.validate();
-    }
-
-    @Override
-    protected IDeletedApplicationObject construct()
-    {
-      return builder_.build();
-    }
-  }
-  
-  @Override
-  public IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request)
-  {
-    if(request.getConsumerManager() instanceof ConsumerManager)
-    {
-      fetchPartitionObjects(request, (ConsumerManager)request.getConsumerManager());
-      
-      return null;
-    }
-    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
-    {
-      return fetchPartitionObjects(request, (AsyncConsumerManager)request.getConsumerManager());
-    }
-    else
-    {
-      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
-    }
-  }
-  
-  private IAllegroQueryManager fetchPartitionObjects(FetchPartitionObjectsRequest request, AsyncConsumerManager consumerManager)
-  {
-
-    AsyncPartitionQueryListManager subscriberManager = new AsyncPartitionQueryListManager.Builder()
-        .withAllegroApi(this)
-        .withHttpClient(httpClient_)
-        .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
-        .withRequest(request)
-        .withConsumerManager(consumerManager)
-      .build();
-    
-    return subscriberManager;
-  }
-
-  private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
-  {
-    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
-        .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
-    {
-      ITraceContext parentTrace = parentTraceTransaction.open();
-
-      for (PartitionQuery query : request.getQueryList())
-      {
-        Integer limit           = query.getMaxItems();
-        int     remainingItems  = limit == null ? 0 : limit;
-        
-        if (limit != null && remainingItems <= 0)
-          break;
-
-        Hash    partitionHash = query.getHash(getUserId());
-        String  after         = query.getAfter();
-
-        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchPartitionObjects",
-            partitionHash.toString()))
-        {
-          ITraceContext trace = traceTransaction.open();
-
-          do
-          {
-            PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
-                .newPartitionsPartitionHashPageGetHttpRequestBuilder()
-                  .withPartitionHash(partitionHash)
-                  .withAfter(after)
-                  .withSortKeyPrefix(query.getSortKeyPrefix())
-                  .withScanForwards(query.getScanForwards());
-
-            if (limit != null)
-              pageRequest.withLimit(remainingItems);
-
-            IPageOfStoredApplicationObject page = pageRequest
-                .build()
-                .execute(httpClient_);
-
-            for (IAbstractStoredApplicationObject item : page.getData())
-            {
-              try
-              {
-                consumerManager.consume(item, trace, this);
-              }
-              catch (RetryableConsumerException | FatalConsumerException e)
-              {
-                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
-                    "Failed to process message", e);
-              }
-              remainingItems--;
-            }
-
-            after = null;
-            IPagination pagination = page.getPagination();
-
-            if (pagination != null)
-            {
-              ICursors cursors = pagination.getCursors();
-
-              if (cursors != null)
-                after = cursors.getAfter();
-            }
-          } while (after != null && (limit == null || remainingItems > 0));
-        }
-      }
-    }
-  }
-  
-
-  @Override
-  public PartitionObjectPage fetchPartitionObjectPage(PartitionQuery query)
-  {
-    Hash          partitionHash   = query.getHash(getUserId());
-    Integer       limit           = query.getMaxItems();
-    int           remainingItems  = limit == null ? 0 : limit;
-    String        after           = query.getAfter();
-
-    PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
-        .newPartitionsPartitionHashPageGetHttpRequestBuilder()
-          .withPartitionHash(partitionHash)
-          .withAfter(after)
-          .withSortKeyPrefix(query.getSortKeyPrefix())
-          .withScanForwards(query.getScanForwards());
-
-    if (limit != null)
-      pageRequest.withLimit(remainingItems);
-
-    IPageOfStoredApplicationObject page = pageRequest
-        .build()
-        .execute(httpClient_);
-    
-    return new PartitionObjectPage(this, partitionHash, query, page);
-  }
-  
-  
-  
-  @Override
-  public @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request)
-  {
-    if(request.getConsumerManager() instanceof ConsumerManager)
-    {
-      fetchObjectVersions(request, (ConsumerManager)request.getConsumerManager());
-      
-      return null;
-    }
-    else if(request.getConsumerManager() instanceof AsyncConsumerManager)
-    {
-      return fetchObjectVersions(request, (AsyncConsumerManager)request.getConsumerManager());
-    }
-    else
-    {
-      throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
-    }
-  }
-  
-  private IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request, AsyncConsumerManager consumerManager)
-  {
-    AsyncVersionQueryListManager subscriberManager = new AsyncVersionQueryListManager.Builder()
-        .withAllegroApi(this)
-        .withHttpClient(httpClient_)
-        .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
-        .withRequest(request)
-        .withConsumerManager(consumerManager)
-      .build();
-    
-    return subscriberManager;
-  }
-
-  private void fetchObjectVersions(FetchObjectVersionsRequest request, ConsumerManager consumerManager)
-  {
-    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
-        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
-    {
-      ITraceContext parentTrace = parentTraceTransaction.open();
-
-      for (VersionQuery query : request.getQueryList())
-      {
-        Integer limit           = query.getMaxItems();
-        int     remainingItems  = limit == null ? 0 : limit;
-        
-        if (limit != null && remainingItems <= 0)
-          break;
-
-        Hash    baseHash      = query.getBaseHash();
-        String  after         = query.getAfter();
-
-        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchObjectVersions",
-            baseHash.toString()))
-        {
-          ITraceContext trace = traceTransaction.open();
-
-          do
-          {
-            ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
-                .withObjectHash(baseHash)
-                .withAfter(after)
-                .withScanForwards(query.getScanForwards())
-                ;
-
-            if (limit != null)
-              pageRequest.withLimit(remainingItems);
-
-            IPageOfAbstractStoredApplicationObject page = pageRequest
-                .build()
-                .execute(httpClient_);
-
-            for (IAbstractStoredApplicationObject item : page.getData())
-            {
-              try
-              {
-                consumerManager.consume(item, trace, this);
-              }
-              catch (RetryableConsumerException | FatalConsumerException e)
-              {
-                consumerManager.getUnprocessableMessageConsumer().consume(item, trace,
-                    "Failed to process message", e);
-              }
-              remainingItems--;
-            }
-
-            after = null;
-            IPagination pagination = page.getPagination();
-
-            if (pagination != null)
-            {
-              ICursors cursors = pagination.getCursors();
-
-              if (cursors != null)
-                after = cursors.getAfter();
-            }
-          } while (after != null && (limit == null || remainingItems > 0));
-        }
-      }
-    }
-  }
-  
   @Override
   public ChatMessage.Builder newChatMessageBuilder()
   {
@@ -1713,7 +1240,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject)
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
   {
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
@@ -2039,9 +1566,10 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
   
 
-  void consume(AbstractConsumerManager consumerManager, IFeedObject message, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
+  @Override
+  void consume(AbstractConsumerManager consumerManager, Object payload, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
   {
-    consumerManager.consume(message.getPayload(), trace, this);
+    consumerManager.consume(payload, trace, this);
   }
 
   /**

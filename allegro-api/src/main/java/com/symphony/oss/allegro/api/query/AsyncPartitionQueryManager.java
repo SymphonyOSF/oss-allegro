@@ -26,7 +26,7 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
+import com.symphony.oss.allegro.api.AllegroBaseApi;
 import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
@@ -41,7 +41,7 @@ public class AsyncPartitionQueryManager extends AbstractAsyncQueryManager
   private final CloseableHttpClient             httpClient_;
   private final Hash                            partitionHash_;
 
-  public AsyncPartitionQueryManager(IAllegroApi allegroApi, PartitionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
+  public AsyncPartitionQueryManager(AllegroBaseApi allegroApi, PartitionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
     super(allegroApi, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);
