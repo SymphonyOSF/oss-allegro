@@ -33,7 +33,6 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.AckIdObject;
 import com.symphony.oss.models.internal.pod.canon.FeedId;

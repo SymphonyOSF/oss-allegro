@@ -71,12 +71,6 @@ import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.io.Files;
-import com.symphony.oss.allegro.api.query.AsyncPartitionQueryListManager;
-import com.symphony.oss.allegro.api.query.AsyncVersionQueryListManager;
-import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
-import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
@@ -130,7 +124,7 @@ import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
  * @author Bruce Skingle
  *
  */
-public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroBaseApi
+abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
 {
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
   private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);
@@ -189,7 +183,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroBaseApi>
+  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
   extends BaseAbstractBuilder<T, B>
   {
     protected PrivateKey                    rsaCredential_;

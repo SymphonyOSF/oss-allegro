@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.request;
+package com.symphony.oss.allegro.api;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -42,7 +42,6 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.symphony.oss.allegro.api.AllegroDecryptor;
 import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;

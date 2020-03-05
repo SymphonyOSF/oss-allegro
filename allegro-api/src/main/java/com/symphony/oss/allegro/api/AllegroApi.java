@@ -60,7 +60,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
 import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
@@ -297,7 +296,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    * 
    * @return The external user ID for the given user ID.
    */
-  public PodAndUserId toExternalUserId(PodAndUserId internalOrExternalUserId)
+  private PodAndUserId toExternalUserId(PodAndUserId internalOrExternalUserId)
   {
     return PodAndUserId.newBuilder().build(UserId.replacePodId(internalOrExternalUserId.longValue(), podInfo_.getExternalPodId()));
   }
@@ -329,8 +328,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return podId_;
   }
 
-  
-
   private String getVersion()
   {
     String version = getClass().getPackage().getImplementationVersion();
@@ -361,9 +358,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .build()
         .execute(httpClient_);
   }
-  
-  
-  IPodInfo getPodInfo()
+
+  private IPodInfo getPodInfo()
   {
     return podInternalApiClient_.newWebcontrollerPublicPodInfoGetHttpRequestBuilder()
         .build()
@@ -446,101 +442,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager(), this, trace);
     }
   }
-
-//  @Override
-//  public void fetchRecentMessages(FetchRecentMessagesRequest request)
-//  {
-//    fetchMessages(request, false);
-//  }
-//
-//  @Override
-//  public void fetchMessages(FetchMessagesRequest request)
-//  {
-//    fetchMessages(request, request.isScanForwards());
-//  }
-//
-//  private void fetchMessages(AbstractFetchRecentMessagesRequest<?> request, boolean scanForwards)
-//  {
-//    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
-//    {
-//      ITraceContext trace = traceTransaction.open();
-//      
-//      IThreadIdObject threadIdObject = new ThreadIdObject.Builder()
-//        .withPodId(podId_)
-//        .withThreadId(request.getThreadId())
-//        .build();
-//      
-//      IFundamentalId sequence = Stream.getStreamContentSequenceId(threadIdObject);
-//      
-//      int maxMessages = request.getMaxMessages() == null ? 5 : request.getMaxMessages();
-//      String after = null;
-//      
-//      do
-//      {
-//        IPageOfFundamentalObject page = fundamentalApiClient_.newSequencesSequenceHashPageGetHttpRequestBuilder()
-//          .withSequenceHash(sequence.getAbsoluteHash())
-//          .withScanForwards(scanForwards)
-//          .withLimit(request.getMaxMessages())
-//          .withAfter(after)
-//          .build()
-//          .execute(httpClient_);
-//        
-//        after = getAfter(page);
-//        
-//        for(IFundamentalObject item : page.getData())
-//        {
-//          request.consume(item, trace, this);
-//          maxMessages--;
-//        }
-//      } while(after != null && maxMessages>0);
-//    }
-//  }
-//  
-//  private String getAfter(IPageOfFundamentalObject page)
-//  {
-//    IPagination p = page.getPagination();
-//    
-//    if(p == null)
-//      return null;
-//    
-//    ICursors c = p.getCursors();
-//    
-//    if(c == null)
-//      return null;
-//    
-//    return c.getAfter();
-//  }
-//
-//  @Deprecated
-//  private void handleFetchedMessage(Consumer<IChatMessage> consumer, IEntity entity)
-//  {
-//    switch(entity.getCanonType())
-//    {
-//      case SocialMessage.TYPE_ID:
-//        consumer.accept(decryptChatMessage((ISocialMessage) entity));
-//        break;
-//        
-//      case MaestroMessage.TYPE_ID:
-//        consumer.accept(maestroMessage((IMaestroMessage) entity));
-//        break;
-//        
-//      default:
-//        //
-//        break;
-//    }
-//  }
-//
-//
-//  private IChatMessage maestroMessage(IMaestroMessage message)
-//  {
-//    ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
-//        .withMessageId(message.getMessageId())
-//        .withThreadId(message.getThreadId())
-//        .withPresentationML(message.getEvent() + " " + message.getVersion() + " message");
-//        ;
-//        
-//    return builder.build();
-//  }
   
   @Override
   public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
@@ -1055,36 +956,36 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       return self();
     }
     
-    /**
-     * Set the already encrypted object payload and header.
-     * 
-     * @param payload The encrypted object payload and header.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectBuilder withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
-    {
-      withHeader(payload.getHeader());
-
-      return withEncryptedPayload(payload);
-    }
-    
-    /**
-     * Set the already encrypted object payload.
-     * 
-     * @param payload The encrypted object payload.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectBuilder withEncryptedPayload(IEncryptedApplicationPayload payload)
-    {
-      withEncryptedPayload(payload.getEncryptedPayload());
-      withRotationId(payload.getRotationId());
-      withCipherSuiteId(payload.getCipherSuiteId());
-      withThreadId(payload.getThreadId());
-      
-      return self();
-    }
+//    /**
+//     * Set the already encrypted object payload and header.
+//     * 
+//     * @param payload The encrypted object payload and header.
+//     * 
+//     * @return This (fluent method).
+//     */
+//    public ApplicationObjectBuilder withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
+//    {
+//      withHeader(payload.getHeader());
+//
+//      return withEncryptedPayload(payload);
+//    }
+//    
+//    /**
+//     * Set the already encrypted object payload.
+//     * 
+//     * @param payload The encrypted object payload.
+//     * 
+//     * @return This (fluent method).
+//     */
+//    public ApplicationObjectBuilder withEncryptedPayload(IEncryptedApplicationPayload payload)
+//    {
+//      withEncryptedPayload(payload.getEncryptedPayload());
+//      withRotationId(payload.getRotationId());
+//      withCipherSuiteId(payload.getCipherSuiteId());
+//      withThreadId(payload.getThreadId());
+//      
+//      return self();
+//    }
     
     @Override
     protected IStoredApplicationObject construct()
@@ -1577,7 +1478,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
   extends AllegroBaseApi.AbstractBuilder<T, B>
   {
     protected URL                           podUrl_;

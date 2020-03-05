@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.query;
+package com.symphony.oss.allegro.api;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,23 +24,23 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 
-import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
-import com.symphony.oss.allegro.api.request.PartitionQuery;
+import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
+import com.symphony.oss.allegro.api.request.VersionQuery;
 
 /**
- * AbstractAsyncQueryListManager implementation for Partition query.
+ * AbstractAsyncQueryListManager implementation for ObjectVersion query.
  *   
  * @author Bruce Skingle
  *
  */
-public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManager<AsyncPartitionQueryListManager, AsyncPartitionQueryManager>
+public class AsyncVersionQueryListManager extends AbstractAsyncQueryListManager<AsyncVersionQueryListManager, AsyncVersionQueryManager>
 {
-  protected AsyncPartitionQueryListManager(Builder builder)
+  protected AsyncVersionQueryListManager(Builder builder)
   {
-    super(AsyncPartitionQueryListManager.class, builder);
+    super(AsyncVersionQueryListManager.class, builder);
   }
   
-  public static class Builder extends AbstractBuilder<Builder, AsyncPartitionQueryListManager>
+  public static class Builder extends AbstractBuilder<Builder, AsyncVersionQueryListManager>
   {
     /**
      * Constructor.
@@ -51,15 +51,15 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
     }
 
     @Override
-    protected AsyncPartitionQueryListManager construct()
+    protected AsyncVersionQueryListManager construct()
     {
-      return new AsyncPartitionQueryListManager(this);
+      return new AsyncVersionQueryListManager(this);
     }
   }
   
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractAsyncQueryListManager<B, AsyncPartitionQueryManager>> extends AbstractAsyncQueryListManager.AbstractBuilder<T, AsyncPartitionQueryManager, B>
+  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractAsyncQueryListManager<B, AsyncVersionQueryManager>> extends AbstractAsyncQueryListManager.AbstractBuilder<T, AsyncVersionQueryManager, B>
   {
-    protected FetchPartitionObjectsRequest  request_;
+    protected FetchObjectVersionsRequest  request_;
 
     protected AbstractBuilder(Class<T> type)
     {
@@ -73,7 +73,7 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
      * 
      * @return This (fluent method).
      */
-    public T withRequest(FetchPartitionObjectsRequest request)
+    public T withRequest(FetchObjectVersionsRequest request)
     {
       request_ = request;
       return self();
@@ -89,13 +89,13 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
     
 
     @Override
-    protected List<AsyncPartitionQueryManager> createQueryManagers( ThreadPoolExecutor handlerExecutor)
+    protected List<AsyncVersionQueryManager> createQueryManagers( ThreadPoolExecutor handlerExecutor)
     {
-      List<AsyncPartitionQueryManager> queryManagers = new LinkedList<>();
+      List<AsyncVersionQueryManager> queryManagers = new LinkedList<>();
       
-      for(PartitionQuery query : request_.getQueryList())
+      for(VersionQuery query : request_.getQueryList())
       {
-        queryManagers.add(new AsyncPartitionQueryManager(allegroApi_, query, consumerManager_, traceFactory_, objectApiClient_,
+        queryManagers.add(new AsyncVersionQueryManager(allegroApi_, query, consumerManager_, traceFactory_, objectApiClient_,
             httpClient_, handlerExecutor));
       }
       

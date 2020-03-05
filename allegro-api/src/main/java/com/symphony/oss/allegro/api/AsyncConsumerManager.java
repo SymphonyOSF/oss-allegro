@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.request;
+package com.symphony.oss.allegro.api;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;

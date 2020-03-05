@@ -35,7 +35,7 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  * @author Bruce Skingle
  *
  */
-public class AllegroDecryptor
+class AllegroDecryptor
 {
   /**
    * Create an IChatMessage from the given ILiveCurrentMessage, if the message

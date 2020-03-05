@@ -30,7 +30,6 @@ import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;

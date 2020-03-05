@@ -37,7 +37,6 @@ import org.symphonyoss.s2.fugue.pubsub.AbstractPullSubscriberManager;
 import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.symphony.oss.allegro.api.query.IAllegroQueryManager;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 

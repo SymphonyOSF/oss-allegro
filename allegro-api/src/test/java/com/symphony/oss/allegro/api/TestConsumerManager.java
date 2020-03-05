@@ -22,7 +22,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContextTransaction;
 
-import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;

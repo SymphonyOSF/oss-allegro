@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.query;
+package com.symphony.oss.allegro.api;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -26,8 +26,6 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
-import com.symphony.oss.allegro.api.AllegroDecryptor;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;

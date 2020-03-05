@@ -31,10 +31,13 @@ import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
 
 /**
@@ -188,5 +191,23 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
    * @return A new ApplicationObjectBuilder to create a new version of the given object.
    */
   ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
-  
+
+  /**
+   * Create an IChatMessage from the given ILiveCurrentMessage, if the message
+   * is an ISocialMessage then the message payload is decrypted.
+   * 
+   * @param message An ILiveCurrentMessage.
+   * 
+   * @return An IChatMessage representing the given message.
+   */
+  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
+
+  /**
+   * Open (deserialize and decrypt) the given object.
+   * 
+   * @param storedApplicationObject An encrypted object.
+   * 
+   * @return The decrypted object.
+   */
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject);
 }

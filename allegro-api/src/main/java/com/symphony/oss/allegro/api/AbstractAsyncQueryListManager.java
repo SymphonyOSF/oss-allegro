@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.query;
+package com.symphony.oss.allegro.api;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -35,9 +35,6 @@ import org.symphonyoss.s2.fugue.FugueLifecycleState;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.api.AllegroBaseApi;
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQueryListManager<T,Q>, Q extends AbstractAsyncQueryManager>

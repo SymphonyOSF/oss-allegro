@@ -23,6 +23,7 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
 
 /**
  * Request to fetch versions of a logical object by its baseHash.
