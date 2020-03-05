@@ -72,8 +72,6 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   private final CloseableHttpClient        httpclient_;
   private final PodInternalHttpModelClient podInternalApiClient_;
   private final KmInternalHttpModelClient  kmInternalClient_;
-  private final CoreHttpModelClient        coreApiClient_;
-  private final ChatHttpModelClient        chatApiClient_;
   private final IPodInfo                   podInfo_;
 
   private final PodAndUserId               internalUserId_;
@@ -90,14 +88,12 @@ class AllegroCryptoClient implements IAllegroCryptoClient
 
   
   AllegroCryptoClient(CloseableHttpClient httpclient, PodInternalHttpModelClient podInternalApiClient,
-      KmInternalHttpModelClient kmInternalClient, CoreHttpModelClient coreApiClient, ChatHttpModelClient chatApiClient, IPodInfo podInfo, PodAndUserId internalUserId,
+      KmInternalHttpModelClient kmInternalClient, IPodInfo podInfo, PodAndUserId internalUserId,
       Supplier<IAccountInfo> accountInfoProvider, IModelRegistry modelRegistry)
   {
     httpclient_ = httpclient;
     podInternalApiClient_ = podInternalApiClient;
     kmInternalClient_ = kmInternalClient;
-    coreApiClient_ = coreApiClient;
-    chatApiClient_ = chatApiClient;
     podInfo_ = podInfo;
     internalUserId_ = internalUserId;
     accountInfoProvider_ = accountInfoProvider;
@@ -116,139 +112,6 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     threadRotationIdCache_ = new ThreadRotationIdCache(httpclient_, podInternalApiClient_);
     entityKeyCache_ = new EntityKeyCache(httpclient_, kmInternalClient_, accountKeyCache_, internalUserId, clientCryptoHandler_);
   }
-  
-//  private IEntity open(IFundamentalObject object)
-//  {
-//    return modelRegistry_.open(object, (IOpenPrincipalCredential)null);
-//  }
-//
-//  @Override
-//  public IOpenSigningKey getSigningKey()
-//  {
-//    return principalSupplier_.getSigningKey();
-//  }
-//
-//  @Override
-//  public IOpenSimpleSecurityContext getSecurityContext(Hash securityContextHash, @Nullable ThreadId threadId)
-//  {
-//    IFundamentalObject securityContextObject = fundamentalApiClient_.newObjectsObjectHashGetHttpRequestBuilder()
-//      .withObjectHash(securityContextHash)
-//      .withCurrentVersion(threadId != null)
-//      .build()
-//      .execute(httpclient_);
-//    
-//    IEntity entity = open(securityContextObject);
-//    
-//    if(entity instanceof ISimpleSecurityContext)
-//    {
-//      ISimpleSecurityContext securityContext = (ISimpleSecurityContext)entity;
-//      
-//      try
-//      {
-//        IMemberIdObject keysId = SecurityContextMember.getMemberKeysIdFor(securityContext.getAbsoluteHash(), principalHash_);
-//  
-//        IFundamentalObject keysObject = fundamentalApiClient_.newObjectsIdIdObjectHashGetHttpRequestBuilder()
-//          .withIdObjectHash(keysId.getAbsoluteHash())
-//          .build()
-//          .execute(httpclient_);
-//        
-//        IEntity keysEntity = open(keysObject);
-//        
-//        if(keysEntity instanceof ISecurityContextMemberKeys)
-//        {
-//          ISecurityContextMemberKeys keys = (ISecurityContextMemberKeys)keysEntity;
-//          
-//          SecretKey secretKey;
-//          
-//          if(threadId==null || keys.getEncryptedKey() == null)
-//          {
-//            if(keys.getWrappedKey() == null)
-//              throw new IllegalStateException("SecurityContextMemberKeys is empty! " + keys);
-//            
-//            secretKey = securityContext.getCipherSuite().unwrap(keys.getWrappedKey(), principalSupplier_.getExchangeKey().getPrivateKey());
-//          }
-//          else
-//          {
-//            RotationId rotationId = getRotationForThread(threadId);
-//            
-//            KeyIdentifier keyId = new KeyIdentifier(threadId.getValue().toByteArray(), internalUserId_.getValue(), rotationId.getValue(), null);
-//            byte[] contentKey;
-//            
-//            try
-//            {
-//              contentKey = contentKeyCache_.unwrapContentKey(keyId, keys.getEncryptedKey().getValue().toByteArray());
-//            }
-//            catch (SymphonyInputException | SymphonyEncryptionException e)
-//            {
-//              throw new IllegalStateException("Unable to recover security context keys.", e);
-//            }
-//            
-//            Base64SecretKey encodedKey = Base64SecretKey.newBuilder().build(Base64.encodeBase64String(contentKey));
-//            
-//            secretKey          = cipherSuite_.secretKeyFromBase64(encodedKey);
-//          }
-//          //SecretKey secretKey2 = securityContext.getCipherSuite().unwrap(keys.getWrappedKey(), principalSupplier_.getExchangeKey().getPrivateKey());
-//
-//          return securityContext.open(secretKey);
-//        }
-//      }
-//      catch(NotFoundException e)
-//      {
-//        // No wrapped keys, see if we can construct them from the keymanager....
-//        if(threadId == null)
-//        {
-//          throw e;
-//        }
-//        else
-//        {
-//          RotationId rotationId = getRotationForThread(threadId);
-//          
-//          AllegroCryptoHelper helper = contentKeyCache_.getContentKey(threadId, rotationId, internalUserId_);
-//  
-//          SecretKey secretKey = helper.getSecretKey();
-//          
-//          return securityContext.open(secretKey);
-//        }
-//      }
-//    }
-//    
-//    throw new IllegalStateException("Not a security context.");
-//  }
-//
-//  @Override
-//  public IOpenSimpleSecurityContext getOrCreateThreadSecurityContext(ThreadId threadId)
-//  {
-//    RotationId rotationId = getRotationForThread(threadId);
-//    
-//    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(threadId, rotationId, internalUserId_);
-//
-//    WrappedKey wrappedKey = cipherSuite_.wrap(helper.getSecretKey(), principalSupplier_.getExchangeKey().getPublicKey());
-//    
-//    IEstablishSecurityContextRequest request = new EstablishSecurityContextRequest.Builder()
-//      .withThreadId(threadId)
-//      .withRotationId(rotationId)
-//      .withExchangeKeyHash(principalSupplier_.getExchangeKey().getAbsoluteHash())
-//      .withCipherSuiteId(cipherSuite_.getId())
-//      .withWrappedKey(wrappedKey)
-//      .withEncryptedKey(helper.getEncryptedKey())
-//      .build();
-//    
-//    IFundamentalObject response = chatApiClient_.newSecurityContextsEstsablishPostHttpRequestBuilder()
-//      .withCanonPayload(request)
-//      .build()
-//      .execute(httpclient_);
-//    
-//    IEntity responsePayload = open(response);
-//    
-//    if(!(responsePayload instanceof ISimpleSecurityContext))
-//      throw new IllegalStateException("Retrieved security context is a " + responsePayload.getClass().getName() + ", not IVersionedSecurityContext");
-//    
-//    ISimpleSecurityContext securityContext = (ISimpleSecurityContext)responsePayload;
-//    
-//    IOpenSimpleSecurityContext openSecurityContext = securityContext.open(helper.getSecretKey());
-//    
-//    return openSecurityContext;
-//  }
 
   @Override
   public RotationId getRotationForThread(ThreadId threadId)
@@ -358,8 +221,6 @@ class AllegroCryptoClient implements IAllegroCryptoClient
       header.setStoredApplicationObject(storedApplicationObject);
     
     return payload;
-          
-    //throw new IllegalArgumentException("Decrypted payload is " + entity.getCanonType() + " not IApplicationPayload.");
   }
 
   @Override
@@ -371,15 +232,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
 
     String plainText = helper.decrypt(cipherText);
       
-//      EncryptedData encryptedData = EncryptedData.newBuilder().build(ImmutableByteArray.newInstance(Base64.decodeBase64(cipherText)));
-//      ImmutableByteArray p2 = helper.getCiphersuite().decrypt(helper.getSecretKey(), encryptedData);
-//      
-//      String s2 = p2.toString();
-//      
-//      System.err.println(plainText);
-//      System.err.println(s2);
-      
-      return plainText;
+    return plainText;
   }
 
   private RotationId getRotationIdForCipherText(byte[] cipherText)

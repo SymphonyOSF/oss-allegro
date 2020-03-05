@@ -74,7 +74,6 @@ import com.symphony.oss.models.allegro.canon.facade.IReceivedSocialMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedMaestroMessage;
 import com.symphony.oss.models.allegro.canon.facade.ReceivedSocialMessage;
-import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
 import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
@@ -144,7 +143,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final AllegroDataProvider             dataProvider_;
   private final V4MessageTransformer            messageTramnsformer_;
   private final EncryptionHandler               agentEncryptionHandler_;
-  private final ChatHttpModelClient             chatApiClient_;
 
   private PodAndUserId                          internalUserId_;
   private PodId                                 podId_;
@@ -268,13 +266,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     dataProvider_ = new AllegroDataProvider(httpClient_, podApiClient_, podInfo_, authHandler_.getSessionToken());
 
-    
-    chatApiClient_  = new ChatHttpModelClient(
-        modelRegistry_,
-        builder.objectStoreUrl_, null, jwtGenerator_);
-    
-    cryptoClient_ = new AllegroCryptoClient(httpClient_, podInternalApiClient_, kmInternalClient_, coreApiClient_,
-        chatApiClient_,
+    cryptoClient_ = new AllegroCryptoClient(httpClient_, podInternalApiClient_, kmInternalClient_,
         podInfo_, internalUserId_,
         accountInfoProvider_,
         modelRegistry_);
