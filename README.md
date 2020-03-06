@@ -7,6 +7,14 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-03-05 Separation of IMultiTenantAllegroApi !!!BREAKING CHANGE!!!
+It is now possible to authenticate to the object store but not a pod to access only multi-tenant features
+of the API. There is an example of this in 
+[CreateToDoItemInTwoStages.java](https://github.com/SymphonyOSF/oss-allegro-examples/blob/master/calendar/src/main/java/com/symphony/s2/allegro/examples/calendar/CreateToDoItemInTwoStages.java#L174)
+
+As part of this refactoring a number of classes have been moved from sub-packages into the main API package
+**com.symphony.oss.allegro.api**
+
 ## 2020-02-04 Deletion now takes IStoredApplicationObject !!!BREAKING CHANGE!!!
 The signature of the delete method is now IAllegroApi.delete(IStoredApplicationObject item, DeletionType deletionType);
 

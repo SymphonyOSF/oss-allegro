@@ -24,7 +24,6 @@ import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**

@@ -23,6 +23,8 @@ import org.symphonyoss.s2.common.fault.FaultAccumulator;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.ConsumerManager;
 
 /**
  * Request to fetch a partition.

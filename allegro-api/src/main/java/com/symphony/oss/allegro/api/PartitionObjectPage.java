@@ -30,7 +30,6 @@ import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.api.request.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
@@ -40,14 +39,14 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 class PartitionObjectPage implements IObjectPage
 {
-  private final AllegroApi                     allegroApi_;
+  private final AllegroBaseApi                 allegroApi_;
   private final Hash                           partitionHash_;
   private final PartitionQuery                 query_;
   private final String                         after_;
   private final String                         before_;
   private final List<IStoredApplicationObject> data_;
 
-  public PartitionObjectPage(AllegroApi allegroApi, Hash partitionHash, PartitionQuery query, IPageOfStoredApplicationObject page)
+  public PartitionObjectPage(AllegroBaseApi allegroApi, Hash partitionHash, PartitionQuery query, IPageOfStoredApplicationObject page)
   {
     IPagination pagination = page.getPagination();
 

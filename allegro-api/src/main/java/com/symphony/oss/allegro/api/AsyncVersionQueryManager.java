@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.query;
+package com.symphony.oss.allegro.api;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -26,8 +26,6 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
@@ -41,7 +39,7 @@ public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
   private final CloseableHttpClient             httpClient_;
 
 
-  public AsyncVersionQueryManager(IAllegroApi allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
+  public AsyncVersionQueryManager(AllegroDecryptor allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
     super(allegroApi, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);

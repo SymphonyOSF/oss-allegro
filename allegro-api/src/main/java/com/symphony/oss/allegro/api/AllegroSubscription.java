@@ -39,7 +39,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final ImmutableSet<FeedName>                                         subscriptionNames_;
 
-  public AllegroSubscription(FetchFeedObjectsRequest request, AllegroApi allegroApi)
+  public AllegroSubscription(FetchFeedObjectsRequest request, AllegroBaseApi allegroApi)
   {
     Set<FeedName> names = new HashSet<>();
     
@@ -54,6 +54,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
       public void consume(IAbstractStoredApplicationObject item, ITraceContext trace)
           throws RetryableConsumerException, FatalConsumerException
       {
+//        allegroApi.consume(request.getConsumerManager(), item, trace);
         request.getConsumerManager().consume(item, trace, allegroApi);
       }
 

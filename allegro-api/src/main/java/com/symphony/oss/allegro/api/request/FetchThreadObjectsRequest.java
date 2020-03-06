@@ -18,6 +18,8 @@ package com.symphony.oss.allegro.api.request;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
 
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
+
 /**
  * Request to fetch a partition.
  * 

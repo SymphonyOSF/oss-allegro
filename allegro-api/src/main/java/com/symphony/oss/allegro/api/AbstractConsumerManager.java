@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.request;
+package com.symphony.oss.allegro.api;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -42,9 +42,7 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.symphony.oss.allegro.api.IFundamentalOpener;
 import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
@@ -286,7 +284,7 @@ public abstract class AbstractConsumerManager
    * @throws FatalConsumerException       If thrown by the called consumer
    * @throws RetryableConsumerException   If thrown by the called consumer
    */
-  public void consume(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
+  public void consume(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(consumeChatTypes(object, traceContext, opener))
       return;
@@ -302,21 +300,24 @@ public abstract class AbstractConsumerManager
 //      applicationPayload = ((IEnvelope)object).getPayload();
 //    }
     
-    if(storedApplicationObject != null)
+    if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
     {
       if(hasChatTypes_ || hasApplicationTypes_)
       {
         try
         {
-          IApplicationObjectPayload applicationObjectPayload = opener.open(storedApplicationObject);
+          IApplicationObjectPayload applicationObjectPayload = opener.decryptObject(storedApplicationObject);
           
-          if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
-            return;
-          
-          if(hasApplicationTypes_)
+          if(applicationObjectPayload != null)
           {
-            if(consume(applicationObjectPayload, traceContext))
+            if(consumeChatTypes(applicationObjectPayload, traceContext, opener))
               return;
+            
+            if(hasApplicationTypes_)
+            {
+              if(consume(applicationObjectPayload, traceContext))
+                return;
+            }
           }
         }
         catch(PermissionDeniedException e)
@@ -330,20 +331,23 @@ public abstract class AbstractConsumerManager
       defaultConsumer_.consume(object, traceContext);
   }
   
-  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IFundamentalOpener opener) throws RetryableConsumerException, FatalConsumerException
+  private boolean consumeChatTypes(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {
       IReceivedChatMessage chatMessage = opener.decryptChatMessage((ILiveCurrentMessage) object);
-          
-      try
+
+      if(chatMessage != null)
       {
-        consume(chatMessage, traceContext);
-        return true;
-      }
-      catch(IllegalArgumentException e)
-      {
-        // Ignore
+        try
+        {
+          consume(chatMessage, traceContext);
+          return true;
+        }
+        catch(IllegalArgumentException e)
+        {
+          // Ignore
+        }
       }
     }
     

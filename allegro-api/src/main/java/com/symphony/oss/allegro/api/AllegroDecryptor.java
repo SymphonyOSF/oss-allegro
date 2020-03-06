@@ -1,7 +1,7 @@
 /*
  *
  *
- * Copyright 2019 Symphony Communication Services, LLC.
+ * Copyright 2020 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,37 +18,37 @@
 
 package com.symphony.oss.allegro.api;
 
+import javax.annotation.Nullable;
+
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
- * An object capable of unwrapping and decrypting FundamentalObjects and SocialMessages.
+ * Base class for AllegroApi implementations.
+ * 
+ * Methods which need to be able to decrypt objects take an instance of this type as a parameter.
+ * 
+ * Note that methods on this class may return null.
  * 
  * @author Bruce Skingle
  *
  */
-public interface IFundamentalOpener
+class AllegroDecryptor
 {
-//  /**
-//   * Open (deserialize and decrypt if necessary) the given object.
-//   * 
-//   * @param item A FundamentalObject.
-//   * 
-//   * @return The typed contents of the given object.
-//   */
-//  IEntity open(IFundamentalObject item);
-  
   /**
-   * Create and IChatMessage from the given ILiveCurrentMessage, if the message
+   * Create an IChatMessage from the given ILiveCurrentMessage, if the message
    * is an ISocialMessage then the message payload is decrypted.
    * 
    * @param message An ILiveCurrentMessage.
    * 
    * @return An IChatMessage representing the given message.
    */
-  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
+  public @Nullable IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  {
+    return null;
+  }
 
   /**
    * Open (deserialize and decrypt) the given object.
@@ -57,5 +57,8 @@ public interface IFundamentalOpener
    * 
    * @return The decrypted object.
    */
-  IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject);
+  public @Nullable IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
+  {
+    return null;
+  }
 }

@@ -22,7 +22,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContextTransaction;
 
-import com.symphony.oss.allegro.api.request.ConsumerManager;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
@@ -64,7 +63,7 @@ public class TestConsumerManager
 //      .withPodId(POD_ID)
 //      .withPurgeTime(10000, ChronoUnit.SECONDS)
 //      .build();
-  private static final IFundamentalOpener OPENER = new IFundamentalOpener()
+  private static final AllegroDecryptor OPENER = new AllegroDecryptor()
   {
 //    @Override
 //    public IEntity open(IFundamentalObject item)
@@ -97,7 +96,7 @@ public class TestConsumerManager
     }
 
     @Override
-    public IApplicationObjectPayload open(IStoredApplicationObject storedApplicationObject)
+    public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
     {
       throw new RuntimeException("Not implemented");
     }

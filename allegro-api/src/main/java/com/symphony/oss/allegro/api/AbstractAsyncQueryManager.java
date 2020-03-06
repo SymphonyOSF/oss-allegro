@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.query;
+package com.symphony.oss.allegro.api;
 
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,8 +27,6 @@ import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
 import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.request.AsyncConsumerManager;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -37,7 +35,7 @@ import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 
 public abstract class AbstractAsyncQueryManager implements Runnable
 {
-  private final IAllegroApi          allegroApi_;
+  private final AllegroDecryptor allegroApi_;
   private final AsyncConsumerManager consumerManager_;
   private final ThreadPoolExecutor   handlerExecutor_;
 
@@ -46,7 +44,7 @@ public abstract class AbstractAsyncQueryManager implements Runnable
   private final AtomicBoolean        running_      = new AtomicBoolean(true);
   private final AtomicInteger        handlerCount_ = new AtomicInteger(0);
 
-  protected AbstractAsyncQueryManager(IAllegroApi allegroApi, int remainingItems, AsyncConsumerManager consumerManager,
+  protected AbstractAsyncQueryManager(AllegroDecryptor allegroApi, int remainingItems, AsyncConsumerManager consumerManager,
       ThreadPoolExecutor handlerExecutor)
   {
     allegroApi_ = allegroApi;
