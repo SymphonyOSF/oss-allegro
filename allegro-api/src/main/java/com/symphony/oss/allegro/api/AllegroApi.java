@@ -101,6 +101,7 @@ import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
@@ -990,7 +991,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Override
     protected IStoredApplicationObject construct()
     {
-      return builder_.build();
+      IStoredApplicationObject storedApplicationObject = builder_.build();
+      
+      if(payload_ instanceof ApplicationObjectPayload)
+        ((ApplicationObjectPayload) payload_).setStoredApplicationObject(storedApplicationObject);
+      
+      return storedApplicationObject;
     }
   }
   
@@ -1068,7 +1074,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Override
     protected IStoredApplicationObject construct()
     {
-      return builder_.build();
+      IStoredApplicationObject storedApplicationObject = builder_.build();
+      
+      if(payload_ instanceof ApplicationObjectPayload)
+        ((ApplicationObjectPayload) payload_).setStoredApplicationObject(storedApplicationObject);
+      
+      return storedApplicationObject;
     }
   }
   
