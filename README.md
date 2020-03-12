@@ -7,6 +7,26 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-03-12 Allow for filtering of feed subscriptions by sort key prefix
+When upserting a partition it is now possible to filter the records which will be delivered to the feed by sort key prefix
+as in this example
+
+```java
+builder = new UpsertFeedRequest.Builder()
+    .withName(FILTER_FEED_NAME)
+    .withPermissions(permissions)
+    .withPartitionSelection(
+        new PartitionId.Builder()
+        .withName(PARTITION_NAME)
+        .build(), FILTER_PREFIX
+        )
+    ;
+
+filterFeed_ = allegroApi_.upsertFeed(builder.build());
+```
+The withPartitionSelection method on UpsertFeedRequest.Builder takes a partition ID and a prefix. Only objects whose sort key begins with
+the given prefix will be forwarded to the feed. If the sort key prefix is null then all records will be forwarded.
+
 ## 2020-03-05 Separation of IMultiTenantAllegroApi !!!BREAKING CHANGE!!!
 It is now possible to authenticate to the object store but not a pod to access only multi-tenant features
 of the API. There is an example of this in 
