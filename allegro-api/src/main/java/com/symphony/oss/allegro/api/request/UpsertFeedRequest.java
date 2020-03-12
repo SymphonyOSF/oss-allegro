@@ -16,7 +16,9 @@
 
 package com.symphony.oss.allegro.api.request;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
@@ -25,6 +27,8 @@ import org.symphonyoss.s2.common.hash.Hash;
 import com.google.common.collect.ImmutableSet;
 import com.symphony.oss.allegro.api.ResourcePermissions;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.object.canon.IPartitionSelection;
+import com.symphony.oss.models.object.canon.PartitionSelection;
 
 /**
  * Request object for UpsertFeed.
@@ -34,31 +38,36 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
  */
 public class UpsertFeedRequest extends NamedUserIdObjectRequest
 {
-  private final ImmutableSet<NamedUserIdObjectOrHashRequest> partitionIds_;
-  private final ResourcePermissions                          permissions_;
+  private final ImmutableSet<PartitionSelectionRequest> partitionSelections_;
+  private final ResourcePermissions                     permissions_;
   
   UpsertFeedRequest(AbstractBuilder<?,?> builder)
   {
     super(builder);
     
-    partitionIds_  = ImmutableSet.copyOf(builder.partitionIds_);
-    permissions_   = builder.permissions_;
+    partitionSelections_  = ImmutableSet.copyOf(builder.partitionSelections_);
+    permissions_          = builder.permissions_;
   }
   
   /**
    * 
    * @param defaultOwner The default owner for partitions.
    * 
-   * @return The partitions to which the feed should be subscribed.
+   * @return The partition selections to which the feed should be subscribed.
    */
-  public Set<Hash> getPartitionHashes(PodAndUserId defaultOwner)
+  public List<IPartitionSelection> getPartitionSelections(PodAndUserId defaultOwner)
   {
-    Set<Hash> hashes = new HashSet<>();
+    List<IPartitionSelection> partitionSelections = new ArrayList<>(partitionSelections_.size());
     
-    for(NamedUserIdObjectOrHashRequest id : partitionIds_)
-      hashes.add(id.getHash(defaultOwner));
+    for(PartitionSelectionRequest psr : partitionSelections_)
+    {
+      partitionSelections.add(new PartitionSelection.Builder()
+          .withPartitionHash(psr.getPartitionId().getHash(defaultOwner))
+          .withSortKeyPrefix(psr.getSortKeyPrefix())
+          .build());
+    }
     
-    return hashes;
+    return partitionSelections;
   }
   
   /**
@@ -103,7 +112,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
    */
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
-    protected Set<NamedUserIdObjectOrHashRequest> partitionIds_ = new HashSet<>();
+    protected Set<PartitionSelectionRequest>      partitionSelections_ = new HashSet<>();
     protected ResourcePermissions                 permissions_;
     
     AbstractBuilder(Class<T> type)
@@ -118,10 +127,12 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
      * 
      * @return This (fluent method)
      */
-    public T withPartitionIds(NamedUserIdObjectOrHashRequest ...partitionId)
+    public T withPartitionIds(PartitionId ...partitionId)
     {
-      for(NamedUserIdObjectOrHashRequest id : partitionId)
-        partitionIds_.add(id);
+      for(PartitionId id : partitionId)
+        partitionSelections_.add(new PartitionSelectionRequest.Builder()
+            .withPartitionId(id)
+            .build());
       
       return self();
     }
@@ -136,7 +147,55 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
     public T withPartitionHashes(Hash ...partitionHashes)
     {
       for(Hash partitionHash : partitionHashes)
-        partitionIds_.add(new PartitionId.Builder().withHash(partitionHash).build());
+        partitionSelections_.add(new PartitionSelectionRequest.Builder()
+            .withPartitionId(
+                new PartitionId.Builder()
+                .withHash(partitionHash)
+                .build()
+                )
+            .build());
+      
+      return self();
+    }
+
+    /**
+     * Add the given partition ID to the set of partitions to be subscribed to.
+     * Only objects whose sortKey matches the given prefix will be forwarded.
+     * 
+     * @param partitionId   Partition IDs to be subscribed to.
+     * @param sortKeyPrefix The prefix which the sort key of records must match if they are to be forwarded.
+     * 
+     * @return This (fluent method)
+     */
+    public T withPartitionSelection(PartitionId partitionId, String sortKeyPrefix)
+    {
+      partitionSelections_.add(new PartitionSelectionRequest.Builder()
+          .withPartitionId(partitionId)
+          .withSortKeyPrefix(sortKeyPrefix)
+          .build());
+    
+      return self();
+    }
+
+    /**
+     * Add the given partition hash to the set of partitions to be subscribed to.
+     * Only objects whose sortKey matches the given prefix will be forwarded.
+     * 
+     * @param partitionHash partition hash to be subscribed to.
+     * @param sortKeyPrefix The prefix which the sort key of records must match if they are to be forwarded.
+     * 
+     * @return This (fluent method)
+     */
+    public T withPartitionHashes(Hash partitionHash, String sortKeyPrefix)
+    {
+      partitionSelections_.add(new PartitionSelectionRequest.Builder()
+          .withPartitionId(
+              new PartitionId.Builder()
+              .withHash(partitionHash)
+              .build()
+              )
+          .withSortKeyPrefix(sortKeyPrefix)
+          .build());
       
       return self();
     }

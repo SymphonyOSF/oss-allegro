@@ -589,7 +589,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     return objectApiClient_.newFeedsUpsertPostHttpRequestBuilder()
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertFeedRequest.Builder()
         .withFeedId(request.getAndValidateId(getUserId()))
-        .withPartitionHashes(request.getPartitionHashes(getUserId()))
+        .withPartitionSelections(request.getPartitionSelections(getUserId()))
         .withUserPermissions(userPermissions)
         .build())
       .build()
