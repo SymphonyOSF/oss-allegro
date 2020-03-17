@@ -7,6 +7,23 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-03-17 Remove mutable attribute from AbstractApplicationObjectPayload
+In order to allow an update to be made from an ApplicationObjectPayload, the class AbstractApplicationObjectPayload
+(which is the superclass of all application (encrypted) payloads and (unencrypted) header objects) provided a
+**getStoredApplicationObject()** method. Unfortunately this was implemented as a getter on a mutable attribute in
+the AbstractApplicationObjectPayload which is problematic for a number of reasons.
+
+TL;DR the mutable attribute has been removed, with the effect that when you create an object, the application
+payload *can not* hold a reference to the StoredApplicationObject because the payload has to be created first.
+
+What does this mean? The method IAllegroApi.newApplicationObjectUpdater(existing) now takes an IStoredApplicationObject
+instead of an IAbstractApplicationPayload. 
+
+When an application object payload is returned from fetch operations you can just call getStoredApplicationObject() on the payload
+to call IAllegroApi.newApplicationObjectUpdater(existing). In cases where you create the payload and then update it
+you need to retain a separate reference to the StoredApplicationObject which is returned by the
+**store(IAbstractStoredApplicationObject object)** method.
+
 ## 2020-03-12 Allow for filtering of feed subscriptions by sort key prefix
 When upserting a partition it is now possible to filter the records which will be delivered to the feed by sort key prefix
 as in this example
