@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.agent.util;
+package com.symphony.oss.allegro.api;
 
 import org.symphonyoss.symphony.messageml.MessageMLContext;
 import org.symphonyoss.symphony.messageml.elements.MessageML;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class V4MessageTransformer
+class V4MessageTransformer
 {
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final JsonFactory FACTORY = MAPPER.getFactory();
+//  private static final JsonFactory FACTORY = MAPPER.getFactory();
 
   private static final String TEXT = "text";
-  private static final String AGENT = "Agent";
+//  private static final String AGENT = "Agent";
   private static final String ENTITIES = "entities";
   private static final String ATTACHMENTS = "attachments";
   private static final String CHIME = "isChime";
@@ -47,12 +46,12 @@ public class V4MessageTransformer
   private static final String VERSION_SOCIALMESSAGE = "SOCIALMESSAGE";
   private static final String PRESENTATIONML = "presentationML";
   private static final String ENTITY_JSON = "entityJSON";
-  private static final String FROM = "from";
-  private static final String ID = "id";
-  private static final String ORIGINATING_SYSTEM_ID = "originatingSystemId";
-  private static final String INGESTION_DATE = "ingestionDate";
-  private static final String IS_IMPORTED = "isImported";
-  private static final String ORIGINAL_MESSAGE_ID = "originalMessageId";
+//  private static final String FROM = "from";
+//  private static final String ID = "id";
+//  private static final String ORIGINATING_SYSTEM_ID = "originatingSystemId";
+//  private static final String INGESTION_DATE = "ingestionDate";
+//  private static final String IS_IMPORTED = "isImported";
+//  private static final String ORIGINAL_MESSAGE_ID = "originalMessageId";
   private static final String DLP_ENFORCE_EXPRESSION_FILTERING = "enforceExpressionFiltering";
   
   private final String clientType_;
@@ -71,7 +70,7 @@ public class V4MessageTransformer
    * @return JSON payload representing the Social Message
    * @throws JsonProcessingException thrown on errors processing the JSON contents of the message
    */
-  public JsonNode createSocialMessage(MessageMLContext context, String threadId, boolean dlpEnforceExpressionFiltering) throws JsonProcessingException {
+  JsonNode createSocialMessage(MessageMLContext context, String threadId, boolean dlpEnforceExpressionFiltering) throws JsonProcessingException {
     ObjectNode result = JsonNodeFactory.instance.objectNode();
     result.put(VERSION, VERSION_SOCIALMESSAGE);
     result.put(SENDING_APP, LC);

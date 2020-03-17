@@ -1170,28 +1170,12 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       return self();
     }
     
-//    @Override
-//    protected void validate()
-//    {
-//      if(builder_.getEncryptedPayload() == null ||
-//          builder_.getRotationId() == null ||
-//          builder_.getCipherSuiteId() == null ||
-//          builder_.getThreadId() == null
-//          )
-//        throw new IllegalStateException("EncryptedPayload is required.");
-//      
-//      super.validate();
-//    }
-    
     @Override
     protected IStoredApplicationObject construct()
     {
       return builder_.build();
     }
   }
-  
-  
-  
 
   @Override
   public IAbstractStoredApplicationObject fetchAbsolute(Hash absoluteHash)

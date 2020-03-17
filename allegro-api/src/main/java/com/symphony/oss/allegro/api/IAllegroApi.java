@@ -48,16 +48,12 @@ import com.symphony.oss.models.pod.canon.IUserV2;
  */
 public interface IAllegroApi extends IAllegroMultiTenantApi
 {
-//  /** Permission value for no access */
-//  static final int   PERMISSION_NONE       = 0;
-//  
-//  /** Permission value for read access */
-//  static final int   PERMISSION_READ       = 1<<0;
-  
+  /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
+  /** Resource path for Symphony dev/QA intermediate certificate */
   static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
+  /** Resource path for Symphony dev certificate */
   static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
-  
   
   /**
    * Force authentication.
@@ -186,11 +182,41 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   /**
    * Create a new ApplicationObjectBuilder to create a new version of the given object.
    * 
+   * When an application object payload is returned from fetch operations it has a reference to the IStoredApplicationObject
+   * which contains it and this can be retrieved by calling the <code>getStoredApplicationObject()</code>
+   * method. In these cases (such as when writing a Consumer method) you can generate an updater from the
+   * application object payload directly by calling
+   * <code>newApplicationObjectUpdater(applicationObjectPayload.getStoredApplicationObject())</code>.
+   * 
+   * In cases where the application object was created (rather than having been retrieved from the object store)
+   * this will not work, since the ApplicationObjectPayload must be created before the StoredApplicationObject.
+   * In order to update an object from a created ApplicationObjectPayload it is necessary to retain a separate
+   * reference to the StoredApplicationObject which is returned by the
+   * <code>store(IAbstractStoredApplicationObject object)</code> method.
+   * 
    * @param existingObject An existing application object for which a new version is to be created.
    * 
    * @return A new ApplicationObjectBuilder to create a new version of the given object.
    */
-  ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject);
+  ApplicationObjectUpdater newApplicationObjectUpdater(IStoredApplicationObject existingObject);
+  
+  /**
+   * Create a new ApplicationObjectBuilder to create a new version of the given object.
+   * 
+   * This method only works with an IApplicationObjectPayload which was retrieved from the object store, if it
+   * is passed a locally created IApplicationObjectPayload then a <code>NullPointerException</code> will be thrown.
+   * 
+   * @param existingObject An existing application object for which a new version is to be created.
+   * 
+   * @deprecated Use <code>newApplicationObjectUpdater(IStoredApplicationObject existingObject)</code> instead.
+   * 
+   * @return A new ApplicationObjectBuilder to create a new version of the given object.
+   */
+  @Deprecated
+  default ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject)
+  {
+    return newApplicationObjectUpdater(existingObject.getStoredApplicationObject());
+  }
 
   /**
    * Create an IChatMessage from the given ILiveCurrentMessage, if the message

@@ -57,8 +57,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.symphony.oss.allegro.api.agent.util.EncryptionHandler;
-import com.symphony.oss.allegro.api.agent.util.V4MessageTransformer;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
@@ -101,7 +99,6 @@ import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
-import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
@@ -138,7 +135,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final PodHttpModelClient              podApiClient_;
   private final PodInternalHttpModelClient      podInternalApiClient_;
   private final KmInternalHttpModelClient       kmInternalClient_;
-  private final IAllegroCryptoClient            cryptoClient_;
+  private final AllegroCryptoClient             cryptoClient_;
   private final IPodInfo                        podInfo_;
   private final AllegroDataProvider             dataProvider_;
   private final V4MessageTransformer            messageTramnsformer_;
@@ -463,9 +460,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public ApplicationObjectUpdater newApplicationObjectUpdater(IApplicationObjectPayload existingObject)
+  public ApplicationObjectUpdater newApplicationObjectUpdater(IStoredApplicationObject existing)
   {
-    return new ApplicationObjectUpdater(existingObject);
+    return new ApplicationObjectUpdater(existing);
   }
 
   /**
@@ -991,12 +988,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Override
     protected IStoredApplicationObject construct()
     {
-      IStoredApplicationObject storedApplicationObject = builder_.build();
-      
-      if(payload_ instanceof ApplicationObjectPayload)
-        ((ApplicationObjectPayload) payload_).setStoredApplicationObject(storedApplicationObject);
-      
-      return storedApplicationObject;
+      return builder_.build();
     }
   }
   
@@ -1014,13 +1006,11 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     /**
      * Constructor.
      * 
-     * @param existingObject An existing Application Object for which a new version is to be created. 
+     * @param existing An existing Application Object for which a new version is to be created. 
      */
-    public ApplicationObjectUpdater(IApplicationObjectPayload existingObject)
+    public ApplicationObjectUpdater(IStoredApplicationObject existing)
     {
-      super(ApplicationObjectUpdater.class, existingObject.getStoredApplicationObject());
-      
-      IStoredApplicationObject existing = existingObject.getStoredApplicationObject();
+      super(ApplicationObjectUpdater.class, existing);
       
       builder_
           .withPartitionHash(existing.getPartitionHash())
@@ -1033,9 +1023,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
           .withPrevHash(existing.getAbsoluteHash())
           .withPrevSortKey(existing.getSortKey())
           ;
-      
-      builder_.withPrevHash(existingObject.getStoredApplicationObject().getAbsoluteHash());
-      builder_.withPrevSortKey(existingObject.getStoredApplicationObject().getSortKey());
     }
     
     /**
@@ -1074,12 +1061,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Override
     protected IStoredApplicationObject construct()
     {
-      IStoredApplicationObject storedApplicationObject = builder_.build();
-      
-      if(payload_ instanceof ApplicationObjectPayload)
-        ((ApplicationObjectPayload) payload_).setStoredApplicationObject(storedApplicationObject);
-      
-      return storedApplicationObject;
+      return builder_.build();
     }
   }
   

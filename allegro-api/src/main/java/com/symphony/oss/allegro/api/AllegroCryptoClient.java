@@ -26,13 +26,11 @@ import java.util.function.Supplier;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.symphonyoss.s2.canon.runtime.IEntity;
-import org.symphonyoss.s2.canon.runtime.IModelRegistry;
+import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.common.fault.CodingFault;
 import org.symphonyoss.s2.common.immutable.ImmutableByteArray;
 
 import com.symphony.oss.allegro.api.AllegroApi.EncryptablePayloadbuilder;
-import com.symphony.oss.models.chat.canon.ChatHttpModelClient;
-import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
@@ -44,7 +42,7 @@ import com.symphony.oss.models.internal.km.canon.facade.IUserKeys;
 import com.symphony.oss.models.internal.pod.canon.IPodInfo;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.facade.AbstractApplicationObjectPayload;
+import com.symphony.oss.models.object.ObjectModelRegistry;
 import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
@@ -60,12 +58,12 @@ import com.symphony.security.exceptions.SymphonyEncryptionException;
 import com.symphony.security.exceptions.SymphonyInputException;
 import com.symphony.security.helper.ClientCryptoHandler;
 /**
- * Implementation of IAllegroCryptoClient.
+ * Cryptographic functions for AllegroApi
  * 
  * @author Bruce Skingle
  *
  */
-class AllegroCryptoClient implements IAllegroCryptoClient
+class AllegroCryptoClient
 {
   public static final CipherSuiteId       ThreadSeurityContextCipherSuiteId = CipherSuiteId.RSA2048_AES256;
 
@@ -77,7 +75,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   private final PodAndUserId               internalUserId_;
   private final Supplier<IAccountInfo>     accountInfoProvider_;
 
-  private final IModelRegistry             modelRegistry_;
+  private final ModelRegistry              modelRegistry_;
   private final ClientCryptoHandler        clientCryptoHandler_;
   private final AccountKeyCache            accountKeyCache_;
   private final ContentKeyCache            contentKeyCache_;
@@ -89,7 +87,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
   
   AllegroCryptoClient(CloseableHttpClient httpclient, PodInternalHttpModelClient podInternalApiClient,
       KmInternalHttpModelClient kmInternalClient, IPodInfo podInfo, PodAndUserId internalUserId,
-      Supplier<IAccountInfo> accountInfoProvider, IModelRegistry modelRegistry)
+      Supplier<IAccountInfo> accountInfoProvider, ModelRegistry modelRegistry)
   {
     httpclient_ = httpclient;
     podInternalApiClient_ = podInternalApiClient;
@@ -113,14 +111,12 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     entityKeyCache_ = new EntityKeyCache(httpclient_, kmInternalClient_, accountKeyCache_, internalUserId, clientCryptoHandler_);
   }
 
-  @Override
-  public RotationId getRotationForThread(ThreadId threadId)
+  RotationId getRotationForThread(ThreadId threadId)
   {
     return threadRotationIdCache_.getRotationId(threadId);
   }
 
-  @Override
-  public String encryptTagV1(String plaintext)
+  String encryptTagV1(String plaintext)
   {
     try
     {
@@ -132,8 +128,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     }
   }
 
-  @Override
-  public String encryptTagV2(String plaintext)
+  String encryptTagV2(String plaintext)
   {
     try
     {
@@ -145,8 +140,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     }
   }
 
-  @Override
-  public List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens)
+  List<String> tokenize(ThreadId threadId, String clear, Set<String> clearTokens)
   {
     RotationId rotationId = getRotationForThread(threadId);
     
@@ -170,8 +164,15 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     }
   }
 
-  @Override
-  public String encrypt(ThreadId threadId, String clearText)
+  /**
+   * Encrypt the given clear text with the content key for the given thread.
+   * 
+   * @param threadId The id of the thread.
+   * @param clearText Text to be encrypted.
+   * 
+   * @return cipher text.
+   */
+  String encrypt(ThreadId threadId, String clearText)
   {
     RotationId rotationId = getRotationForThread(threadId);
     
@@ -180,9 +181,7 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     return helper.encrypt(clearText, podInfo_.getPodId(), rotationId.getValue());
   }
   
-
-  @Override
-  public void encrypt(EncryptablePayloadbuilder<?,?> builder)
+  void encrypt(EncryptablePayloadbuilder<?,?> builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     
@@ -193,14 +192,15 @@ class AllegroCryptoClient implements IAllegroCryptoClient
       .withCipherSuiteId(cipherSuite_.getId());
   }
   
-  @Override
-  public IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject)
+  IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject)
   {
     AllegroCryptoHelper helper = contentKeyCache_.getContentKey(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), internalUserId_);
 
     ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), storedApplicationObject.getEncryptedPayload());
     
-    IEntity entity = modelRegistry_.parseOne(plainText.getReader());
+    ObjectModelRegistry objectModelRegistry = new ObjectModelRegistry(modelRegistry_, storedApplicationObject);
+    
+    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
     ApplicationObjectPayload payload;
     
     if(entity instanceof ApplicationObjectPayload)
@@ -210,21 +210,20 @@ class AllegroCryptoClient implements IAllegroCryptoClient
     }
     else
     {
-      payload = new ApplicationObjectPayload(entity.getJsonObject(), modelRegistry_);
+      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
     }
     
-    payload.setStoredApplicationObject(storedApplicationObject);
+    //payload.setStoredApplicationObject(storedApplicationObject);
     
-    AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
+//    AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
     
-    if(header != null)
-      header.setStoredApplicationObject(storedApplicationObject);
+//    if(header != null)
+//      header.setStoredApplicationObject(storedApplicationObject);
     
     return payload;
   }
 
-  @Override
-  public String decrypt(ThreadId threadId, String cipherText)
+  String decrypt(ThreadId threadId, String cipherText)
   {
     RotationId  rotationId  = getRotationIdForCipherText(Base64.decodeBase64(cipherText));
     

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.agent.util;
+package com.symphony.oss.allegro.api;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,13 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.symphony.oss.allegro.api.IAllegroCryptoClient;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 
 /**
  * This class provides helper methods for encrypting binary data and JSON payloads of Symphony messages.
  */
-public class EncryptionHandler {
+class EncryptionHandler {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final int ENCRYPTION_ORDINAL = 0;
@@ -66,9 +65,9 @@ public class EncryptionHandler {
   private static final String ID_FLD = "id";
   private static final String TYPE_FLD = "type";
 
-  private final IAllegroCryptoClient cryptoClient_;
+  private final AllegroCryptoClient cryptoClient_;
 
-  public EncryptionHandler(IAllegroCryptoClient cryptoClient)
+  public EncryptionHandler(AllegroCryptoClient cryptoClient)
   {
     cryptoClient_ = cryptoClient;
   }
@@ -107,7 +106,7 @@ public class EncryptionHandler {
   /**
    * Encrypt a JSON message payload.
    */
-  public JsonNode handleEncrypt(ThreadId threadId, JsonNode socialMessage, String plaintextMessage
+  JsonNode handleEncrypt(ThreadId threadId, JsonNode socialMessage, String plaintextMessage
 //      , int podId, String streamKey,
 //      String publicKey, String entityKey, long rotationId
       )
