@@ -783,6 +783,12 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     return new EncryptedApplicationObjectBuilder();
   }
   
+  @Override
+  public EncryptedApplicationObjectUpdater newEncryptedApplicationObjectUpdater(IStoredApplicationObject existingObject)
+  {
+    return new EncryptedApplicationObjectUpdater(existingObject);
+  }
+
   /**
    * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
    * version is to be created.
@@ -1170,6 +1176,77 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       return self();
     }
     
+    @Override
+    protected IStoredApplicationObject construct()
+    {
+      return builder_.build();
+    }
+  }
+  
+  /**
+   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
+   * version is to be created.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public class EncryptedApplicationObjectUpdater extends BaseEncryptedApplicationObjectBuilder<EncryptedApplicationObjectUpdater>
+  {
+    /**
+     * Constructor.
+     * 
+     * @param existing An existing Application Object for which a new version is to be created. 
+     */
+    public EncryptedApplicationObjectUpdater(IStoredApplicationObject existing)
+    {
+      super(EncryptedApplicationObjectUpdater.class, existing);
+      
+      builder_
+          .withPartitionHash(existing.getPartitionHash())
+          .withSortKey(existing.getSortKey())
+          .withOwner(getUserId())
+          .withThreadId(existing.getThreadId())
+          .withHeader(existing.getHeader())
+          .withPurgeDate(existing.getPurgeDate())
+          .withBaseHash(existing.getBaseHash())
+          .withPrevHash(existing.getAbsoluteHash())
+          .withPrevSortKey(existing.getSortKey())
+          ;
+    }
+    
+    /**
+     * Set the already encrypted object payload and header.
+     * 
+     * @param payload The encrypted object payload and header.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectUpdater withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
+    {
+      withHeader(payload.getHeader());
+
+      return withEncryptedPayload(payload);
+    }
+    
+    /**
+     * Set the already encrypted object payload.
+     * 
+     * @param payload The encrypted object payload.
+     * 
+     * @return This (fluent method).
+     */
+    public EncryptedApplicationObjectUpdater withEncryptedPayload(IEncryptedApplicationPayload payload)
+    {
+      if(!builder_.getThreadId().equals(payload.getThreadId()))
+        throw new IllegalArgumentException("The threadId of an object cannot be changed. The object being updated has thread ID " + builder_.getThreadId());
+      
+      builder_.withEncryptedPayload(payload.getEncryptedPayload());
+      builder_.withRotationId(payload.getRotationId());
+      builder_.withCipherSuiteId(payload.getCipherSuiteId());
+      
+      return self();
+    }
+
     @Override
     protected IStoredApplicationObject construct()
     {

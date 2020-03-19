@@ -23,6 +23,7 @@ import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
+import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -104,6 +105,15 @@ public interface IAllegroMultiTenantApi
    * @return A new EncryptedApplicationObjectBuilder.
    */
   EncryptedApplicationObjectBuilder newEncryptedApplicationObjectBuilder();
+  
+  /**
+   * Create a new EncryptedApplicationObjectBuilder to create a new version of the given object.
+   * 
+   * @param existingObject An existing object for which a new version is to be created.
+   * 
+   * @return A new ApplicationObjectBuilder to create a new version of the given object.
+   */
+  EncryptedApplicationObjectUpdater newEncryptedApplicationObjectUpdater(IStoredApplicationObject existingObject);
   
   /**
    * Create a new ApplicationObjectDeleter to delete the given object.
