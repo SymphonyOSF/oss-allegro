@@ -19,11 +19,13 @@ package com.symphony.oss.allegro.api;
 import javax.annotation.Nullable;
 
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
+import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
 import org.symphonyoss.s2.common.hash.Hash;
 
 import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -31,11 +33,20 @@ import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.s2.authc.model.IMultiTenantServiceRegistry;
+import com.symphony.s2.authz.canon.EntitlementAction;
+import com.symphony.s2.authz.canon.facade.IEntitlement;
+import com.symphony.s2.authz.canon.facade.IPodEntitlementMapping;
+import com.symphony.s2.authz.canon.facade.IUserEntitlementMapping;
+import com.symphony.s2.authz.model.IEntitlementSpec;
+import com.symphony.s2.authz.model.IEntitlementValidator;
+import com.symphony.s2.authz.model.IMultiTenantServiceEntitlementSpec;
 
 /**
  * The public interface of the Allegro API.
@@ -43,7 +54,7 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroMultiTenantApi
+public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
 {
   /**
    * @return The user ID of the user we have authenticated as.
@@ -285,4 +296,110 @@ public interface IAllegroMultiTenantApi
    * @return an IAllegroQueryManager if this is an asynchronous request otherwise null.
    */
   @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request);
+
+  /**
+   * Fetch an entitlement.
+   * 
+   * @param request Details of the required entitlement.
+   * 
+   * @return The required entitlement.
+   */
+  IEntitlement fetchEntitlement(FetchEntitlementRequest request);
+
+  /**
+   * Fetch an entitlement.
+   * 
+   * @param entitlementSpec Details of the required entitlement.
+   * 
+   * @return The required entitlement.
+   */
+  IEntitlement fetchEntitlement(IMultiTenantServiceEntitlementSpec entitlementSpec);
+  
+  /**
+   * Fetch an entitlement.
+   * 
+   * @param entitlementSpec Details of the required entitlement.
+   * 
+   * @return The required entitlement.
+   */
+  IEntitlement fetchEntitlement(IEntitlementSpec entitlementSpec);
+
+  
+  /**
+   * 
+   * @return An implementation of IEntitlementValidator which can be used to validate entitlements for a user.
+   */
+  IEntitlementValidator getEntitlementValidator();
+
+  /**
+   * Upsert the mapping of a regular entitlement to a user (the subject).
+   * 
+   * This method can be used to grant or revoke an entitlement to or from the subject.
+   * 
+   * To remove and entitlement upsert a mapping with the action DENY.
+   * 
+   * @param entitlementSpec The entitlement.
+   * @param subjectUserId   The subject.
+   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
+   * 
+   * @return The upserted mapping.
+   * 
+   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
+   */
+  IUserEntitlementMapping upsertUserEntitlementMapping(IEntitlementSpec entitlementSpec, PodAndUserId subjectUserId,
+      EntitlementAction action);
+
+  /**
+   * Upsert the mapping of a multi tenant service entitlement to a user (the subject).
+   * 
+   * This method can be used to grant or revoke an entitlement to or from the subject.
+   * 
+   * To remove and entitlement upsert a mapping with the action DENY.
+   * 
+   * @param entitlementSpec The entitlement.
+   * @param subjectUserId   The subject.
+   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
+   * 
+   * @return The upserted mapping.
+   * 
+   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
+   */
+  IUserEntitlementMapping upsertUserEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec,
+      PodAndUserId subjectUserId, EntitlementAction action);
+
+  /**
+   * Upsert the mapping of a multi tenant service entitlement to a pod (the subject).
+   * 
+   * This method can be used to grant or revoke an entitlement to or from the subject.
+   * 
+   * To remove and entitlement upsert a mapping with the action DENY.
+   * 
+   * @param entitlementSpec The entitlement.
+   * @param subjectPodId    The subject.
+   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
+   * 
+   * @return The upserted mapping.
+   * 
+   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
+   */
+  IPodEntitlementMapping upsertPodEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec,
+      PodId subjectPodId, EntitlementAction action);
+
+  /**
+   * Upsert the mapping of a regular entitlement to a pod (the subject).
+   * 
+   * This method can be used to grant or revoke an entitlement to or from the subject.
+   * 
+   * To remove and entitlement upsert a mapping with the action DENY.
+   * 
+   * @param entitlementSpec The entitlement.
+   * @param subjectPodId    The subject.
+   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
+   * 
+   * @return The upserted mapping.
+   * 
+   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
+   */
+  IPodEntitlementMapping upsertPodEntitlementMapping(IEntitlementSpec entitlementSpec, PodId subjectPodId,
+      EntitlementAction action);
 }

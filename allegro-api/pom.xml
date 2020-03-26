@@ -33,7 +33,6 @@
   </repositories>
   
   <dependencies>
-
     <dependency>
       <groupId>org.symphonyoss.s2.common</groupId>
       <version>${s2.common.version}</version>
@@ -44,6 +43,11 @@
       <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
       <artifactId>authc-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <version>${oss.models.version}</version>
+      <artifactId>authz-model</artifactId>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>

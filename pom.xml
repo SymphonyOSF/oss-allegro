@@ -67,12 +67,13 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>  
     
-    <s2.common.version>0.2.7</s2.common.version>
-    <canon.version>0.2.19</canon.version>
-    <fugue.version>0.2.45</fugue.version>
+    <s2.common.version>0.2.8</s2.common.version>
+    <canon.version>0.2.20</canon.version>
+    <fugue.version>0.2.46</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.3.16</oss.models.version>
+    <oss.models.version>0.3.18-SNAPSHOT</oss.models.version>
+    <authz.lib.version>0.0.1-SNAPSHOT</authz.lib.version>
   </properties>
   
   <modules>
@@ -123,6 +124,12 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>com.symphony.s2</groupId>
+        <artifactId>authz-lib</artifactId>
+        <version>${authz.lib.version}</version>
+      </dependency>
+      
       <dependency>
         <groupId>org.symphonyoss.s2.fugue</groupId>
         <artifactId>fugue-core</artifactId>

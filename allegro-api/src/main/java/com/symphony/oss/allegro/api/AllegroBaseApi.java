@@ -27,9 +27,11 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +56,7 @@ import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntityFactory;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
+import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
@@ -72,6 +75,7 @@ import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FeedQuery;
+import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
@@ -86,6 +90,7 @@ import com.symphony.oss.models.core.canon.HashType;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
@@ -100,6 +105,7 @@ import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
+import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
@@ -117,6 +123,24 @@ import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
+import com.symphony.s2.authc.canon.AuthcHttpModelClient;
+import com.symphony.s2.authc.canon.AuthcModel;
+import com.symphony.s2.authc.canon.IServiceInfo;
+import com.symphony.s2.authc.canon.ServiceId;
+import com.symphony.s2.authc.model.IMultiTenantService;
+import com.symphony.s2.authc.model.MultiTenantService;
+import com.symphony.s2.authz.canon.AuthzHttpModelClient;
+import com.symphony.s2.authz.canon.AuthzModel;
+import com.symphony.s2.authz.canon.EntitlementAction;
+import com.symphony.s2.authz.canon.facade.IEntitlement;
+import com.symphony.s2.authz.canon.facade.IPodEntitlementMapping;
+import com.symphony.s2.authz.canon.facade.IUserEntitlementMapping;
+import com.symphony.s2.authz.canon.facade.PodEntitlementMapping;
+import com.symphony.s2.authz.canon.facade.UserEntitlementMapping;
+import com.symphony.s2.authz.model.BaseEntitlementValidator;
+import com.symphony.s2.authz.model.IEntitlementSpec;
+import com.symphony.s2.authz.model.IEntitlementValidator;
+import com.symphony.s2.authz.model.IMultiTenantServiceEntitlementSpec;
 
 /**
  * Super class of AllegroMultiTenantApi and AllegroApi.
@@ -142,8 +166,13 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   final CloseableHttpClient             httpClient_;
   final CoreHttpModelClient             coreApiClient_;
   final ObjectHttpModelClient           objectApiClient_;
+  final AuthcHttpModelClient            authcApiClient_;
+  final AuthzHttpModelClient            authzApiClient_;
+  final BaseEntitlementValidator        entitlementValidator_;
 
   final ITraceContextTransactionFactory traceContextFactory_;
+  
+  private final Map<ServiceId, IServiceInfo>   serviceMap_ = new HashMap<>();
   
   AllegroBaseApi(AbstractBuilder<?, ?> builder)
   {
@@ -152,6 +181,8 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     
     modelRegistry_ = new ModelRegistry()
         .withFactories(ObjectModel.FACTORIES)
+        .withFactories(AuthcModel.FACTORIES)
+        .withFactories(AuthzModel.FACTORIES)
         .withFactories(CoreModel.FACTORIES)
         ;
     
@@ -163,11 +194,42 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     
     coreApiClient_  = new CoreHttpModelClient(
         modelRegistry_,
-        builder.objectStoreUrl_, null, jwtGenerator_);
+        initUrl(builder.objectStoreUrl_, MultiTenantService.OBJECT), null, jwtGenerator_);
     
     objectApiClient_  = new ObjectHttpModelClient(
         modelRegistry_,
-        builder.objectStoreUrl_, null, jwtGenerator_);
+        initUrl(builder.objectStoreUrl_, MultiTenantService.OBJECT), null, jwtGenerator_);
+    
+    authcApiClient_  = new AuthcHttpModelClient(
+        modelRegistry_,
+        initUrl(builder.objectStoreUrl_, MultiTenantService.AUTHC), null, jwtGenerator_);
+    
+    authzApiClient_  = new AuthzHttpModelClient(
+        modelRegistry_,
+        initUrl(builder.objectStoreUrl_, MultiTenantService.AUTHZ), null, jwtGenerator_);
+    
+    
+//    IMultiTenantServiceRegistry serviceRegistry = new IMultiTenantServiceRegistry()
+//        {
+//
+//          @Override
+//          public IServiceInfo fetchServiceInfo(MultiTenantService service)
+//          {
+//            // TODO Auto-generated method stub
+//            return null;
+//          }
+//      
+//        };
+    
+    entitlementValidator_ = new BaseEntitlementValidator(httpClient_, authzApiClient_, this);
+  }
+
+  private String initUrl(String url, MultiTenantService service)
+  {
+    if(url.equals("local"))
+      return "http://127.0.0.1:" + service.getHttpPort();
+    
+    return url;
   }
 
   /**
@@ -192,25 +254,16 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     protected CipherSuiteId                 cipherSuiteId_;
     protected ICipherSuite                  cipherSuite_;
     protected CloseableHttpClient           httpclient_;
-    protected URL                           objectStoreUrl_;
+    protected String                        objectStoreUrl_       = "https://api.symphony.com";
     protected CookieStore                   cookieStore_;
-    protected List<IEntityFactory<?, ?, ?>> factories_ = new LinkedList<>();
-    protected List<X509Certificate>         trustedCerts_ = new LinkedList<>();
+    protected List<IEntityFactory<?, ?, ?>> factories_            = new LinkedList<>();
+    protected List<X509Certificate>         trustedCerts_         = new LinkedList<>();
     protected List<String>                  trustedCertResources_ = new LinkedList<>();
     private TrustStrategy                   sslTrustStrategy_     = null;
     
     public AbstractBuilder(Class<T> type)
     {
       super(type);
-      
-      try
-      {
-        objectStoreUrl_ = new URL("https://api.symphony.com");
-      }
-      catch (MalformedURLException e)
-      {
-        throw new IllegalArgumentException("Invalid default URL", e);
-      }
     }
     
     public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
@@ -279,21 +332,30 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
 
     public T withObjectStoreUrl(URL objectStoreUrl)
     {
-      objectStoreUrl_ = objectStoreUrl;
+      objectStoreUrl_ = objectStoreUrl.toString();
       
       return self();
     }
 
     public T withObjectStoreUrl(String objectStoreUrl)
     {
-      try
+      switch(objectStoreUrl)
       {
-        objectStoreUrl_ = new URL(objectStoreUrl);
+        case "local":
+          log_.info("Using local service URLS");
+          break;
+        
+        default:
+          try
+          {
+            new URL(objectStoreUrl);
+          }
+          catch (MalformedURLException e)
+          {
+            throw new IllegalArgumentException("Invalid objectStoreUrl", e);
+          }
       }
-      catch (MalformedURLException e)
-      {
-        throw new IllegalArgumentException("Invalid objectStoreUrl", e);
-      }
+      objectStoreUrl_ = objectStoreUrl;
       
       return self();
     }
@@ -1252,6 +1314,150 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     {
       return builder_.build();
     }
+  }
+  
+  @Override
+  public IEntitlement fetchEntitlement(FetchEntitlementRequest request)
+  {
+    return authzApiClient_.newEntitlementsEntitlementHashGetHttpRequestBuilder()
+      .withEntitlementHash(request.getHash(getUserId()))
+      .build()
+      .execute(httpClient_);
+  }
+  
+  @Override
+  public IEntitlement fetchEntitlement(IMultiTenantServiceEntitlementSpec entitlementSpec)
+  {
+    return authzApiClient_.newEntitlementsEntitlementHashGetHttpRequestBuilder()
+        .withEntitlementHash(new NamedUserIdObject.Builder()
+            .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
+            .withName(entitlementSpec.getName())
+            .build()
+            .getHash())
+        .build()
+        .execute(httpClient_);
+  }
+
+  @Override
+  public IEntitlement fetchEntitlement(IEntitlementSpec entitlementSpec)
+  {
+    return authzApiClient_.newEntitlementsEntitlementHashGetHttpRequestBuilder()
+        .withEntitlementHash(new NamedUserIdObject.Builder()
+            .withUserId(entitlementSpec.getOwner())
+            .withName(entitlementSpec.getName())
+            .build()
+            .getHash())
+        .build()
+        .execute(httpClient_);
+  }
+  
+  @Override
+  public IPodEntitlementMapping upsertPodEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
+  {
+    return authzApiClient_.newPodsPodIdEntitlementsUpsertPostHttpRequestBuilder()
+        .withPodId(subjectPodId)
+        .withCanonPayload(new PodEntitlementMapping.Builder()
+          .withEntitlementHash(new NamedUserIdObject.Builder()
+              .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
+              .withName(entitlementSpec.getName())
+              .build()
+              .getHash())
+          .withAction(action)
+          .build()
+          )
+        .build()
+        .execute(httpClient_);
+  }
+  
+  @Override
+  public IPodEntitlementMapping upsertPodEntitlementMapping(IEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
+  {
+    return authzApiClient_.newPodsPodIdEntitlementsUpsertPostHttpRequestBuilder()
+        .withPodId(subjectPodId)
+        .withCanonPayload(new PodEntitlementMapping.Builder()
+          .withEntitlementHash(new NamedUserIdObject.Builder()
+              .withUserId(entitlementSpec.getOwner())
+              .withName(entitlementSpec.getName())
+              .build()
+              .getHash())
+          .withAction(action)
+          .build()
+          )
+        .build()
+        .execute(httpClient_);
+  }
+  
+  @Override
+  public IUserEntitlementMapping upsertUserEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
+  {
+    return authzApiClient_.newUsersUserIdEntitlementsUpsertPostHttpRequestBuilder()
+        .withUserId(subjectUserId)
+        .withCanonPayload(new UserEntitlementMapping.Builder()
+          .withEntitlementHash(new NamedUserIdObject.Builder()
+              .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
+              .withName(entitlementSpec.getName())
+              .build()
+              .getHash())
+          .withAction(action)
+          .build()
+          )
+        .build()
+        .execute(httpClient_);
+  }
+  
+  @Override
+  public IUserEntitlementMapping upsertUserEntitlementMapping(IEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
+  {
+    return authzApiClient_.newUsersUserIdEntitlementsUpsertPostHttpRequestBuilder()
+        .withUserId(subjectUserId)
+        .withCanonPayload(new UserEntitlementMapping.Builder()
+          .withEntitlementHash(new NamedUserIdObject.Builder()
+              .withUserId(entitlementSpec.getOwner())
+              .withName(entitlementSpec.getName())
+              .build()
+              .getHash())
+          .withAction(action)
+          .build()
+          )
+        .build()
+        .execute(httpClient_);
+  }
+
+  @Override
+  public IEntitlementValidator getEntitlementValidator()
+  {
+    return entitlementValidator_;
+  }
+
+  @Override
+  public IServiceInfo fetchServiceInfo(IMultiTenantService service)
+  {
+    ServiceId serviceId = ServiceId.newBuilder().build(service.getName());
+  
+    if(!serviceMap_.containsKey(serviceId))
+    {
+      try
+      {
+        IServiceInfo serviceInfo = authcApiClient_.newServicesServiceIdGetHttpRequestBuilder()
+            .withServiceId(serviceId)
+            .build()
+            .execute(httpClient_);
+        
+        serviceMap_.put(serviceId, serviceInfo);
+      }
+      catch(NotFoundException e)
+      {
+        serviceMap_.put(serviceId, null);
+        
+        throw e;
+      }
+    }
+    IServiceInfo serviceInfo = serviceMap_.get(serviceId);
+    
+    if(serviceInfo == null)
+      throw new NotFoundException("No such service \"" + serviceId + "\"");
+    
+    return serviceInfo;
   }
 
   @Override
