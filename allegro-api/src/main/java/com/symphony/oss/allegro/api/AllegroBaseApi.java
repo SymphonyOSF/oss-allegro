@@ -105,7 +105,6 @@ import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
-import com.symphony.oss.models.object.canon.NamedUserIdObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
@@ -138,9 +137,10 @@ import com.symphony.s2.authz.canon.facade.IUserEntitlementMapping;
 import com.symphony.s2.authz.canon.facade.PodEntitlementMapping;
 import com.symphony.s2.authz.canon.facade.UserEntitlementMapping;
 import com.symphony.s2.authz.model.BaseEntitlementValidator;
-import com.symphony.s2.authz.model.IEntitlementSpec;
+import com.symphony.s2.authz.model.EntitlementSpecAdaptor;
 import com.symphony.s2.authz.model.IEntitlementValidator;
-import com.symphony.s2.authz.model.IMultiTenantServiceEntitlementSpec;
+import com.symphony.s2.authz.model.IGeneralEntitlementSpec;
+import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
 
 /**
  * Super class of AllegroMultiTenantApi and AllegroApi.
@@ -169,7 +169,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   final AuthcHttpModelClient            authcApiClient_;
   final AuthzHttpModelClient            authzApiClient_;
   final BaseEntitlementValidator        entitlementValidator_;
-
+  final EntitlementSpecAdaptor          entitlementSpecAdaptor_;
   final ITraceContextTransactionFactory traceContextFactory_;
   
   private final Map<ServiceId, IServiceInfo>   serviceMap_ = new HashMap<>();
@@ -222,6 +222,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
 //        };
     
     entitlementValidator_ = new BaseEntitlementValidator(httpClient_, authzApiClient_, this);
+    entitlementSpecAdaptor_ = new EntitlementSpecAdaptor(this);
   }
 
   private String initUrl(String url, MultiTenantService service)
@@ -1326,96 +1327,35 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   }
   
   @Override
-  public IEntitlement fetchEntitlement(IMultiTenantServiceEntitlementSpec entitlementSpec)
+  public IEntitlement fetchEntitlement(IServiceEntitlementSpecOrIdProvider entitlementSpec)
   {
     return authzApiClient_.newEntitlementsEntitlementHashGetHttpRequestBuilder()
-        .withEntitlementHash(new NamedUserIdObject.Builder()
-            .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
-            .withName(entitlementSpec.getName())
-            .build()
-            .getHash())
-        .build()
-        .execute(httpClient_);
-  }
-
-  @Override
-  public IEntitlement fetchEntitlement(IEntitlementSpec entitlementSpec)
-  {
-    return authzApiClient_.newEntitlementsEntitlementHashGetHttpRequestBuilder()
-        .withEntitlementHash(new NamedUserIdObject.Builder()
-            .withUserId(entitlementSpec.getOwner())
-            .withName(entitlementSpec.getName())
-            .build()
-            .getHash())
+        .withEntitlementHash(entitlementSpecAdaptor_.getEntitlementId(entitlementSpec).getHash())
         .build()
         .execute(httpClient_);
   }
   
   @Override
-  public IPodEntitlementMapping upsertPodEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
+  public IPodEntitlementMapping upsertPodEntitlementMapping(IGeneralEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
   {
     return authzApiClient_.newPodsPodIdEntitlementsUpsertPostHttpRequestBuilder()
         .withPodId(subjectPodId)
         .withCanonPayload(new PodEntitlementMapping.Builder()
-          .withEntitlementHash(new NamedUserIdObject.Builder()
-              .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
-              .withName(entitlementSpec.getName())
-              .build()
-              .getHash())
+          .withEntitlementId(entitlementSpecAdaptor_.getEntitlementId(entitlementSpec))
           .withAction(action)
           .build()
-          )
+         )
         .build()
         .execute(httpClient_);
   }
   
   @Override
-  public IPodEntitlementMapping upsertPodEntitlementMapping(IEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
-  {
-    return authzApiClient_.newPodsPodIdEntitlementsUpsertPostHttpRequestBuilder()
-        .withPodId(subjectPodId)
-        .withCanonPayload(new PodEntitlementMapping.Builder()
-          .withEntitlementHash(new NamedUserIdObject.Builder()
-              .withUserId(entitlementSpec.getOwner())
-              .withName(entitlementSpec.getName())
-              .build()
-              .getHash())
-          .withAction(action)
-          .build()
-          )
-        .build()
-        .execute(httpClient_);
-  }
-  
-  @Override
-  public IUserEntitlementMapping upsertUserEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
+  public IUserEntitlementMapping upsertUserEntitlementMapping(IGeneralEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
   {
     return authzApiClient_.newUsersUserIdEntitlementsUpsertPostHttpRequestBuilder()
         .withUserId(subjectUserId)
         .withCanonPayload(new UserEntitlementMapping.Builder()
-          .withEntitlementHash(new NamedUserIdObject.Builder()
-              .withUserId(fetchServiceInfo(entitlementSpec.getOwner()).getUserId())
-              .withName(entitlementSpec.getName())
-              .build()
-              .getHash())
-          .withAction(action)
-          .build()
-          )
-        .build()
-        .execute(httpClient_);
-  }
-  
-  @Override
-  public IUserEntitlementMapping upsertUserEntitlementMapping(IEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
-  {
-    return authzApiClient_.newUsersUserIdEntitlementsUpsertPostHttpRequestBuilder()
-        .withUserId(subjectUserId)
-        .withCanonPayload(new UserEntitlementMapping.Builder()
-          .withEntitlementHash(new NamedUserIdObject.Builder()
-              .withUserId(entitlementSpec.getOwner())
-              .withName(entitlementSpec.getName())
-              .build()
-              .getHash())
+          .withEntitlementId(entitlementSpecAdaptor_.getEntitlementId(entitlementSpec))
           .withAction(action)
           .build()
           )

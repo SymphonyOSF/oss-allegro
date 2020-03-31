@@ -44,9 +44,9 @@ import com.symphony.s2.authz.canon.EntitlementAction;
 import com.symphony.s2.authz.canon.facade.IEntitlement;
 import com.symphony.s2.authz.canon.facade.IPodEntitlementMapping;
 import com.symphony.s2.authz.canon.facade.IUserEntitlementMapping;
-import com.symphony.s2.authz.model.IEntitlementSpec;
 import com.symphony.s2.authz.model.IEntitlementValidator;
-import com.symphony.s2.authz.model.IMultiTenantServiceEntitlementSpec;
+import com.symphony.s2.authz.model.IGeneralEntitlementSpec;
+import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
 
 /**
  * The public interface of the Allegro API.
@@ -313,17 +313,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
    * 
    * @return The required entitlement.
    */
-  IEntitlement fetchEntitlement(IMultiTenantServiceEntitlementSpec entitlementSpec);
-  
-  /**
-   * Fetch an entitlement.
-   * 
-   * @param entitlementSpec Details of the required entitlement.
-   * 
-   * @return The required entitlement.
-   */
-  IEntitlement fetchEntitlement(IEntitlementSpec entitlementSpec);
-
+  IEntitlement fetchEntitlement(IServiceEntitlementSpecOrIdProvider entitlementSpec);
   
   /**
    * 
@@ -332,7 +322,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
   IEntitlementValidator getEntitlementValidator();
 
   /**
-   * Upsert the mapping of a regular entitlement to a user (the subject).
+   * Upsert the mapping of an entitlement to a user (the subject).
    * 
    * This method can be used to grant or revoke an entitlement to or from the subject.
    * 
@@ -346,29 +336,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
    * 
    * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
    */
-  IUserEntitlementMapping upsertUserEntitlementMapping(IEntitlementSpec entitlementSpec, PodAndUserId subjectUserId,
-      EntitlementAction action);
-
-  /**
-   * Upsert the mapping of a multi tenant service entitlement to a user (the subject).
-   * 
-   * This method can be used to grant or revoke an entitlement to or from the subject.
-   * 
-   * To remove and entitlement upsert a mapping with the action DENY.
-   * 
-   * @param entitlementSpec The entitlement.
-   * @param subjectUserId   The subject.
-   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
-   * 
-   * @return The upserted mapping.
-   * 
-   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
-   */
-  IUserEntitlementMapping upsertUserEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec,
+  IUserEntitlementMapping upsertUserEntitlementMapping(IGeneralEntitlementSpec entitlementSpec,
       PodAndUserId subjectUserId, EntitlementAction action);
 
   /**
-   * Upsert the mapping of a multi tenant service entitlement to a pod (the subject).
+   * Upsert the mapping of an entitlement to a pod (the subject).
    * 
    * This method can be used to grant or revoke an entitlement to or from the subject.
    * 
@@ -382,24 +354,6 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
    * 
    * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
    */
-  IPodEntitlementMapping upsertPodEntitlementMapping(IMultiTenantServiceEntitlementSpec entitlementSpec,
+  IPodEntitlementMapping upsertPodEntitlementMapping(IGeneralEntitlementSpec entitlementSpec,
       PodId subjectPodId, EntitlementAction action);
-
-  /**
-   * Upsert the mapping of a regular entitlement to a pod (the subject).
-   * 
-   * This method can be used to grant or revoke an entitlement to or from the subject.
-   * 
-   * To remove and entitlement upsert a mapping with the action DENY.
-   * 
-   * @param entitlementSpec The entitlement.
-   * @param subjectPodId    The subject.
-   * @param action          One of EntitlementAction.ALLOW or EntitlementAction.DENY.
-   * 
-   * @return The upserted mapping.
-   * 
-   * @throws PermissionDeniedException If the caller is not the owner of the entitlement.
-   */
-  IPodEntitlementMapping upsertPodEntitlementMapping(IEntitlementSpec entitlementSpec, PodId subjectPodId,
-      EntitlementAction action);
 }
