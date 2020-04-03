@@ -132,6 +132,7 @@ import com.symphony.s2.authz.canon.AuthzHttpModelClient;
 import com.symphony.s2.authz.canon.AuthzModel;
 import com.symphony.s2.authz.canon.EntitlementAction;
 import com.symphony.s2.authz.canon.facade.IEntitlement;
+import com.symphony.s2.authz.canon.facade.IEntitlementId;
 import com.symphony.s2.authz.canon.facade.IPodEntitlementMapping;
 import com.symphony.s2.authz.canon.facade.IUserEntitlementMapping;
 import com.symphony.s2.authz.canon.facade.PodEntitlementMapping;
@@ -1338,29 +1339,41 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   @Override
   public IPodEntitlementMapping upsertPodEntitlementMapping(IGeneralEntitlementSpec entitlementSpec, PodId subjectPodId, EntitlementAction action)
   {
-    return authzApiClient_.newPodsPodIdEntitlementsUpsertPostHttpRequestBuilder()
+    IEntitlementId entitlementId = entitlementSpecAdaptor_.getEntitlementId(entitlementSpec);
+    
+    IPodEntitlementMapping payload = new PodEntitlementMapping.Builder()
+        .withEntitlementId(entitlementId)
+        .withAction(action)
+        .build();
+    
+    authzApiClient_.newPodsPodIdEntitlementsEntitlementHashPutHttpRequestBuilder()
         .withPodId(subjectPodId)
-        .withCanonPayload(new PodEntitlementMapping.Builder()
-          .withEntitlementId(entitlementSpecAdaptor_.getEntitlementId(entitlementSpec))
-          .withAction(action)
-          .build()
-         )
+        .withEntitlementHash(entitlementId.getHash())
+        .withCanonPayload(payload)
         .build()
         .execute(httpClient_);
+    
+    return payload;
   }
   
   @Override
   public IUserEntitlementMapping upsertUserEntitlementMapping(IGeneralEntitlementSpec entitlementSpec, PodAndUserId subjectUserId, EntitlementAction action)
   {
-    return authzApiClient_.newUsersUserIdEntitlementsUpsertPostHttpRequestBuilder()
+    IEntitlementId entitlementId = entitlementSpecAdaptor_.getEntitlementId(entitlementSpec);
+    
+    IUserEntitlementMapping payload = new UserEntitlementMapping.Builder()
+        .withEntitlementId(entitlementId)
+        .withAction(action)
+        .build();
+    
+    authzApiClient_.newUsersUserIdEntitlementsEntitlementHashPutHttpRequestBuilder()
         .withUserId(subjectUserId)
-        .withCanonPayload(new UserEntitlementMapping.Builder()
-          .withEntitlementId(entitlementSpecAdaptor_.getEntitlementId(entitlementSpec))
-          .withAction(action)
-          .build()
-          )
+        .withEntitlementHash(entitlementId.getHash())
+        .withCanonPayload(payload)
         .build()
         .execute(httpClient_);
+    
+    return payload;
   }
 
   @Override
