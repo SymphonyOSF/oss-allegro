@@ -1134,6 +1134,21 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return cryptoClient_.decrypt(storedApplicationObject);
   }
 
+  @Override
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject,
+      Class<T> type)
+  {
+    if(storedApplicationObject.getEncryptedPayload() == null)
+      return null;
+    
+    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
+    
+    if(type.isInstance(payload))
+      return type.cast(payload);
+    
+    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
+  }
+
   /**
    * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
    * the Markdown content and JSON entities and returns their PresentationML representation.

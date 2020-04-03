@@ -236,4 +236,18 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
    * @return The decrypted object.
    */
   public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject);
+
+  /**
+   * Open (deserialize and decrypt) the given object.
+   * 
+   * @param <T> Type of the required object payload.
+   * 
+   * @param storedApplicationObject An encrypted object.
+   * @param type                    Type of the required object payload.
+   * 
+   * @return The decrypted object.
+   * 
+   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+   */
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
 }
