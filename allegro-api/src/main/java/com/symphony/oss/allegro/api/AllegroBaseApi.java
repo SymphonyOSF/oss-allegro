@@ -1343,7 +1343,9 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     
     IPodEntitlementMapping payload = new PodEntitlementMapping.Builder()
         .withEntitlementId(entitlementId)
+        .withPodId(subjectPodId)
         .withAction(action)
+        .withEffectiveDate(Instant.now())
         .build();
     
     authzApiClient_.newPodsPodIdEntitlementsEntitlementHashPutHttpRequestBuilder()
@@ -1363,7 +1365,9 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     
     IUserEntitlementMapping payload = new UserEntitlementMapping.Builder()
         .withEntitlementId(entitlementId)
+        .withUserId(subjectUserId)
         .withAction(action)
+        .withEffectiveDate(Instant.now())
         .build();
     
     authzApiClient_.newUsersUserIdEntitlementsEntitlementHashPutHttpRequestBuilder()

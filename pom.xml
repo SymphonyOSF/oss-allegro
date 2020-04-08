@@ -57,7 +57,7 @@
       <organization>Symphony Communication Services LLC</organization>
       <organizationUrl>http://symphony.com</organizationUrl>
       <roles>
-        <role>Chief Architect</role>
+        <role>Distinguished Engineer</role>
       </roles>
     </developer>
   </developers>
@@ -73,7 +73,7 @@
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
     <oss.models.version>0.3.20</oss.models.version>
-    <authz.lib.version>0.0.3</authz.lib.version>
+    <authz.lib.version>0.0.4</authz.lib.version>
   </properties>
   
   <modules>
@@ -120,104 +120,4 @@
       </snapshots>
     </pluginRepository>
   </pluginRepositories>
-  
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.symphony.s2</groupId>
-        <artifactId>authz-lib</artifactId>
-        <version>${authz.lib.version}</version>
-      </dependency>
-      
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-core</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-config-manager</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-resources</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-config</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-pubsub</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>aws-fugue</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>fugue-launch</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.fugue</groupId>
-        <artifactId>google-fugue</artifactId>
-        <version>${fugue.version}</version>
-      </dependency>
-      
-      <dependency>
-        <groupId>org.symphonyoss.s2.canon</groupId>
-        <artifactId>canon-runtime-java</artifactId>
-        <version>${canon.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.canon</groupId>
-        <artifactId>canon-jjwt</artifactId>
-        <version>${canon.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.canon</groupId>
-        <artifactId>canon-model-gcp</artifactId>
-        <version>${canon.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.canon</groupId>
-        <artifactId>canon-parser</artifactId>
-        <version>${canon.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.symphonyoss.s2.canon</groupId>
-        <artifactId>canon-template-java</artifactId>
-        <version>${canon.version}</version>
-      </dependency>
-      
-			<dependency>
-		    <groupId>org.symphonyoss.symphony</groupId>
-		    <artifactId>messageml</artifactId>
-		    <version>${messageml.version}</version>
-			</dependency>
-    </dependencies>
-  </dependencyManagement>
-  
-  <dependencies>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-     </dependency>
-     
-      
-    
-     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  
 </project>

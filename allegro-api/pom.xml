@@ -35,91 +35,97 @@
   <dependencies>
     <dependency>
       <groupId>org.symphonyoss.s2.common</groupId>
-      <version>${s2.common.version}</version>
       <artifactId>S2-common-core</artifactId>
+      <version>${s2.common.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.symphonyoss.s2.common</groupId>
+      <artifactId>S2-common-dom</artifactId>
+      <version>${s2.common.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.symphonyoss.s2.common</groupId>
+      <artifactId>S2-common-dom-jackson</artifactId>
+      <version>${s2.common.version}</version>
     </dependency>
     
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>authc-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>authz-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>core-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>object-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>crypto-model</artifactId>
-    </dependency>
-    
-    <!-- <dependency>
-      <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
-      <artifactId>fundamental-model</artifactId>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
-      <artifactId>system-model</artifactId>
-    </dependency> -->
-    <!-- <dependency>
-      <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
-      <artifactId>pod-private-model</artifactId>
-    </dependency> -->
-    <dependency>
-      <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>allegro-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
-    
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
+      <artifactId>chat-model</artifactId>
       <version>${oss.models.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
       <artifactId>auth-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>pod-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>pod-internal-model</artifactId>
+      <version>${oss.models.version}</version>
     </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
-      <version>${oss.models.version}</version>
       <artifactId>km-internal-model</artifactId>
-    </dependency>
-    <!-- <dependency>
-      <groupId>com.symphony.oss.models</groupId>
       <version>${oss.models.version}</version>
-      <artifactId>sbe-id</artifactId>
-    </dependency> -->
+    </dependency>
     
     <dependency>
       <groupId>org.symphonyoss.s2.canon</groupId>
       <artifactId>canon-runtime-java</artifactId>
+       <version>${canon.version}</version>
     </dependency>
     <dependency>
       <groupId>org.symphonyoss.s2.canon</groupId>
       <artifactId>canon-jjwt</artifactId>
+       <version>${canon.version}</version>
     </dependency>
+    
+     <dependency>
+       <groupId>org.symphonyoss.s2.fugue</groupId>
+       <artifactId>fugue-core</artifactId>
+       <version>${fugue.version}</version>
+     </dependency>
+     <dependency>
+       <groupId>org.symphonyoss.s2.fugue</groupId>
+       <artifactId>fugue-pubsub</artifactId>
+       <version>${fugue.version}</version>
+     </dependency>
     
     <dependency>
 	    <groupId>com.symphony</groupId>
@@ -130,11 +136,50 @@
     <dependency>
       <groupId>org.symphonyoss.symphony</groupId>
       <artifactId>messageml</artifactId>
+      <version>${messageml.version}</version>
     </dependency>
     
     <dependency>
+        <groupId>io.jsonwebtoken</groupId>
+        <artifactId>jjwt</artifactId>
+        <version>0.6.0</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+     
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.4</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
 
