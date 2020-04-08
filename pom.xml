@@ -69,11 +69,11 @@
     
     <s2.common.version>0.2.8</s2.common.version>
     <canon.version>0.2.20</canon.version>
-    <fugue.version>0.2.47</fugue.version>
+    <fugue.version>0.2.51</fugue.version>
     <symphony.security.version>1.55.0</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.3.19</oss.models.version>
-    <authz.lib.version>0.0.2</authz.lib.version>
+    <oss.models.version>0.3.20</oss.models.version>
+    <authz.lib.version>0.0.3</authz.lib.version>
   </properties>
   
   <modules>

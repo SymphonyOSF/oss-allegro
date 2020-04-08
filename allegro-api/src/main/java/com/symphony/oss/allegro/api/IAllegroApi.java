@@ -39,6 +39,7 @@ import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
+import com.symphony.oss.models.pod.canon.IV2UserList;
 
 /**
  * The public interface of the Allegro API.
@@ -229,7 +230,7 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
 
   /**
-   * Open (deserialize and decrypt) the given object.
+   * Deserialize and decrypt the given object.
    * 
    * @param storedApplicationObject An encrypted object.
    * 
@@ -238,7 +239,7 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject);
 
   /**
-   * Open (deserialize and decrypt) the given object.
+   * Deserialize and decrypt the given object.
    * 
    * @param <T> Type of the required object payload.
    * 
@@ -250,4 +251,24 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
    * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
    */
   public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
+
+  /**
+   * Fetch information about a user given a user (login) name.
+   * 
+   * @param userName  The userName with which the required user logs in.
+   * 
+   * @return The user object for the required user.
+   * 
+   * @throws NotFoundException If the given userName cannot be found.
+   */
+  IUserV2 getUserByName(String userName) throws NotFoundException;
+
+  /**
+   * Fetch information about one or more users given a user (login) name.
+   * 
+   * @param userNames  The userName with which the required users log in.
+   * 
+   * @return A list of responses and errors.
+   */
+  IV2UserList getUsersByName(String... userNames);
 }

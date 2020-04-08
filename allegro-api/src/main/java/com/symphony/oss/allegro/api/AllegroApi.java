@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.EntityBuilder;
 import org.symphonyoss.s2.canon.runtime.IEntity;
+import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
+import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.IJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
@@ -107,6 +109,7 @@ import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IUserV2;
+import com.symphony.oss.models.pod.canon.IV2UserList;
 import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
 
@@ -243,19 +246,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     log_.info("keymanager auth...." + authHandler_.getKeyManagerToken());
     
     
-    if(authHandler_.getUserId() == null)
-    {
-      log_.info("getAccountInfo....");
-      IAccountInfo accountInfo = accountInfoProvider_.get();
-      log_.info("getAccountInfo...." + accountInfo);
-      
-      internalUserId_ = PodAndUserId.newBuilder().build(accountInfo.getUserName());
-      userId_ = toExternalUserId(internalUserId_);
-    }
-    else
-    {
-      internalUserId_ = userId_ = authHandler_.getUserId();
-    }
+    log_.info("getAccountInfo....");
+    IAccountInfo accountInfo = accountInfoProvider_.get();
+    log_.info("getAccountInfo...." + accountInfo);
+    
+    internalUserId_ = PodAndUserId.newBuilder().build(accountInfo.getUserName());
+    userId_ = toExternalUserId(internalUserId_);
     
     kmInternalClient_ = new KmInternalHttpModelClient(
         modelRegistry_,
@@ -345,6 +341,38 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public void authenticate()
   {
     authHandler_.authenticate(true, true);
+  }
+
+  @Override
+  public IUserV2 getUserByName(String userName) throws NotFoundException
+  {
+    if(userName.indexOf(',') != -1)
+      throw new BadRequestException("Only a single userName may be passed, try getUsersByName() instead.");
+    
+    IV2UserList result = podApiClient_.newV3UsersGetHttpRequestBuilder()
+        .withSessionToken(authHandler_.getSessionToken())
+        .withUsername(userName)
+        .withLocal(true)
+        .build()
+        .execute(httpClient_);
+    
+    if(result.getUsers().size()==1)
+      return result.getUsers().get(0);
+    
+    throw new NotFoundException("User not found " + result.getErrors());
+  }
+
+  @Override
+  public IV2UserList getUsersByName(String ...userNames)
+  {
+    String userNamesList = String.join(",", userNames);
+    
+    return podApiClient_.newV3UsersGetHttpRequestBuilder()
+        .withSessionToken(authHandler_.getSessionToken())
+        .withUsername(userNamesList)
+        .withLocal(true)
+        .build()
+        .execute(httpClient_);
   }
   
   @Override

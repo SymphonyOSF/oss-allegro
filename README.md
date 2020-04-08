@@ -7,6 +7,60 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-04-03 Release 0.1.19
+Version 0.1.19 was released internally including all changes below.
+
+## 2020-04-07 Fixes for Pods with different internal and external PodIds
+Several bugs which impact pods with a different internal and external pod ID were fixed.
+
+## 2020-04-04 Addded methods to fetch users by their login name
+You can now find users in your local pod by their login name.
+
+```java
+
+  /**
+   * Fetch information about a user given a user (login) name.
+   * 
+   * @param userName  The userName with which the required user logs in.
+   * 
+   * @return The user object for the required user.
+   * 
+   * @throws NotFoundException If the given userName cannot be found.
+   */
+  IUserV2 getUserByName(String userName) throws NotFoundException;
+
+  /**
+   * Fetch information about one or more users given a user (login) name.
+   * 
+   * @param userNames  The userName with which the required users log in.
+   * 
+   * @return A list of responses and errors.
+   */
+  IV2UserList getUsersByName(String... userNames);
+```
+
+## 2020-04-03 Added type specific decryptObject() method
+You can now get a typed reference to a decrypted ApplicationObjectPayload by calling the method
+
+```java
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param <T> Type of the required object payload.
+   * 
+   * @param storedApplicationObject An encrypted object.
+   * @param type                    Type of the required object payload.
+   * 
+   * @return The decrypted object.
+   * 
+   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+   */
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
+```
+
+## 2020-04-03 Release 0.1.18
+Version 0.1.18 was released internally including all changes below.
+
 ## 2020-03-17 Remove mutable attribute from AbstractApplicationObjectPayload
 In order to allow an update to be made from an ApplicationObjectPayload, the class AbstractApplicationObjectPayload
 (which is the superclass of all application (encrypted) payloads and (unencrypted) header objects) provided a

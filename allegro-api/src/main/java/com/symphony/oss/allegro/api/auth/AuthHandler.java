@@ -16,18 +16,15 @@
 
 package com.symphony.oss.allegro.api.auth;
 
+import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.Key;
 import java.security.PrivateKey;
-
-import javax.annotation.Nullable;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.symphonyoss.s2.canon.runtime.IModelRegistry;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.exception.NotAuthenticatedException;
 import org.symphonyoss.s2.canon.runtime.http.client.IJwtAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.Rs512JwtGenerator;
 
@@ -38,12 +35,6 @@ import com.symphony.oss.models.auth.canon.IToken;
 import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequest;
 import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequestBuilder;
 import com.symphony.oss.models.auth.canon.Token;
-import com.symphony.oss.models.core.canon.facade.PodAndUserId;
-
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwsHeader;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SigningKeyResolverAdapter;
 
 /**
  * Handler for the bot RSA authentication mechanism.
@@ -66,10 +57,8 @@ public class AuthHandler
 
   private INamedToken                      keyManagerToken_;
   private INamedToken                      sessionToken_;
-  private String                           domain_;
-  
-
-  private PodAndUserId userId_;
+  private String                           podDomain_;
+  private String                           keyManagerDomain_;
   
   public AuthHandler(CloseableHttpClient httpClient, CookieStore cookieStore, URL podUrl, PrivateKey rsaCredential, String serviceAccountName)
   {
@@ -83,7 +72,7 @@ public class AuthHandler
         .withTTL(300000)  // 5 minutes, this is the max allowed by Symphony RSA authentication.
         ;
     
-    domain_ = podUrl.getHost();
+    podDomain_ = podUrl.getHost();
     
     podClient_ = new AuthHttpModelClient(
         modelRegistry_,
@@ -102,37 +91,13 @@ public class AuthHandler
     if(authSession)
     {
       sessionToken_    = authenticate(podClient_, token);
-      addCookie("skey", sessionToken_);
-      
-      if(userId_ == null)
-      {
-        setUserId(sessionToken_);
-      }
+      addCookie("skey", sessionToken_, podDomain_);
     }
     
     if(authKeyManager)
     {
       keyManagerToken_ = authenticate(keyManagerClient_, token);
-      addCookie("kmsession", keyManagerToken_);
-      
-      if(userId_ == null)
-      {
-        setUserId(sessionToken_);
-      }
-    }
-  }
-
-  private void setUserId(INamedToken token)
-  {
-    try
-    {
-      Jwts.parser()
-          .setSigningKeyResolver(new SigningKeyResolver())
-          .parseClaimsJws(token.getToken());
-    }
-    catch(NotAuthenticatedException e)
-    {
-      // expected
+      addCookie("kmsession", keyManagerToken_, keyManagerDomain_);
     }
   }
 
@@ -154,12 +119,12 @@ public class AuthHandler
       authenticate(true, true);
   }
 
-  private void addCookie(String name, INamedToken sessionToken)
+  private void addCookie(String name, INamedToken sessionToken, String domain)
   {
 
     BasicClientCookie cookie = new BasicClientCookie(name, sessionToken.getToken());
     
-    cookie.setDomain(domain_);
+    cookie.setDomain(domain);
     
     cookieStore_.addCookie(cookie);
   }
@@ -173,45 +138,19 @@ public class AuthHandler
       return request.execute(httpClient_);
   }
 
-  /**
-   * 
-   * @return The callers external userId if this can be determined, otherwise null.
-   * 
-   */
-  public @Nullable PodAndUserId getUserId()
-  {
-    if(userId_ != null && userId_.getPodId().getValue() != 1)
-      return userId_;
-    
-    return null;
-  }
-
   public void setKeyManagerUrl(String keyManagerUrl)
   {
     keyManagerClient_ = new AuthHttpModelClient(
         modelRegistry_,
         keyManagerUrl, null, null);
-  }
-
-  class SigningKeyResolver extends SigningKeyResolverAdapter
-  {
-
-    @Override
-    public Key resolveSigningKey(@SuppressWarnings("rawtypes") JwsHeader header, Claims claims)
+    
+    try
     {
-      userId_ = PodAndUserId.newBuilder().build(getUserId(claims));
-       
-      throw new NotAuthenticatedException();
+      keyManagerDomain_ = new URL(keyManagerUrl).getHost();
     }
-
-    private Long getUserId(Claims claims)
+    catch (MalformedURLException e)
     {
-      Object userIdObject = claims.get("userId");
-      
-      if(userIdObject instanceof Long)
-        return (Long) userIdObject;
-      
-      return Long.parseLong(userIdObject.toString());
+      throw new IllegalStateException("Invalid KM URL received", e);
     }
   }
 }
