@@ -58,6 +58,7 @@ import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
 import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
+import org.symphonyoss.s2.canon.runtime.http.IRequestAuthenticator;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
@@ -126,8 +127,10 @@ import com.symphony.s2.authc.canon.AuthcHttpModelClient;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.IServiceInfo;
 import com.symphony.s2.authc.canon.ServiceId;
+import com.symphony.s2.authc.model.IAuthcContext;
 import com.symphony.s2.authc.model.IMultiTenantService;
 import com.symphony.s2.authc.model.MultiTenantService;
+import com.symphony.s2.authc.model.RemoteJwtAuthenticator;
 import com.symphony.s2.authz.canon.AuthzHttpModelClient;
 import com.symphony.s2.authz.canon.AuthzModel;
 import com.symphony.s2.authz.canon.EntitlementAction;
@@ -174,6 +177,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   final ITraceContextTransactionFactory traceContextFactory_;
   
   private final Map<ServiceId, IServiceInfo>   serviceMap_ = new HashMap<>();
+  private RemoteJwtAuthenticator authenticator_;
   
   AllegroBaseApi(AbstractBuilder<?, ?> builder)
   {
@@ -460,6 +464,12 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         throw new IllegalStateException("Failed to configure SSL trust", e);
       }
     }
+  }
+
+  @Override
+  public CloseableHttpClient getHttpClient()
+  {
+    return httpClient_;
   }
   
   @Override
@@ -1378,6 +1388,23 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         .execute(httpClient_);
     
     return payload;
+  }
+  
+  @Override
+  public IAuthenticationProvider getJwtGenerator()
+  {
+    return jwtGenerator_;
+  }
+
+  @Override
+  public IRequestAuthenticator<IAuthcContext> getAuthenticator()
+  {
+    if(authenticator_ == null)
+    {
+      authenticator_ = new RemoteJwtAuthenticator(authcApiClient_, httpClient_);
+    }
+    
+    return authenticator_;
   }
 
   @Override

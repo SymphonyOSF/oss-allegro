@@ -43,6 +43,10 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
 
 /**
  * The public interface of the Allegro API.
+ * <p>
+ * The full version of AllegroApi supports encryption and decryption capabilities and
+ * requires authentication to a pod. For cases where a multi-tenant service wishes to use a subset of
+ * the full API avoiding the need to authenticate to a pod see {@link IAllegroMultiTenantApi}.
  * 
  * @author Bruce Skingle
  *
