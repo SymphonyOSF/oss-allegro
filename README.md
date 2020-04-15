@@ -10,6 +10,10 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 ## 2020-04-15 Public Release 0.2.0
 Version 0.2.0 was released to Maven Central including all changes below.
 
+## 2020-04-15 Cryptolib upgrade to 1.57.2
+The embedded copy of cryptolib was upgraded to 1.57.2 which includes a fix for a failure to
+load native libraries under JDK 8u242.
+
 ## 2020-04-14 Support for entitlements and JWT session token generation and verification
 Methods added to access create and fetch operations for entitlements and entitlement mappings as
 well as methods to obtain JWT generator and verifier instances and an entitlement validator.
