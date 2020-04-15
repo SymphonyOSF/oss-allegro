@@ -7,6 +7,13 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-04-15 Public Release 0.2.0
+Version 0.2.0 was released to Maven Central including all changes below.
+
+## 2020-04-14 Support for entitlements and JWT session token generation and verification
+Methods added to access create and fetch operations for entitlements and entitlement mappings as
+well as methods to obtain JWT generator and verifier instances and an entitlement validator.
+
 ## 2020-04-03 Release 0.1.19
 Version 0.1.19 was released internally including all changes below.
 
