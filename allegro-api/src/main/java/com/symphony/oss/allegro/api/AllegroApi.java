@@ -418,7 +418,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
+    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
     {
       ITraceContext trace = traceTransaction.open();
       
@@ -461,7 +461,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceContextFactory_.createTransaction("FetchFeedMessagesRequest", request.getFeedId().toString()))
+    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchFeedMessagesRequest", request.getFeedId().toString()))
     {
       ITraceContext trace = traceTransaction.open();
       

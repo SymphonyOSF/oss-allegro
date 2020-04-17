@@ -174,7 +174,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   final AuthzHttpModelClient            authzApiClient_;
   final BaseEntitlementValidator        entitlementValidator_;
   final EntitlementSpecAdaptor          entitlementSpecAdaptor_;
-  final ITraceContextTransactionFactory traceContextFactory_;
+  final ITraceContextTransactionFactory traceFactory_;
   
   private final Map<ServiceId, IServiceInfo>   serviceMap_ = new HashMap<>();
   private RemoteJwtAuthenticator authenticator_;
@@ -182,7 +182,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   AllegroBaseApi(AbstractBuilder<?, ?> builder)
   {
     
-    traceContextFactory_ = new NoOpContextFactory();
+    traceFactory_ = builder.traceFactory_;
     
     modelRegistry_ = new ModelRegistry()
         .withFactories(ObjectModel.FACTORIES)
@@ -254,22 +254,30 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
   protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
   extends BaseAbstractBuilder<T, B>
   {
-    protected PrivateKey                    rsaCredential_;
+    protected PrivateKey                      rsaCredential_;
+    protected PemPrivateKey                   rsaPemCredential_;
+    protected CipherSuiteId                   cipherSuiteId_;
+    protected ICipherSuite                    cipherSuite_;
+    protected CloseableHttpClient             httpclient_;
+    protected String                          objectStoreUrl_       = "https://api.symphony.com";
+    protected CookieStore                     cookieStore_;
+    protected List<IEntityFactory<?, ?, ?>>   factories_            = new LinkedList<>();
+    protected List<X509Certificate>           trustedCerts_         = new LinkedList<>();
+    protected List<String>                    trustedCertResources_ = new LinkedList<>();
+    private TrustStrategy                     sslTrustStrategy_     = null;
+    protected ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
 
-    protected PemPrivateKey                 rsaPemCredential_;
-    protected CipherSuiteId                 cipherSuiteId_;
-    protected ICipherSuite                  cipherSuite_;
-    protected CloseableHttpClient           httpclient_;
-    protected String                        objectStoreUrl_       = "https://api.symphony.com";
-    protected CookieStore                   cookieStore_;
-    protected List<IEntityFactory<?, ?, ?>> factories_            = new LinkedList<>();
-    protected List<X509Certificate>         trustedCerts_         = new LinkedList<>();
-    protected List<String>                  trustedCertResources_ = new LinkedList<>();
-    private TrustStrategy                   sslTrustStrategy_     = null;
     
     public AbstractBuilder(Class<T> type)
     {
       super(type);
+    }
+    
+    public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
+    {
+      traceFactory_ = traceFactory;
+      
+      return self();
     }
     
     public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
@@ -523,7 +531,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
         .withHttpClient(httpClient_)
         .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withTraceContextTransactionFactory(traceFactory_)
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSubscription(request, this))
         .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
@@ -535,7 +543,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
 
   private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
   {
-    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+    try (ITraceContextTransaction parentTraceTransaction = traceFactory_
         .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
@@ -748,7 +756,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         .withAllegroApi(this)
         .withHttpClient(httpClient_)
         .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withTraceContextTransactionFactory(traceFactory_)
         .withRequest(request)
         .withConsumerManager(consumerManager)
       .build();
@@ -758,7 +766,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
 
   private void fetchPartitionObjects(FetchPartitionObjectsRequest request, ConsumerManager consumerManager)
   {
-    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+    try (ITraceContextTransaction parentTraceTransaction = traceFactory_
         .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
@@ -1506,7 +1514,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         .withAllegroApi(this)
         .withHttpClient(httpClient_)
         .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceContextFactory_)
+        .withTraceContextTransactionFactory(traceFactory_)
         .withRequest(request)
         .withConsumerManager(consumerManager)
       .build();
@@ -1516,7 +1524,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
 
   private void fetchObjectVersions(FetchObjectVersionsRequest request, ConsumerManager consumerManager)
   {
-    try (ITraceContextTransaction parentTraceTransaction = traceContextFactory_
+    try (ITraceContextTransaction parentTraceTransaction = traceFactory_
         .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
