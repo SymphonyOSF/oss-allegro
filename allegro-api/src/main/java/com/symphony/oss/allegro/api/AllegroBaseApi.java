@@ -49,6 +49,7 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -266,11 +267,28 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     protected List<String>                    trustedCertResources_ = new LinkedList<>();
     private TrustStrategy                     sslTrustStrategy_     = null;
     protected ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
+    protected int                             maxHttpConnections_   = 200;
 
     
     public AbstractBuilder(Class<T> type)
     {
       super(type);
+    }
+    
+    /**
+     * Set the maximum number of concurrent HTTP connections which the client can make.
+     * 
+     * The default value is 200.
+     * 
+     * @param maxHttpConnections The maximum number of concurrent HTTP connections which the client can make.
+     * 
+     * @return This (fluent method).
+     */
+    public T withMaxHttpConnections(int maxHttpConnections)
+    {
+      maxHttpConnections_ = maxHttpConnections;
+      
+      return self();
     }
     
     public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
@@ -422,7 +440,14 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       
       cookieStore_ = new BasicCookieStore();
       
-      HttpClientBuilder httpBuilder = HttpClients.custom().setDefaultCookieStore(cookieStore_);
+      PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+      
+      connectionManager.setDefaultMaxPerRoute(maxHttpConnections_);
+      connectionManager.setMaxTotal(maxHttpConnections_);
+      
+      HttpClientBuilder httpBuilder = HttpClients.custom()
+          .setDefaultCookieStore(cookieStore_)
+          .setConnectionManager(connectionManager);
       
       if(!trustedCerts_.isEmpty() || sslTrustStrategy_ != null)
       {
@@ -471,6 +496,20 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       {
         throw new IllegalStateException("Failed to configure SSL trust", e);
       }
+    }
+  }
+  
+
+  @Override
+  public void close()
+  {
+    try
+    {
+      httpClient_.close();
+    }
+    catch (IOException e)
+    {
+      log_.error("Unable to close HttpClient", e);
     }
   }
 

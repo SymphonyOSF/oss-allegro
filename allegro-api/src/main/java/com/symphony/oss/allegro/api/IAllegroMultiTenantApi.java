@@ -16,6 +16,8 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.io.Closeable;
+
 import javax.annotation.Nullable;
 
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -64,8 +66,11 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * <p>
  * @author Bruce Skingle
  */
-public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry
+public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Closeable
 {
+  @Override
+  void close();
+  
   /**
    * @return The user ID of the user we have authenticated as.
    */
