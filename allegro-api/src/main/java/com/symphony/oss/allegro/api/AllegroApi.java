@@ -60,6 +60,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.auth.DummyAuthHandler;
+import com.symphony.oss.allegro.api.auth.IAuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
@@ -134,7 +136,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final String                          userName_;
   private final String                          clientType_;
   private final ICipherSuite                    cipherSuite_;
-  private final AuthHandler                     authHandler_;
+  private final IAuthHandler                    authHandler_;
   private final PodHttpModelClient              podApiClient_;
   private final PodInternalHttpModelClient      podInternalApiClient_;
   private final KmInternalHttpModelClient       kmInternalClient_;
@@ -186,8 +188,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         modelRegistry_,
         builder.podUrl_, "/pod", null);
     
-    authHandler_    = new AuthHandler(httpClient_, builder.cookieStore_,
-        builder.podUrl_, builder.rsaCredential_, userName_);
+    authHandler_    = builder.sessionToken_ != null
+        ? new DummyAuthHandler(builder.sessionToken_, builder.keymanagerToken_, builder.cookieStore_, builder.podUrl_)
+        : new AuthHandler(httpClient_, builder.cookieStore_, builder.podUrl_, builder.rsaCredential_, userName_);
     
     log_.info("sbe auth....");
     authHandler_.authenticate(true, false);
@@ -1519,6 +1522,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     protected URL                           podUrl_;
     protected String                        userName_;
+    protected String                        sessionToken_;
+    protected String                        keymanagerToken_;
 
     public AbstractBuilder(Class<T> type)
     {
@@ -1528,6 +1533,20 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     public T withUserName(String serviceAccountName)
     {
       userName_ = serviceAccountName;
+      
+      return self();
+    }
+    
+    public T withSessionToken(String sessionToken)
+    {
+      sessionToken_ = sessionToken;
+      
+      return self();
+    }
+    
+    public T withKeymanagerToken(String keymanagerToken)
+    {
+      keymanagerToken_ = keymanagerToken;
       
       return self();
     }
@@ -1557,9 +1576,25 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-
+      
+      if(sessionToken_ != null || keymanagerToken_!= null )
+      {
+        if(sessionToken_ == null || keymanagerToken_== null )
+          faultAccumulator.error("SessionToekn and KeymanagerToken must be specified together");
+      }
+      else
+      {
+        if(rsaCredential_ == null)
+        {
+          if(rsaPemCredential_ == null)
+            faultAccumulator.error("rsaCredential is required");
+          
+          rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+        }
+        
+        faultAccumulator.checkNotNull(userName_, "User Name");
+      }
       faultAccumulator.checkNotNull(podUrl_, "Pod URL");
-      faultAccumulator.checkNotNull(userName_, "User Name");
     }
   }
   

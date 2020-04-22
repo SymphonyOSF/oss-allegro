@@ -155,6 +155,14 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super.validate(faultAccumulator);
       
+      if(rsaCredential_ == null)
+      {
+        if(rsaPemCredential_ == null)
+          faultAccumulator.error("rsaCredential is required");
+        
+        rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+      }
+      
       faultAccumulator.checkNotNull(userId_, "User ID");
     }
   }

@@ -143,6 +143,7 @@ class AllegroSubscriber extends AbstractPullSubscriber
         ITraceContext trace = traceTransaction.open();
         
         log_.info("Pull....");
+        trace.trace("PULL_MSG");
         List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
             .withFeedHash(feedHash_)
             .withCanonPayload(new FeedRequest.Builder()
@@ -156,6 +157,7 @@ class AllegroSubscriber extends AbstractPullSubscriber
 //            .withMaxItems(0)
 //            .withWaitTimeSeconds(0);
         
+        trace.trace("RECEIVED_MSG");
         log_.info("Received " + messages.size() + " messages.");
         for(IFeedObject message : messages)
         {

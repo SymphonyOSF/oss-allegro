@@ -45,7 +45,7 @@ import com.symphony.oss.models.auth.canon.Token;
  * @author Bruce Skingle
  *
  */
-public class AuthHandler
+public class AuthHandler implements IAuthHandler
 {
   private final CloseableHttpClient        httpClient_;
   private final CookieStore                cookieStore_;
@@ -79,6 +79,7 @@ public class AuthHandler
         podUrl, "/login", null);
   }
   
+  @Override
   public void authenticate(boolean authSession, boolean authKeyManager)
   {
     String jwtToken = authProvider_.createJwt();
@@ -101,12 +102,14 @@ public class AuthHandler
     }
   }
 
+  @Override
   public String getKeyManagerToken()
   {
     authenticateIfNecessary();
     return keyManagerToken_.getToken();
   }
 
+  @Override
   public String getSessionToken()
   {
     authenticateIfNecessary();
@@ -121,7 +124,6 @@ public class AuthHandler
 
   private void addCookie(String name, INamedToken sessionToken, String domain)
   {
-
     BasicClientCookie cookie = new BasicClientCookie(name, sessionToken.getToken());
     
     cookie.setDomain(domain);
@@ -138,6 +140,7 @@ public class AuthHandler
       return request.execute(httpClient_);
   }
 
+  @Override
   public void setKeyManagerUrl(String keyManagerUrl)
   {
     keyManagerClient_ = new AuthHttpModelClient(

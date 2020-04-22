@@ -42,6 +42,10 @@ import javax.net.ssl.SSLContext;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
@@ -331,6 +335,9 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
     
     public T withRsaPemCredentialFile(String rsaPemCredentialFile)
     {
+      if(rsaPemCredentialFile == null)
+        return self();
+      
       checkCredentialNotNull(rsaPemCredentialFile);
       
       File file = new File(rsaPemCredentialFile);
@@ -440,32 +447,44 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       
       cookieStore_ = new BasicCookieStore();
       
+      httpclient_ = HttpClients.custom()
+          .setDefaultCookieStore(cookieStore_)
+          .setConnectionManager(createConnectionManager())
+          .build();
+    }
+    
+    private PoolingHttpClientConnectionManager createConnectionManager()
+    {
+      
       PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+      
+      
+      if(!trustedCerts_.isEmpty() || sslTrustStrategy_ != null)
+      {
+        SSLConnectionSocketFactory sslsf = configureTrust();
+        
+        //httpBuilder.setSSLSocketFactory(sslsf);
+        
+        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create()
+            .register("http", new PlainConnectionSocketFactory())
+            .register("https", sslsf)
+            .build();
+        
+        connectionManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
+        
+      }
+      else
+      {
+        connectionManager = new PoolingHttpClientConnectionManager();
+      }
       
       connectionManager.setDefaultMaxPerRoute(maxHttpConnections_);
       connectionManager.setMaxTotal(maxHttpConnections_);
       
-      HttpClientBuilder httpBuilder = HttpClients.custom()
-          .setDefaultCookieStore(cookieStore_)
-          .setConnectionManager(connectionManager);
-      
-      if(!trustedCerts_.isEmpty() || sslTrustStrategy_ != null)
-      {
-        configureTrust(httpBuilder);
-      }
-      
-      httpclient_ = httpBuilder.build();
-      
-      if(rsaCredential_ == null)
-      {
-        if(rsaPemCredential_ == null)
-          faultAccumulator.error("rsaCredential is required");
-        
-        rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
-      }
+      return connectionManager;
     }
-    
-    private void configureTrust(HttpClientBuilder httpBuilder)
+
+    private SSLConnectionSocketFactory configureTrust()
     {
       try
       {
@@ -490,7 +509,9 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
                 null,
                 (HostnameVerifier)null);
         
-        httpBuilder.setSSLSocketFactory(sslsf);
+        return sslsf;
+        
+        
       }
       catch(GeneralSecurityException | IOException e)
       {
