@@ -240,18 +240,15 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     };
 
     podInfo_ = getPodInfo();
-    log_.info("fetch podInfo_...." + podInfo_);
     
     log_.info("keymanager auth....");
     podId_ = PodId.newBuilder().build(podInfo_.getExternalPodId());
     authHandler_.setKeyManagerUrl(podInfo_.getKeyManagerUrl());
     authHandler_.authenticate(false, true);
-    log_.info("keymanager auth...." + authHandler_.getKeyManagerToken());
     
     
     log_.info("getAccountInfo....");
     IAccountInfo accountInfo = accountInfoProvider_.get();
-    log_.info("getAccountInfo...." + accountInfo);
     
     internalUserId_ = PodAndUserId.newBuilder().build(accountInfo.getUserName());
     userId_ = toExternalUserId(internalUserId_);
