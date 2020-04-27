@@ -7,6 +7,39 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-04-15 Caller provided session and keymanager tokens
+It is now possible to provide session and keymanager tokens rather than login credentials. This snippet passes in both session tokens
+and login credentials to the API constructor. If **sessionToken** and **keymanagerToken** are both non-null then they are used,
+otherwise if **serviceAccount** and **credentialFile** are both present they are used to log in and the session and keymanager
+tokens are printed to stdout.
+
+**The session and keymanager tokens are bearer authentication credentials and should be protected from disclosure.**
+
+```java
+allegroApi_ = new AllegroApi.Builder()
+        .withPodUrl(podUrl_)
+        .withObjectStoreUrl(objectStoreUrl_)
+        .withUserName(serviceAccount_)
+        .withRsaPemCredentialFile(credentialFile_)
+        .withFactories(CalendarModel.FACTORIES)
+        .withTrustAllSslCerts()
+        .withTraceFactory(traceFactory_)
+        .withSessionToken(sessionToken_)
+        .withKeymanagerToken(keymanagerToken_)
+        .build();
+      
+    userId_         = allegroApi_.getUserId();
+    
+    log_.info("PodId is " + allegroApi_.getPodId());
+    log_.info("UserId is " + userId_);
+
+    if(credentialFile_ != null)
+    {
+      System.out.println("SessionToken " + allegroApi_.getSessionToken());
+      System.out.println("KeyManagerToken " + allegroApi_.getKeyManagerToken());
+    }
+```
+
 ## 2020-04-15 Public Release 0.2.0
 Version 0.2.0 was released to Maven Central including all changes below.
 

@@ -165,10 +165,6 @@ implements IAllegroQueryManager
     {
       log_.info("Starting subscription to " + subscriber.getFeedHash() + "...");
       submit(subscriber, true);
-      submit(subscriber, true);
-      submit(subscriber, true);
-      submit(subscriber, true);
-      submit(subscriber, true);
     }
   }
 
