@@ -22,7 +22,7 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.0.7</version>
+		<version>0.0.8-SNAPSHOT</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
