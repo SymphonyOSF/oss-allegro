@@ -51,7 +51,6 @@ import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.TrustStrategy;
@@ -68,7 +67,6 @@ import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fault.TransientTransactionFault;
 import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
@@ -639,12 +637,6 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
                   .withReceiptHandle(message.getReceiptHandle())
                   .build()
                   );
-              ackCnt++;
-            }
-            catch (TransientTransactionFault e)
-            {
-              log_.warn("Transient processing failure, will retry (forever)", e);
-              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
               ackCnt++;
             }
             catch(RetryableConsumerException e)
