@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fluent.Fluent;
+import com.symphony.oss.commons.fluent.Fluent;
 
 /**
  * Base class for Allegro request objects.

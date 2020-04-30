@@ -16,9 +16,8 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-
 import com.symphony.oss.allegro.api.ResourcePermissions;
+import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**
  * Request to create a partition.

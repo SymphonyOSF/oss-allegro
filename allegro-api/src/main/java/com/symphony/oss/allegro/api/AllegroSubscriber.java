@@ -31,7 +31,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
-import org.symphonyoss.s2.common.hash.Hash;
 import org.symphonyoss.s2.fugue.Fugue;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
@@ -43,6 +42,7 @@ import org.symphonyoss.s2.fugue.pubsub.AbstractPullSubscriber;
 import org.symphonyoss.s2.fugue.pubsub.IPullSubscriberContext;
 import org.symphonyoss.s2.fugue.pubsub.IPullSubscriberMessage;
 
+import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;

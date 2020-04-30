@@ -16,10 +16,9 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
 

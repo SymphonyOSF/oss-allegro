@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
+import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**
  * A query specification to fetch objects from a partition.

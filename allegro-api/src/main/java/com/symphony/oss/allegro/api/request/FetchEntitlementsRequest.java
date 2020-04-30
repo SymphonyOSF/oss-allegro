@@ -19,11 +19,10 @@ package com.symphony.oss.allegro.api.request;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-import org.symphonyoss.s2.common.hash.Hash;
-
 import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.NamedUserIdObject;
 

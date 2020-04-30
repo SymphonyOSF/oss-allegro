@@ -26,9 +26,9 @@ import org.symphonyoss.s2.canon.runtime.jjwt.Rs512JwtGenerator;
 import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
 import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
 import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.ObjectModel;

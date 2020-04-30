@@ -26,15 +26,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.common.concurrent.NamedThreadFactory;
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
 import org.symphonyoss.s2.fugue.Fugue;
 import org.symphonyoss.s2.fugue.FugueLifecycleComponent;
 import org.symphonyoss.s2.fugue.FugueLifecycleState;
 import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.commons.concurrent.NamedThreadFactory;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQueryListManager<T,Q>, Q extends AbstractAsyncQueryManager>

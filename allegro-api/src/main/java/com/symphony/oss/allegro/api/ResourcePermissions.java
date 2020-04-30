@@ -22,10 +22,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 
 /**
