@@ -106,25 +106,25 @@
     </dependency>
     
     <dependency>
-      <groupId>org.symphonyoss.s2.canon</groupId>
+      <groupId>com.symphony.oss.canon</groupId>
       <artifactId>canon-runtime-java</artifactId>
-       <version>${canon.version}</version>
+       <version>${oss.canon.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.symphonyoss.s2.canon</groupId>
+      <groupId>com.symphony.oss.canon</groupId>
       <artifactId>canon-jjwt</artifactId>
-       <version>${canon.version}</version>
+       <version>${oss.canon.version}</version>
     </dependency>
     
      <dependency>
-       <groupId>org.symphonyoss.s2.fugue</groupId>
+       <groupId>com.symphony.oss.fugue</groupId>
        <artifactId>fugue-core</artifactId>
-       <version>${fugue.version}</version>
+       <version>${oss.fugue.version}</version>
      </dependency>
      <dependency>
-       <groupId>org.symphonyoss.s2.fugue</groupId>
+       <groupId>com.symphony.oss.fugue</groupId>
        <artifactId>fugue-pubsub</artifactId>
-       <version>${fugue.version}</version>
+       <version>${oss.fugue.version}</version>
      </dependency>
     
     <dependency>
