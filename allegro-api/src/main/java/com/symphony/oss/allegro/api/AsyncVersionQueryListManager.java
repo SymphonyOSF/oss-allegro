@@ -36,7 +36,7 @@ public class AsyncVersionQueryListManager extends AbstractAsyncQueryListManager<
 {
   protected AsyncVersionQueryListManager(Builder builder)
   {
-    super(AsyncVersionQueryListManager.class, builder);
+    super(builder);
   }
   
   public static class Builder extends AbstractBuilder<Builder, AsyncVersionQueryListManager>

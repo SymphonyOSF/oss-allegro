@@ -36,7 +36,7 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
 {
   protected AsyncPartitionQueryListManager(Builder builder)
   {
-    super(AsyncPartitionQueryListManager.class, builder);
+    super(builder);
   }
   
   public static class Builder extends AbstractBuilder<Builder, AsyncPartitionQueryListManager>

@@ -68,8 +68,8 @@
     <maven.compiler.target>1.8</maven.compiler.target>  
     
     <oss.commons.version>0.0.1</oss.commons.version>
-    <oss.canon.version>0.0.1</oss.canon.version>
-    <oss.fugue.version>0.0.1</oss.fugue.version>
+    <oss.canon.version>0.0.2-SNAPSHOT</oss.canon.version>
+    <oss.fugue.version>0.0.2-SNAPSHOT</oss.fugue.version>
     <symphony.security.version>1.57.2</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
     <oss.models.version>0.4.3-SNAPSHOT</oss.models.version>

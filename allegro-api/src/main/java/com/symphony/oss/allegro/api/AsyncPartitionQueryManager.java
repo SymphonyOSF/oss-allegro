@@ -21,12 +21,12 @@ package com.symphony.oss.allegro.api;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.fugue.core.trace.ITraceContextTransaction;
+import com.symphony.oss.fugue.core.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;

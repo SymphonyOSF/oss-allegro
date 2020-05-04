@@ -26,19 +26,18 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.fugue.Fugue;
-import org.symphonyoss.s2.fugue.FugueLifecycleComponent;
-import org.symphonyoss.s2.fugue.FugueLifecycleState;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.symphony.oss.commons.concurrent.NamedThreadFactory;
 import com.symphony.oss.commons.fault.FaultAccumulator;
-import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.fugue.Fugue;
+import com.symphony.oss.fugue.FugueLifecycleComponent;
+import com.symphony.oss.fugue.FugueLifecycleState;
+import com.symphony.oss.fugue.core.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQueryListManager<T,Q>, Q extends AbstractAsyncQueryManager>
-  extends FugueLifecycleComponent<T>
+  extends FugueLifecycleComponent
   implements IAllegroQueryManager
 {
   private static final Logger log_ = LoggerFactory.getLogger(AbstractAsyncQueryListManager.class);
@@ -55,9 +54,9 @@ public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQuery
 
   private List<Q> remainingQueryManagers_;
 
-  protected AbstractAsyncQueryListManager(Class<T> type, AbstractBuilder<?,Q,T> builder)
+  protected AbstractAsyncQueryListManager(AbstractBuilder<?,Q,T> builder)
   {
-    super(type);
+    super(builder);
 
     consumerManager_          = builder.consumerManager_;
     subscriberThreadPoolSize_ = Fugue.isDebugSingleThread() ? 1 : consumerManager_.getSubscriberThreadPoolSize() == null ? builder.getQueryCount() : consumerManager_.getSubscriberThreadPoolSize();
@@ -205,7 +204,7 @@ public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQuery
   
   protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,Q,B>, 
     Q extends AbstractAsyncQueryManager, 
-    B extends AbstractAsyncQueryListManager<B,Q>> extends BaseAbstractBuilder<T,B>
+    B extends AbstractAsyncQueryListManager<B,Q>> extends FugueLifecycleComponent.AbstractBuilder<T,B>
   {
     protected AllegroBaseApi                  allegroApi_;
     protected ITraceContextTransactionFactory traceFactory_;

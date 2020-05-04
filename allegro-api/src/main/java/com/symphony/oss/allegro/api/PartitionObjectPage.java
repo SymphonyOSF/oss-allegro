@@ -23,14 +23,13 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.core.trace.NoOpTraceContext;
-import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
-import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
-
 import com.google.common.collect.ImmutableList;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.fugue.core.trace.NoOpTraceContext;
+import com.symphony.oss.fugue.pipeline.FatalConsumerException;
+import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;

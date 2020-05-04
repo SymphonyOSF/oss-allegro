@@ -18,7 +18,7 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.symphonyoss.s2.fugue.IFugueLifecycleComponent;
+import com.symphony.oss.fugue.IFugueLifecycleComponent;
 
 /**
  * A manager of some query.

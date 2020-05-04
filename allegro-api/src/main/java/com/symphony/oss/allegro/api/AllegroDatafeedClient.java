@@ -29,10 +29,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
 import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
-import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
+import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.fugue.pipeline.FatalConsumerException;
+import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.AckIdObject;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
