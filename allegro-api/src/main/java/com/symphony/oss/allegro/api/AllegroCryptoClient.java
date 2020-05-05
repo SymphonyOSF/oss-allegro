@@ -25,10 +25,10 @@ import java.util.function.Supplier;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.symphonyoss.s2.canon.runtime.IEntity;
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
 
 import com.symphony.oss.allegro.api.AllegroApi.EncryptablePayloadbuilder;
+import com.symphony.oss.canon.runtime.IEntity;
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;

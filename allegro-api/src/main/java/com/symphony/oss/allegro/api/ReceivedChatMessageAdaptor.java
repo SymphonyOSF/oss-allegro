@@ -18,7 +18,7 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedSocialMessage;

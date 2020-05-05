@@ -23,11 +23,11 @@ import java.security.PrivateKey;
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.symphonyoss.s2.canon.runtime.IModelRegistry;
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.http.client.IJwtAuthenticationProvider;
-import org.symphonyoss.s2.canon.runtime.jjwt.Rs512JwtGenerator;
 
+import com.symphony.oss.canon.runtime.IModelRegistry;
+import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.http.client.IJwtAuthenticationProvider;
+import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.models.auth.canon.AuthHttpModelClient;
 import com.symphony.oss.models.auth.canon.AuthModel;
 import com.symphony.oss.models.auth.canon.INamedToken;

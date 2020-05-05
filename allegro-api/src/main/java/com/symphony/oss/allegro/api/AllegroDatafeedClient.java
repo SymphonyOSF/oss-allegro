@@ -26,13 +26,13 @@ import javax.annotation.Nullable;
 
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
-import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
 
-import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
+import com.symphony.oss.canon.runtime.jjwt.JwtBase;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
+import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.AckIdObject;
 import com.symphony.oss.models.internal.pod.canon.FeedId;

@@ -21,8 +21,8 @@ package com.symphony.oss.allegro.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.fugue.core.trace.ITraceContext;
 import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
+import com.symphony.oss.fugue.trace.ITraceContext;
 
 abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeRetryableConsumer<T>
 {

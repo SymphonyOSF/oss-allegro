@@ -21,15 +21,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.symphonyoss.s2.canon.runtime.exception.CanonException;
-import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
-import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.gs.ti.wpt.lc.security.cryptolib.AES;
+import com.symphony.oss.canon.runtime.exception.CanonException;
+import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.models.core.canon.CertificateId;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.RotationId;

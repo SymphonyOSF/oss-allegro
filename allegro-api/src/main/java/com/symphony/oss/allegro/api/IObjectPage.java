@@ -22,7 +22,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.symphony.oss.fugue.core.trace.ITraceContext;
+import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**

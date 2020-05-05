@@ -21,13 +21,12 @@ package com.symphony.oss.allegro.api;
 import java.io.File;
 import java.io.IOException;
 
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.jjwt.Rs512JwtGenerator;
-import org.symphonyoss.s2.common.dom.json.IImmutableJsonDomNode;
-import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
-import org.symphonyoss.s2.common.dom.json.jackson.JacksonAdaptor;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
+import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
+import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
+import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;

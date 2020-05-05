@@ -21,17 +21,16 @@ package com.symphony.oss.allegro.api;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.symphonyoss.s2.fugue.pubsub.ISubscription;
-
 import com.google.common.collect.ImmutableSet;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.commons.hash.Hash;
-import com.symphony.oss.fugue.core.trace.ITraceContext;
 import com.symphony.oss.fugue.naming.Name;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
+import com.symphony.oss.fugue.pubsub.ISubscription;
+import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 /* package */ class AllegroSubscription implements ISubscription<IAbstractStoredApplicationObject>

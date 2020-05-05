@@ -25,14 +25,13 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.canon.runtime.exception.PermissionDeniedException;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
-import com.symphony.oss.fugue.core.trace.ITraceContext;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.IConsumer;
 import com.symphony.oss.fugue.pipeline.IErrorConsumer;
@@ -42,6 +41,7 @@ import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
 import com.symphony.oss.fugue.pipeline.IThreadSafeConsumer;
 import com.symphony.oss.fugue.pipeline.IThreadSafeErrorConsumer;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
+import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;

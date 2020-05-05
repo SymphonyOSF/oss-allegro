@@ -20,8 +20,8 @@ package com.symphony.oss.allegro.api;
 
 import org.apache.commons.codec.binary.Base64;
 
-import com.symphony.oss.fugue.core.trace.ITraceContext;
-import com.symphony.oss.fugue.core.trace.NoOpTraceContextTransaction;
+import com.symphony.oss.fugue.trace.ITraceContext;
+import com.symphony.oss.fugue.trace.NoOpTraceContextTransaction;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;

@@ -16,8 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
-
+import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;

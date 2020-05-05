@@ -33,7 +33,7 @@ import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.fugue.Fugue;
 import com.symphony.oss.fugue.FugueLifecycleComponent;
 import com.symphony.oss.fugue.FugueLifecycleState;
-import com.symphony.oss.fugue.core.trace.ITraceContextTransactionFactory;
+import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQueryListManager<T,Q>, Q extends AbstractAsyncQueryManager>

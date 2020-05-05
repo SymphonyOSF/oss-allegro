@@ -21,14 +21,13 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
-
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
