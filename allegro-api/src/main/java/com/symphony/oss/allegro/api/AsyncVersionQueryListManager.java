@@ -22,10 +22,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.VersionQuery;
+import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**
  * AbstractAsyncQueryListManager implementation for ObjectVersion query.
@@ -37,7 +36,7 @@ public class AsyncVersionQueryListManager extends AbstractAsyncQueryListManager<
 {
   protected AsyncVersionQueryListManager(Builder builder)
   {
-    super(AsyncVersionQueryListManager.class, builder);
+    super(builder);
   }
   
   public static class Builder extends AbstractBuilder<Builder, AsyncVersionQueryListManager>

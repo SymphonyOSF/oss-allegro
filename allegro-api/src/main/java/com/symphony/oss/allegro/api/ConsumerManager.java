@@ -18,11 +18,11 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.symphonyoss.s2.fugue.pipeline.IConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IErrorConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IRetryableConsumer;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleErrorConsumer;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.IConsumer;
+import com.symphony.oss.fugue.pipeline.IErrorConsumer;
+import com.symphony.oss.fugue.pipeline.IRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.ISimpleErrorConsumer;
+import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
 
 /**
  * Single Threaded Manager of Consumers.

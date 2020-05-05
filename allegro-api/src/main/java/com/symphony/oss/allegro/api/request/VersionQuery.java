@@ -16,9 +16,9 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-import org.symphonyoss.s2.common.hash.Hash;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.hash.Hash;
 
 /**
  * Request to fetch versions of a logical object by its baseHash.

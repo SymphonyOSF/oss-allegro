@@ -17,7 +17,8 @@
 package com.symphony.oss.allegro.api;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.symphonyoss.s2.canon.runtime.IEntity;
+
+import com.symphony.oss.canon.runtime.IEntity;
 
 //import com.symphony.oss.models.fundamental.FundamentalModelRegistry;
 //import com.symphony.oss.models.fundamental.canon.facade.IExchangeKey;

@@ -51,33 +51,11 @@ import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.TrustStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.canon.runtime.EntityBuilder;
-import org.symphonyoss.s2.canon.runtime.IEntityFactory;
-import org.symphonyoss.s2.canon.runtime.ModelRegistry;
-import org.symphonyoss.s2.canon.runtime.exception.BadRequestException;
-import org.symphonyoss.s2.canon.runtime.exception.NotFoundException;
-import org.symphonyoss.s2.canon.runtime.exception.ServerErrorException;
-import org.symphonyoss.s2.canon.runtime.http.IRequestAuthenticator;
-import org.symphonyoss.s2.canon.runtime.http.client.IAuthenticationProvider;
-import org.symphonyoss.s2.canon.runtime.jjwt.JwtBase;
-import org.symphonyoss.s2.common.dom.json.ImmutableJsonObject;
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fault.TransientTransactionFault;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-import org.symphonyoss.s2.common.hash.Hash;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransaction;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContextTransactionFactory;
-import org.symphonyoss.s2.fugue.core.trace.NoOpContextFactory;
-import org.symphonyoss.s2.fugue.pipeline.FatalConsumerException;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
-import org.symphonyoss.s2.fugue.pipeline.RetryableConsumerException;
 
 import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FeedQuery;
@@ -90,6 +68,26 @@ import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.allegro.api.request.VersionQuery;
+import com.symphony.oss.canon.runtime.EntityBuilder;
+import com.symphony.oss.canon.runtime.IEntityFactory;
+import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.exception.BadRequestException;
+import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.canon.runtime.exception.ServerErrorException;
+import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
+import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
+import com.symphony.oss.canon.runtime.jjwt.JwtBase;
+import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.fugue.pipeline.FatalConsumerException;
+import com.symphony.oss.fugue.pipeline.IThreadSafeErrorConsumer;
+import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
+import com.symphony.oss.fugue.trace.ITraceContext;
+import com.symphony.oss.fugue.trace.ITraceContextTransaction;
+import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
+import com.symphony.oss.fugue.trace.NoOpContextFactory;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.HashType;
@@ -639,12 +637,6 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
                   .withReceiptHandle(message.getReceiptHandle())
                   .build()
                   );
-              ackCnt++;
-            }
-            catch (TransientTransactionFault e)
-            {
-              log_.warn("Transient processing failure, will retry (forever)", e);
-              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
               ackCnt++;
             }
             catch(RetryableConsumerException e)

@@ -18,12 +18,12 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.fugue.core.trace.ITraceContext;
-import org.symphonyoss.s2.fugue.pipeline.ISimpleThreadSafeRetryableConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeErrorConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeRetryableConsumer;
-import org.symphonyoss.s2.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.fugue.pipeline.ISimpleThreadSafeRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.IThreadSafeErrorConsumer;
+import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
+import com.symphony.oss.fugue.trace.ITraceContext;
 
 /**
  * Manager of Thread Safe Consumers.

@@ -19,12 +19,11 @@ package com.symphony.oss.allegro.api.request;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
-
 import com.google.common.collect.ImmutableList;
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.ConsumerManager;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 
 /**
  * Request to fetch a partition.

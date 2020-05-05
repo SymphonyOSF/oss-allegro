@@ -20,8 +20,8 @@ package com.symphony.oss.allegro.api.request;
 
 import javax.annotation.Nullable;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.common.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 
 /**
  * A Partition Selection which includes a Partition ID and an optional sort key prefix.

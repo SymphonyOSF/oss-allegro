@@ -29,14 +29,14 @@ import java.util.List;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.symphonyoss.s2.canon.runtime.exception.NotImplementedException;
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-import org.symphonyoss.s2.fugue.config.Configuration;
-import org.symphonyoss.s2.fugue.naming.Name;
-import org.symphonyoss.s2.fugue.pubsub.AbstractPullSubscriberManager;
-import org.symphonyoss.s2.fugue.pubsub.ISubscription;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.canon.runtime.exception.NotImplementedException;
+import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.fugue.config.Configuration;
+import com.symphony.oss.fugue.naming.Name;
+import com.symphony.oss.fugue.pubsub.AbstractPullSubscriberManager;
+import com.symphony.oss.fugue.pubsub.ISubscription;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
@@ -57,7 +57,7 @@ implements IAllegroQueryManager
 
   private AllegroSubscriberManager(Builder builder)
   {
-    super(AllegroSubscriberManager.class, builder);
+    super(builder);
     
     objectApiClient_ = builder.objectApiClient_;
     httpClient_ = builder.httpClient_;

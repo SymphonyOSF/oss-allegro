@@ -22,10 +22,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
-import org.symphonyoss.s2.common.fault.FaultAccumulator;
-
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
+import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**
  * AbstractAsyncQueryListManager implementation for Partition query.
@@ -37,7 +36,7 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
 {
   protected AsyncPartitionQueryListManager(Builder builder)
   {
-    super(AsyncPartitionQueryListManager.class, builder);
+    super(builder);
   }
   
   public static class Builder extends AbstractBuilder<Builder, AsyncPartitionQueryListManager>
