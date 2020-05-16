@@ -16,31 +16,23 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
-
-import javax.annotation.Nullable;
-
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+package com.symphony.oss.allegro.ui;
 
 /**
- * A page of objects retrieved from a partition in the object store.
+ * A function which can extract UI applicable attributes from some object type.
  * 
  * @author Bruce Skingle
  *
+ * @param <T> The type of object which this function operates on.
  */
-public interface IObjectPage extends IAbstractObjectPage<IStoredApplicationObject>
+@FunctionalInterface
+public interface IProjectionEnricher<T>
 {
   /**
-   * Fetch the next page of objects, if any.
+   * Project UI attributes for the given object into the given projection.
    * 
-   * @return The next page of objects, or <code>null</code> if there is none.
+   * @param projection  Target for projected attributes.
+   * @param payload     Object whose attributes are to be extracted.
    */
-  @Nullable IObjectPage fetchNextPage();
-
-  /**
-   * Fetch the previous page of objects, if any.
-   * 
-   * @return The previous page of objects, or <code>null</code> if there is none.
-   */
-  @Nullable IObjectPage fetchPrevPage();
+  void project(Projection.AttributeSet projection, T payload);
 }

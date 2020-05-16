@@ -32,6 +32,8 @@ import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
+import com.symphony.oss.allegro.api.request.VersionQuery;
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
@@ -118,6 +120,8 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * <p>
    * If such a query were made via fetchPartitionObjects(FetchPartitionObjectsRequest request) then the rows would
    * be returned in the reverse sequence.
+   * <p>
+   * This method makes exactly one call to the server to retrieve a page of objects.
    * <p>
    * @param query The query parameters for the objects required.
    * <p>
@@ -245,7 +249,10 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * e.g.
    * <pre>{@code
     allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
-        .withName("myCalendarFeed")
+        .withQuery(new FeedQuery.Builder()
+            .withName(feedName)
+            .build()
+            )
         .withConsumerManager(new ConsumerManager.Builder()
             .withMaxItems(10)
             .withConsumer(Object.class, (object, trace) -&gt;
@@ -266,8 +273,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * <p>
    * e.g.
    * <pre>{@code
-    IAllegroQueryManager subscriber = allegroApi_.fetchFeedObjects(new SubscribeFeedObjectsRequest.Builder()
-        .withName("myCalendarFeed")
+    IAllegroQueryManager subscriber = allegroApi_.fetchFeedObjects(new FetchFeedObjectsRequest.Builder()
+        .withQuery(new FeedQuery.Builder()
+            .withName(feedName)
+            .build()
+            )
         .withConsumerManager(new AsyncConsumerManager.Builder()
           .withSubscriberThreadPoolSize(10)
           .withHandlerThreadPoolSize(90)
@@ -311,6 +321,26 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return an IAllegroQueryManager if this is an asynchronous request otherwise null.
    */
   @Nullable IAllegroQueryManager fetchObjectVersions(FetchObjectVersionsRequest request);
+  
+  /**
+   * Fetch a page of object versions.
+   * <p>
+   * The returned IObjectPage allows the next and previous pages to be fetched.
+   * <p>
+   * Because this method is intended to be called in a paged context, the rows provided by the 
+   * getData() method on the returned IObjectPage will always be in the forwards order (ascending order of sort key)
+   * regardless of whether the query was specified with .withScanForwards(false) or .withBefore(String).
+   * <p>
+   * If such a query were made via fetchObjectVersions(FetchObjectVersionssRequest request) then the rows would
+   * be returned in the reverse sequence.
+   * <p>
+   * This method makes exactly one call to the server to retrieve a page of objects.
+   * <p>
+   * @param query The query parameters for the objects required.
+   * <p>
+   * @return  A page of objects.
+   */
+  IObjectVersionPage fetchObjectVersionsPage(VersionQuery query);
 
   /**
    * Fetch an entitlement.
@@ -397,4 +427,33 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return an IAuthenticationProvider.
    */
   IAuthenticationProvider getJwtGenerator();
+
+  /**
+   * Fetch a Partition object.
+   * 
+   * @param query The query parameters for the Partition required.
+   * 
+   * @return The Partition object which describes the partition.
+   */
+  IPartition fetchPartition(PartitionQuery query);
+
+  /**
+   * Return the ModelRegistry used by Allegro.
+   * 
+   * @return the ModelRegistry used by Allegro.
+   */
+  ModelRegistry getModelRegistry();
+
+  /**
+   * Fetch an object by its Partition and Sort key.
+   * 
+   * @param partitionHash The Partition of which the object is a member.
+   * @param sortKey       The object's sort key.
+   * 
+   * @return The required object.
+   * 
+   * @throws PermissionDeniedException If the caller does not have access to the required object.
+   * @throws NotFoundException         If the requested object does not exist.
+   */
+  IStoredApplicationObject fetchObject(Hash partitionHash, String sortKey);
 }

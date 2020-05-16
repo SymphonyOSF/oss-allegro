@@ -7,6 +7,41 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-05-07 Partition Methods
+Methods were added to fetch a Partition object (i.e. the object describing a partition including it's ID object), fetch
+an object based on it's partition and sort key, and to return the ModelRegistry used by Allegro.
+ 
+```java
+  /**
+   * Fetch a Partition object.
+   * 
+   * @param query The query parameters for the Partition required.
+   * 
+   * @return The Partition object which describes the partition.
+   */
+  IPartition fetchPartition(PartitionQuery query);
+
+  /**
+   * Return the ModelRegistry used by Allegro.
+   * 
+   * @return the ModelRegistry used by Allegro.
+   */
+  ModelRegistry getModelRegistry();
+
+  /**
+   * Fetch an object by its Partition and Sort key.
+   * 
+   * @param partitionHash The Partition of which the object is a member.
+   * @param sortKey       The object's sort key.
+   * 
+   * @return The required object.
+   * 
+   * @throws PermissionDeniedException If the caller does not have access to the required object.
+   * @throws NotFoundException         If the requested object does not exist.
+   */
+  IStoredApplicationObject fetchObject(Hash partitionHash, String sortKey);
+  ```
+
 ## 2020-04-15 Caller provided session and keymanager tokens
 It is now possible to provide session and keymanager tokens rather than login credentials. This snippet passes in both session tokens
 and login credentials to the API constructor. If **sessionToken** and **keymanagerToken** are both non-null then they are used,

@@ -49,7 +49,7 @@ import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
- * Multi Threaded, Asynchronous, Manager of Consumers.
+ * Base class of Manager of Consumers.
  * 
  * When the consume method is called the consumer with the most specific type to the object
  * being consumed will be selected. Objects will be unwrapped if necessary to obtain a more
@@ -70,15 +70,18 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  * ISocialMessage
  * ILiveCurrentMessage
  * IApplicationObject
+ * IAbstractStoredApplicationObject
  * IStoredApplicationObject
  * ISystemObject
  * Object
  * </pre>
  * 
  * In fact, when reading from the object store, the object being consumed will always be an instance of
- * IStoredApplicationObject and when reading from a feed the object will always be an instance of IEnvelope
+ * IStoredApplicationObject or IDeletedApplicationObject and these are both sub-interfaces of IAbstractStoredApplicationObject,
  * so registering a consumer of those types represents a "catch all", but it is also possible to
  * register a handler of type Object if this is preferred.
+ * 
+ * When reading chat messages, the object being consumed will always be an instance of ILiveCurrentMessage.
  * 
  * @author Bruce Skingle
  */
@@ -295,10 +298,6 @@ public abstract class AbstractConsumerManager
     {
       storedApplicationObject = (IStoredApplicationObject) object;
     }
-//    else if(object instanceof IEnvelope)
-//    {
-//      applicationPayload = ((IEnvelope)object).getPayload();
-//    }
     
     if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
     {

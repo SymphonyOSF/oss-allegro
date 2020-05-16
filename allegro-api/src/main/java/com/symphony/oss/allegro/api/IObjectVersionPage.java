@@ -20,27 +20,30 @@ package com.symphony.oss.allegro.api;
 
 import javax.annotation.Nullable;
 
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 /**
- * A page of objects retrieved from a partition in the object store.
+ * A page of object versions retrieved from a partition in the object store.
+ * 
+ * Objects are of type IAbstractStoredApplicationObject because there may be delete markers
+ * in the data.
  * 
  * @author Bruce Skingle
  *
  */
-public interface IObjectPage extends IAbstractObjectPage<IStoredApplicationObject>
+public interface IObjectVersionPage extends IAbstractObjectPage<IAbstractStoredApplicationObject>
 {
   /**
    * Fetch the next page of objects, if any.
    * 
    * @return The next page of objects, or <code>null</code> if there is none.
    */
-  @Nullable IObjectPage fetchNextPage();
+  @Nullable IObjectVersionPage fetchNextPage();
 
   /**
    * Fetch the previous page of objects, if any.
    * 
    * @return The previous page of objects, or <code>null</code> if there is none.
    */
-  @Nullable IObjectPage fetchPrevPage();
+  @Nullable IObjectVersionPage fetchPrevPage();
 }

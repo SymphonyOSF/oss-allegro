@@ -46,15 +46,18 @@ import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
  * ISocialMessage
  * ILiveCurrentMessage
  * IApplicationObject
+ * IAbstractStoredApplicationObject
  * IStoredApplicationObject
  * ISystemObject
  * Object
  * </pre>
  * 
  * In fact, when reading from the object store, the object being consumed will always be an instance of
- * IStoredApplicationObject and when reading from a feed the object will always be an instance of IEnvelope
+ * IStoredApplicationObject or IDeletedApplicationObject and these are both sub-interfaces of IAbstractStoredApplicationObject,
  * so registering a consumer of those types represents a "catch all", but it is also possible to
  * register a handler of type Object if this is preferred.
+ * 
+ * When reading chat messages, the object being consumed will always be an instance of ILiveCurrentMessage.
  * 
  * @author Bruce Skingle
  */

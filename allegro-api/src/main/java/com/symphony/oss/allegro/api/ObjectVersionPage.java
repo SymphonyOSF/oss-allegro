@@ -20,65 +20,59 @@ package com.symphony.oss.allegro.api;
 
 import javax.annotation.Nullable;
 
-import com.symphony.oss.allegro.api.request.PartitionQuery;
+import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.commons.hash.Hash;
-import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 
-class PartitionObjectPage extends AbstractObjectPage<IStoredApplicationObject> implements IObjectPage
+class ObjectVersionPage extends AbstractObjectPage<IAbstractStoredApplicationObject> implements IObjectVersionPage
 {
-  private final Hash                           partitionHash_;
-  private final PartitionQuery                 query_;
+  private final VersionQuery query_;
 
-  public PartitionObjectPage(AllegroBaseApi allegroApi, Hash partitionHash, PartitionQuery query, IPageOfStoredApplicationObject page)
+  public ObjectVersionPage(AllegroBaseApi allegroApi, VersionQuery query, IPageOfAbstractStoredApplicationObject page)
   {
     super(allegroApi, page.getPagination(), Boolean.TRUE == query.getScanForwards(), page.getData());
 
-    
-    partitionHash_  = partitionHash;
-    query_          = query;
+    query_ = query;
   }
 
-  public Hash getPartitionHash()
-  {
-    return partitionHash_;
-  }
-
-  public PartitionQuery getQuery()
+  public VersionQuery getQuery()
   {
     return query_;
   }
+  
+  public Hash getBaseHash()
+  {
+    return query_.getBaseHash();
+  }
 
   @Override
-  public @Nullable PartitionObjectPage  fetchNextPage()
+  public @Nullable ObjectVersionPage  fetchNextPage()
   {
     if(after_ == null)
       return null;
     
-    return allegroApi_.fetchPartitionObjectPage(new PartitionQuery.Builder()
+    return allegroApi_.fetchObjectVersionsPage(new VersionQuery.Builder()
         .withAfter(after_)
-        .withHash(partitionHash_)
+        .withBaseHash(getBaseHash())
         .withMaxItems(query_.getMaxItems())
         .withScanForwards(true)
-        .withSortKeyPrefix(query_.getSortKeyPrefix())
         .build()
         );
   }
   
   @Override
-  public @Nullable PartitionObjectPage  fetchPrevPage()
+  public @Nullable ObjectVersionPage  fetchPrevPage()
   {
     if(before_ == null)
       return null;
     
-    return allegroApi_.fetchPartitionObjectPage(new PartitionQuery.Builder()
+    return allegroApi_.fetchObjectVersionsPage(new VersionQuery.Builder()
         .withAfter(before_)
-        .withHash(partitionHash_)
+        .withBaseHash(getBaseHash())
         .withMaxItems(query_.getMaxItems())
         .withScanForwards(false)
-        .withSortKeyPrefix(query_.getSortKeyPrefix())
         .build()
         );
   }
-
 }

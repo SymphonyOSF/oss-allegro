@@ -112,6 +112,7 @@ import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.PartitionsPartitionHashGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
@@ -517,7 +518,12 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       }
     }
   }
-  
+
+  @Override
+  public ModelRegistry getModelRegistry()
+  {
+    return modelRegistry_;
+  }
 
   @Override
   public void close()
@@ -909,6 +915,18 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         .execute(httpClient_);
     
     return new PartitionObjectPage(this, partitionHash, query, page);
+  }
+  
+  @Override
+  public IPartition fetchPartition(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+
+    return objectApiClient_
+        .newPartitionsPartitionHashGetHttpRequestBuilder()
+          .withPartitionHash(partitionHash)
+          .build()
+        .execute(httpClient_);
   }
 
   @Override
@@ -1529,6 +1547,21 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
         .build()
         .execute(httpClient_);
   }
+  
+  @Override
+  public IStoredApplicationObject fetchObject(Hash partitionHash, String sortKey)
+  {
+    return fetchObject(partitionHash, SortKey.newBuilder().build(sortKey));
+  }
+  
+  public IStoredApplicationObject fetchObject(Hash partitionHash, SortKey sortKey)
+  {
+    return objectApiClient_.newPartitionsPartitionHashSortKeyGetHttpRequestBuilder()
+      .withPartitionHash(partitionHash)
+      .withSortKey(sortKey)
+      .build()
+      .execute(httpClient_);
+  }
 
   @Override
   public void delete(IStoredApplicationObject existingObject, DeletionType deletionType)
@@ -1539,6 +1572,27 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       ;
     
     store(deletedObject);
+  }
+  
+  @Override
+  public ObjectVersionPage fetchObjectVersionsPage(VersionQuery query)
+  {
+    Hash    baseHash      = query.getBaseHash();
+    String  after         = query.getAfter();
+    Integer limit           = query.getMaxItems();
+    
+    ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
+        .withObjectHash(baseHash)
+        .withAfter(after)
+        .withScanForwards(query.getScanForwards())
+        .withLimit(query.getMaxItems())
+        ;
+
+    IPageOfAbstractStoredApplicationObject page = pageRequest
+        .build()
+        .execute(httpClient_);
+    
+    return new ObjectVersionPage(this, query, page);
   }
 
   @Override

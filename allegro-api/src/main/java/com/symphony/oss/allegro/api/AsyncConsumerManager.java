@@ -28,6 +28,38 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 /**
  * Manager of Thread Safe Consumers.
  * 
+ * When the consume method is called the consumer with the most specific type to the object
+ * being consumed will be selected. Objects will be unwrapped if necessary to obtain a more
+ * specific type to match with a consumer.
+ * 
+ * Sub types of the following types are considered more specific than the ones which follow:
+ * <pre>
+ * IChatMessage
+ * IApplicationObject
+ * </pre>
+ * 
+ * For example, if a StoredApplicationObject containing a SocialMessage was consumed, then consumers
+ * would be selected in the following order of precedence:
+ *
+ * <pre>
+ * IReceivedChatMessage
+ * IChatMessage
+ * ISocialMessage
+ * ILiveCurrentMessage
+ * IApplicationObject
+ * IAbstractStoredApplicationObject
+ * IStoredApplicationObject
+ * ISystemObject
+ * Object
+ * </pre>
+ * 
+ * In fact, when reading from the object store, the object being consumed will always be an instance of
+ * IStoredApplicationObject or IDeletedApplicationObject and these are both sub-interfaces of IAbstractStoredApplicationObject,
+ * so registering a consumer of those types represents a "catch all", but it is also possible to
+ * register a handler of type Object if this is preferred.
+ * 
+ * When reading chat messages, the object being consumed will always be an instance of ILiveCurrentMessage.
+ * 
  * @author Bruce Skingle
  */
 public class AsyncConsumerManager extends AbstractConsumerManager
