@@ -120,7 +120,10 @@ public class ProjectorManager
           if(i == -1)
             projection.with(Projection.ATTRIBUTE_HEADER_TYPE, fullType);
           else
-            projection.with(Projection.ATTRIBUTE_HEADER_TYPE, fullType.substring(i+1), fullType);
+            projection.with(
+                new Projection.Attribute(Projection.ATTRIBUTE_HEADER_TYPE, fullType.substring(i+1))
+                  .withHoverText(fullType)
+                );
           
           if(object.getEncryptedPayload() != null)
             projection.with(new Projection.ErrorAttribute(Projection.ATTRIBUTE_PAYLOAD_TYPE, "Unable to Decrypt"));
@@ -140,7 +143,10 @@ public class ProjectorManager
         if(i == -1)
           projection.with(Projection.ATTRIBUTE_PAYLOAD_TYPE, fullType);
         else
-          projection.with(Projection.ATTRIBUTE_PAYLOAD_TYPE, fullType.substring(i+1), fullType);
+          projection.with(
+              new Projection.Attribute(Projection.ATTRIBUTE_PAYLOAD_TYPE, fullType.substring(i+1))
+                .withHoverText(fullType)
+              );
         
         return projection;
       });
@@ -166,11 +172,25 @@ public class ProjectorManager
       }
     }
     
+    /**
+     * Return the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @return the default projector which is used as a last resort if no matching projector is defined.
+     */
     public IProjector<Object,?> getDefaultProjector()
     {
       return defaultProjector_;
     }
     
+    /**
+     * Add the given projector.
+     * 
+     * @param <P>         The concrete type of the payload on which this projector operates.
+     * @param type        The concrete type of the payload on which this projector operates.
+     * @param projector   The projector.
+     * 
+     * @return This (fluent method).
+     */
     public <P extends IApplicationObjectPayload> T withProjector(Class<P> type, IProjectionEnricher<P> projector)
     {
       projectorMap_.put(type, new ProjectionAdaptor<P>(projector));
@@ -179,8 +199,17 @@ public class ProjectorManager
       return self();
     }
 
-    
-    <C,P extends Projection> IProjector<C,P> addProjector(Class<C> type, IProjector<C,P> projector)
+    /**
+     * Add the given projector and return it.
+     * 
+     * @param <C>         The concrete type of the payload on which this projector operates.
+     * @param <P>         The concrete type of the projection returned by this projector.
+     * @param type        The concrete type of the payload on which this projector operates.
+     * @param projector   The projector.
+     * 
+     * @return            The projector.
+     */
+    <C,P extends Projection<?>> IProjector<C,P> addProjector(Class<C> type, IProjector<C,P> projector)
     {
       projectorMap_.put(type, projector);
       projectorTypeList_.add(type);
@@ -188,6 +217,13 @@ public class ProjectorManager
       return projector;
     }
     
+    /**
+     * Set the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @param defaultProjector the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @return This (fluent method).
+     */
     public T withDefaultProjector(IProjector<Object,?> defaultProjector)
     {
       defaultProjector_ = defaultProjector;
@@ -203,9 +239,9 @@ public class ProjectorManager
    * 
    * @return A Projection of the given object containing the attributes to be rendered.
    */
-  public Projection project(PartitionObject<?> partitionObject)
+  public Projection<?> project(PartitionObject<?> partitionObject)
   {
-    Projection result =  null;
+    Projection<?> result =  null;
     IApplicationObjectPayload payload = partitionObject.getPayloadUnchecked();
     
     if(payload != null)

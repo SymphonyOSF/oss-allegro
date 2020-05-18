@@ -36,14 +36,14 @@ class ListRendererManager extends BaseRendererManager
     {
       boolean first = true;
       
-      for(AbstractAttribute<?> attr : projection.getAttributes())
+      for(AbstractAttribute<?,?> attr : projection.getAttributes())
       {
         if(first)
           first = false;
         else
           out.print(", ");
         
-        IRenderer<Projection> renderer = getConsumer(attr.getClass());
+        IRenderer<Projection<?>> renderer = getConsumer(attr.getClass());
         
         if(renderer == null)
           out.print("\"" + attr.getName() + "\": \"" + attr.getValue() + "\"");
@@ -54,50 +54,63 @@ class ListRendererManager extends BaseRendererManager
     
     with(Projection.Attribute.class, (out, projection) ->
     {
-      if(projection.getHoverText() == null)
-        out.print("\"" + projection.getName() + "\": \"" + projection.getValue() + "\"");
-      else
-        out.print("\"" + projection.getName() + "\": [\"" + projection.getValue() + "\",\"" + projection.getHoverText() + "\"]");
+      out.print(toJson(projection));
     });
     
     with(Projection.ErrorAttribute.class, (out, projection) ->
     {
-      if(projection.getHoverText() == null)
-        out.print("\"" + projection.getName() + "\": \"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\"");
-      else
-        out.print("\"" + projection.getName() + "\": [\"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\",\"" + projection.getHoverText() + "\"]");
+      out.print(toJson(projection, "<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>"));
+//      if(projection.getHoverText() == null)
+//        out.print("\"" + projection.getName() + "\": \"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\"");
+//      else
+//        out.print("\"" + projection.getName() + "\": [\"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\",\"" + projection.getHoverText() + "\"]");
     });
     
     with(Projection.AbsoluteHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          projection.getValue().toStringBase64() + "</a>"));
+      
+//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+//          panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
+//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+//          projection.getValue().toStringBase64() + "</a>\"");
 
     });
     
     with(Projection.BaseHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          projection.getValue().toStringBase64() + "</a>"));
+      
+//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+//          panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
+//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+//          projection.getValue().toStringBase64() + "</a>\"");
     });
     
     with(Projection.PartitionHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          projection.getValue().toStringBase64() + "</a>"));
+      
+//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+//          panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
+//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+//          projection.getValue().toStringBase64() + "</a>\"");
     });
   }
 
   void render(UIHtmlWriter out, Object rowId, PartitionObject<?> partitionObject)
   {
-    Projection projection = projectorManager_.project(partitionObject);
-    IRenderer<Projection> renderer = getConsumer(projection.getClass());
+    Projection<?> projection = projectorManager_.project(partitionObject);
+    IRenderer<Projection<?>> renderer = getConsumer(projection.getClass());
     
     if(renderer == null)
     {

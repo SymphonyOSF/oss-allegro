@@ -342,7 +342,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       File file = new File(rsaPemCredentialFile);
       
       if(!file.canRead())
-        throw new IllegalArgumentException("Credential file is unreadable");
+        throw new IllegalArgumentException("Credential file \"" + file.getAbsolutePath() + "\" is unreadable");
       
       try
       {
@@ -350,7 +350,7 @@ abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiT
       }
       catch (IOException e)
       {
-        throw new IllegalArgumentException("Unable to read credential file.", e);
+        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
       }
       
       return self();

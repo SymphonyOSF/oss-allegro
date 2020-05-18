@@ -22,25 +22,31 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.symphony.oss.commons.fluent.Fluent;
 import com.symphony.oss.commons.hash.Hash;
 
-public class Projection
+public class Projection<T extends Projection<T>> extends Fluent<T>
 {
   public static final String ATTRIBUTE_SORT_KEY       = "Sort Key";
   public static final String ATTRIBUTE_HEADER_TYPE    = "Header Type";
   public static final String ATTRIBUTE_PAYLOAD_TYPE   = "Payload Type";
-  public static final String ATTRIBUTE_PAYLOAD        = "Payload";
   public static final String ATTRIBUTE_ABSOLUTE_HASH  = "Absolute Hash";
   public static final String ATTRIBUTE_BASE_HASH      = "Base Hash";
   public static final String ATTRIBUTE_PARTITION_HASH = "Partition Hash";
-
   
-  public static class Error extends Projection
+  public Projection(Class<T> type)
+  {
+    super(type);
+  }
+
+  public static class Error extends Projection<Error>
   {
     private String message_;
 
     public Error(String message)
     {
+      super(Error.class);
+      
       message_ = message;
     }
 
@@ -50,23 +56,33 @@ public class Projection
     }
   }
   
-  public static class AbstractAttribute<T> extends Projection
+  public static class AbstractAttribute<T extends AbstractAttribute<T,P>, P> extends Projection<T>
   {
     private String name_;
-    private T value_;
+    private P value_;
     private String hoverText_;
+    private boolean hiddenByDefault_;
     
-    public AbstractAttribute(String name, T value)
+    public AbstractAttribute(Class<T> type, String name, P value)
     {
+      super(type);
+      
       name_ = name;
       value_ = value;
     }
 
-    public AbstractAttribute(String name, T value, String hoverText)
+    public T withHoverText(String hoverText)
     {
-      name_ = name;
-      value_ = value;
       hoverText_ = hoverText;
+      
+      return self();
+    }
+
+    public T withHiddenByDefault(boolean hiddenByDefault)
+    {
+      hiddenByDefault_ = hiddenByDefault;
+      
+      return self();
     }
 
     public String getName()
@@ -74,7 +90,7 @@ public class Projection
       return name_;
     }
 
-    public T getValue()
+    public P getValue()
     {
       return value_;
     }
@@ -85,16 +101,11 @@ public class Projection
     }
   }
   
-  public static class Attribute extends AbstractAttribute<String>
+  public static class Attribute extends AbstractAttribute<Attribute, String>
   {
     public Attribute(String name, String value)
     {
-      super(name, value);
-    }
-
-    public Attribute(String name, String value, String hoverText)
-    {
-      super(name, value, hoverText);
+      super(Attribute.class, name, value);
     }
   }
   
@@ -106,35 +117,40 @@ public class Projection
     }
   }
   
-  public static class AbsoluteHashAttribute extends AbstractAttribute<Hash>
+  public static class AbsoluteHashAttribute extends AbstractAttribute<AbsoluteHashAttribute, Hash>
   {
     public AbsoluteHashAttribute(Hash value)
     {
-      super(ATTRIBUTE_ABSOLUTE_HASH, value);
+      super(AbsoluteHashAttribute.class, ATTRIBUTE_ABSOLUTE_HASH, value);
     }
   }
   
-  public static class BaseHashAttribute extends AbstractAttribute<Hash>
+  public static class BaseHashAttribute extends AbstractAttribute<BaseHashAttribute, Hash>
   {
     public BaseHashAttribute(Hash value)
     {
-      super(ATTRIBUTE_BASE_HASH, value);
+      super(BaseHashAttribute.class, ATTRIBUTE_BASE_HASH, value);
     }
   }
   
-  public static class PartitionHashAttribute extends AbstractAttribute<Hash>
+  public static class PartitionHashAttribute extends AbstractAttribute<PartitionHashAttribute, Hash>
   {
     public PartitionHashAttribute(Hash value)
     {
-      super(ATTRIBUTE_PARTITION_HASH, value);
+      super(PartitionHashAttribute.class, ATTRIBUTE_PARTITION_HASH, value);
     }
   }
   
-  public static class AttributeSet extends Projection
+  public static class AttributeSet extends Projection<AttributeSet>
   {
-    private Map<String, AbstractAttribute<?>> attributeMap_ = new HashMap<>();
+    private Map<String, AbstractAttribute<?,?>> attributeMap_ = new HashMap<>();
     
-    public AttributeSet with(AbstractAttribute<?> attribute)
+    public AttributeSet()
+    {
+      super(AttributeSet.class);
+    }
+    
+    public AttributeSet with(AbstractAttribute<?,?> attribute)
     {
       attributeMap_.put(attribute.getName(), attribute);
       
@@ -145,22 +161,15 @@ public class Projection
     {
       attributeMap_.put(name, new Attribute(name, value == null ? "" : value.toString()));
       
-      return this;
-    }
-    
-    public AttributeSet with(String name, Object value, String hoverText)
-    {
-      attributeMap_.put(name, new Attribute(name, value.toString(), hoverText));
-      
-      return this;
+      return self();
     }
 
-    public Map<String, AbstractAttribute<?>> getAttributeMap()
+    public Map<String, AbstractAttribute<?,?>> getAttributeMap()
     {
       return attributeMap_;
     }
 
-    public Collection<AbstractAttribute<?>> getAttributes()
+    public Collection<AbstractAttribute<?,?>> getAttributes()
     {
       return attributeMap_.values();
     }

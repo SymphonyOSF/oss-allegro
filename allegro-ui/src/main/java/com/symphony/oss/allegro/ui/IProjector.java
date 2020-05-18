@@ -18,8 +18,24 @@
 
 package com.symphony.oss.allegro.ui;
 
+/**
+ * A Projection is a set of attributes which a UI can operate upon. A Projector is a class which can extract a Projection from
+ * some payload object.
+ * 
+ * @author Bruce Skingle
+ *
+ * @param <T> The type of the payload class on which this projector operates.
+ * @param <R> The type of the projection which it returns.
+ */
 @FunctionalInterface
-public interface IProjector<T, R extends Projection>
+public interface IProjector<T, R extends Projection<?>>
 {
+  /**
+   * Create a projection of the given payload.
+   * 
+   * @param payload A payload.
+   * 
+   * @return a projection of the given payload.
+   */
   R project(T payload);
 }

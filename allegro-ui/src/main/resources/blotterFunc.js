@@ -52,6 +52,9 @@
 	    // Insert a row in the table at the last row
 	    row = tableRef.insertRow(-1);
 	    row.id = rowId;
+//    	row.contentEditable = true;
+//	    row.style.position = 'relative';
+//	    row.style.display = 'grid';
 	}
 	
     for(i=0 ; i<header.cells.length ; i++)
@@ -64,6 +67,8 @@
     		cell = row.insertCell(-1);
     	
     	cell.classList.add(header.cells[i].id);
+//    	cell.contentEditable = true;
+    	
     	var attr = attributes[header.cells[i].innerHTML];
     	
     	if(attr == null)
@@ -72,14 +77,7 @@
     	}
     	else
     	{
-    		if(Array.isArray(attr))
-    		{
-    			cell.innerHTML = '<span title="' + attr[1] + '">' + attr[0] + '</span>';
-    		}
-    		else
-    		{
-    			cell.innerHTML = attr;
-    		}
+    		renderCell(cell, attr);
     		delete attributes[header.cells[i].innerHTML];
     	}
     }
@@ -97,7 +95,9 @@
     	
     	var cell = row.insertCell(-1);
     	cell.classList.add(colId);
-    	cell.innerHTML = attributes[key];
+//    	cell.contentEditable = true;
+    	
+    	renderCell(cell, attributes[key]);
     	
     	var menu = document.getElementById('configure-menu-list');
     	
@@ -118,6 +118,19 @@
     	
     	menu.append(li);
     }
+  }
+  
+  function renderCell(cell, attr)
+  {
+	    
+	if(attr.hoverText != null)
+	{
+		cell.innerHTML = '<span title="' + attr.hoverText + '">' + attr.text + '</span>';
+	}
+	else
+	{
+		cell.innerHTML = attr.text;
+	}
   }
 
   function upsertPayload(baseHash, storedObject, payload)
@@ -206,6 +219,36 @@
         }
       }
     }
+  }
+  
+  document.getElementById('blotter').onclick = function(event)
+  {
+	var tdElement = event.target.closest('td');
+	var trElement = tdElement.closest('tr');
+  	var cellIndex = tdElement.cellIndex;
+    //var cellIndex = cell.cellIndex;
+  	var headerCell = header.cells[cellIndex];
+	  alert('Click ' + headerCell.innerHTML);
+//	var form = document.createElement('div');
+//	form.style.backgroundColor = "red";
+//	form.style.'grid-area' = '1 / 1';
+////	form.style.position = 'absolute';
+////	form.style.top = '0px';
+////	form.style.left = '0px';
+////	form.style.width = '100%';
+////	form.style.height = '100%';
+	
+//	tdElement.closest('tr').appendChild(form);
+	  
+
+	  $("<div>Loading...</div>").css({
+		    position: "absolute",
+		    width: "100%",
+		    height: "100%",
+		    top: 0,
+		    left: 0,
+		    background: "#ccc"
+		}).appendTo($(tdElement.closest('tr')).css("position", "relative"));
   }
   
 //  function upsertException(storedObject, exception)

@@ -183,7 +183,7 @@ class PartitionBlotterPanel extends RenderingPanel
       feedOut_.flush();
     }
 
-    public void objectUpserted(PartitionObject partitionObject)
+    public void objectUpserted(PartitionObject<?> partitionObject)
     {
       feedOut_.openElement("script");
       doObjectUpserted(partitionObject);

@@ -34,9 +34,9 @@ class SummaryRendererManager extends BaseRendererManager
     
     with(Projection.AttributeSet.class, (out, projection) ->
     {
-      for(AbstractAttribute<?> attr : projection.getAttributes())
+      for(AbstractAttribute<?,?> attr : projection.getAttributes())
       {
-        IRenderer<Projection> renderer = getConsumer(attr.getClass());
+        IRenderer<Projection<?>> renderer = getConsumer(attr.getClass());
         
         if(renderer == null)
         {
@@ -111,8 +111,8 @@ class SummaryRendererManager extends BaseRendererManager
 
   void render(UIHtmlWriter out, PartitionObject<?> partitionObject)
   {
-    Projection projection = projectorManager_.project(partitionObject);
-    IRenderer<Projection> renderer = getConsumer(projection.getClass());
+    Projection<?> projection = projectorManager_.project(partitionObject);
+    IRenderer<Projection<?>> renderer = getConsumer(projection.getClass());
     
     if(renderer == null)
     {

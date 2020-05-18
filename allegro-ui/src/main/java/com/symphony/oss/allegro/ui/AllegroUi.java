@@ -388,7 +388,7 @@ public class AllegroUi
       return self();
     }
   
-    public <C, P extends Projection> IProjector<C, P> addProjector(Class<C> type, IProjector<C, P> projector)
+    public <C, P extends Projection<?>> IProjector<C, P> addProjector(Class<C> type, IProjector<C, P> projector)
     {
       return projectorBuilder_.addProjector(type, projector);
     }

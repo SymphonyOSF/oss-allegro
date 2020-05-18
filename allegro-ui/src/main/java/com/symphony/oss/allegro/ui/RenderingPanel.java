@@ -39,6 +39,8 @@ abstract class RenderingPanel extends AllegroUiPanel
 
   private static final String HIDE = "Hide";
   private static final String SHOW = "Show";
+  private static final String SCRIPT = "script";
+  private static final String SRC = "src";
 
   
   private final ProjectorManager       projectorManager_;
@@ -56,7 +58,6 @@ abstract class RenderingPanel extends AllegroUiPanel
         .put(Projection.ATTRIBUTE_PARTITION_HASH, Boolean.FALSE)
         .put(Projection.ATTRIBUTE_HEADER_TYPE,    Boolean.TRUE)
         .put(Projection.ATTRIBUTE_PAYLOAD_TYPE,   Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_PAYLOAD,        Boolean.TRUE)
         .build();
   }
   
@@ -90,6 +91,7 @@ abstract class RenderingPanel extends AllegroUiPanel
 
   void startTable(UIHtmlWriter out)
   {
+    out.printElement(SCRIPT, "", SRC, "https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js");
     out.openElement("div", ID, "configure-menu", CLASS, "dropdown-content");
     out.openElement("ul", ID, "configure-menu-list");
     
