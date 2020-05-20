@@ -44,10 +44,15 @@ class BaseRendererManager
   
   String toJson(Projection.AbstractAttribute<?, ?> projection)
   {
-    return toJson(projection, projection.getValue().toString());
+    return toJson(projection, projection.getValue().toString(), null);
   }
   
   String toJson(Projection.AbstractAttribute<?, ?> projection, String text)
+  {
+    return toJson(projection, text, projection.getValue().toString());
+  }
+  
+  String toJson(Projection.AbstractAttribute<?, ?> projection, String text, String editText)
   {
     StringBuilder s = new StringBuilder();
 
@@ -57,6 +62,11 @@ class BaseRendererManager
     s.append(text);
     s.append('"');
     
+    s.append(", \"id\": \"");
+
+    s.append(projection.getId());
+    s.append('"');
+
     if(projection.getHoverText() != null)
     {
       s.append(", \"hoverText\": \"");
@@ -64,6 +74,20 @@ class BaseRendererManager
       s.append(projection.getHoverText());
       s.append('"');
     }
+    
+    if(projection.isEditable())
+    {
+      s.append(", \"editable\": true");
+    }
+    
+    if(editText != null)
+    {
+      s.append(", \"editText\": \"");
+
+      s.append(editText);
+      s.append('"');
+    }
+    
     s.append('}');
 
     return s.toString();

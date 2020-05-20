@@ -52,12 +52,12 @@ abstract class RenderingPanel extends AllegroUiPanel
   static
   {
     initialColumnMap_ = new ImmutableMap.Builder<String, Boolean>()
-        .put(Projection.ATTRIBUTE_SORT_KEY,       Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_ABSOLUTE_HASH,  Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_BASE_HASH,      Boolean.FALSE)
-        .put(Projection.ATTRIBUTE_PARTITION_HASH, Boolean.FALSE)
-        .put(Projection.ATTRIBUTE_HEADER_TYPE,    Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_PAYLOAD_TYPE,   Boolean.TRUE)
+//        .put(Projection.ATTRIBUTE_SORT_KEY,       Boolean.TRUE)
+//        .put(Projection.ATTRIBUTE_ABSOLUTE_HASH,  Boolean.TRUE)
+//        .put(Projection.ATTRIBUTE_BASE_HASH,      Boolean.FALSE)
+//        .put(Projection.ATTRIBUTE_PARTITION_HASH, Boolean.FALSE)
+//        .put(Projection.ATTRIBUTE_HEADER_TYPE,    Boolean.TRUE)
+//        .put(Projection.ATTRIBUTE_PAYLOAD_TYPE,   Boolean.TRUE)
         .build();
   }
   
@@ -92,6 +92,13 @@ abstract class RenderingPanel extends AllegroUiPanel
   void startTable(UIHtmlWriter out)
   {
     out.printElement(SCRIPT, "", SRC, "https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js");
+    
+    out.openElement("div", ID, "editContainer", CLASS, "blotter-modal");
+      out.openElement("div", ID, "editButtonBar", CLASS, "edit-buttonbar");
+        out.printElement("button", "Save", ON_CLICK, "editSave()");
+        out.printElement("button", "Cancel", ON_CLICK, "editCancel()");
+      out.closeElement(); // div editButtonBar
+    out.closeElement(); // div editContainer
     out.openElement("div", ID, "configure-menu", CLASS, "dropdown-content");
     out.openElement("ul", ID, "configure-menu-list");
     

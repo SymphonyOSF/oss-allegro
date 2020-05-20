@@ -3,6 +3,11 @@
   var heartbeatRef = document.getElementById('heartbeat');
   var errorRef = document.getElementById('error');
   var header = document.getElementById('header');
+  var editContainer = document.getElementById('editContainer');
+  var editButtonBar = document.getElementById('editButtonBar');
+  var pageContent = document.getElementById('pageContent');
+  var configureMenu = document.getElementById('configure-menu');
+  var attributeSpecs = {};
   
   function heartBeat(time)
   {
@@ -52,6 +57,7 @@
 	    // Insert a row in the table at the last row
 	    row = tableRef.insertRow(-1);
 	    row.id = rowId;
+	    $(row).css("position", "relative");
 //    	row.contentEditable = true;
 //	    row.style.position = 'relative';
 //	    row.style.display = 'grid';
@@ -84,7 +90,14 @@
     
     for(var key in attributes)
     {
+    	var attr = attributes[key];
     	var attrId = key.split(' ').join('_');
+    	
+    	if(attributeSpecs[attrId] == null)
+    	{
+    		attributeSpecs[attrId] = attr;
+    	}
+    	
     	var colId = 'COL_' + attrId;
     	var cell = document.createElement("th");
 
@@ -97,7 +110,7 @@
     	cell.classList.add(colId);
 //    	cell.contentEditable = true;
     	
-    	renderCell(cell, attributes[key]);
+    	renderCell(cell, attr);
     	
     	var menu = document.getElementById('configure-menu-list');
     	
@@ -106,7 +119,16 @@
     	checkBox.id = 'CHECK_' + attrId;
     	checkBox.attrId = attrId;
     	checkBox.type = 'checkbox';
-    	checkBox.checked = true;
+    	
+    	if(attr.hiddenByDefault)
+    	{
+    		cell.style.display = "none";
+        	checkBox.checked = false;
+    	}
+    	else
+    	{
+        	checkBox.checked = true;
+    	}
     	checkBox.onchange = function(){toggleCol(this.attrId);};
     	
     	var textNode = document.createTextNode(key);
@@ -122,7 +144,6 @@
   
   function renderCell(cell, attr)
   {
-	    
 	if(attr.hoverText != null)
 	{
 		cell.innerHTML = '<span title="' + attr.hoverText + '">' + attr.text + '</span>';
@@ -207,54 +228,159 @@
 	  document.getElementById(id).classList.toggle("show");
   }
   
-  //Close the dropdown menu if the user clicks outside of it
-  window.onclick = function(event) {
-    if (!event.target.matches('.dropbtn')) {
-      var dropdowns = document.getElementsByClassName("dropdown-content");
-      var i;
-      for (i = 0; i < dropdowns.length; i++) {
-        var openDropdown = dropdowns[i];
-        if (openDropdown.classList.contains('show')) {
-          openDropdown.classList.remove('show');
-        }
-      }
-    }
-  }
-  
-  document.getElementById('blotter').onclick = function(event)
+//  document.getElementById('blotter')
+  window.onclick = function(event)
   {
-	var tdElement = event.target.closest('td');
-	var trElement = tdElement.closest('tr');
-  	var cellIndex = tdElement.cellIndex;
-    //var cellIndex = cell.cellIndex;
-  	var headerCell = header.cells[cellIndex];
-	  alert('Click ' + headerCell.innerHTML);
-//	var form = document.createElement('div');
-//	form.style.backgroundColor = "red";
-//	form.style.'grid-area' = '1 / 1';
-////	form.style.position = 'absolute';
-////	form.style.top = '0px';
-////	form.style.left = '0px';
-////	form.style.width = '100%';
-////	form.style.height = '100%';
-	
-//	tdElement.closest('tr').appendChild(form);
-	  
-
-	  $("<div>Loading...</div>").css({
-		    position: "absolute",
-		    width: "100%",
-		    height: "100%",
-		    top: 0,
-		    left: 0,
-		    background: "#ccc"
-		}).appendTo($(tdElement.closest('tr')).css("position", "relative"));
+	if(configureMenu.classList.contains('show'))
+	{
+		//Close the dropdown menu if the user clicks outside of it
+		if (!event.target.matches('.dropbtn')) {
+			configureMenu.classList.remove('show');
+		}
+	}
+	else
+	{
+		var existingEditPanel = document.getElementById("editPanel");
+		
+		if(existingEditPanel == null)
+		{
+			if (event.target.closest('#blotter'))
+				openEditPanel(event);
+		}
+	}
   }
   
-//  function upsertException(storedObject, exception)
-//  {
-//    // Insert a row in the table at the last row
-//    var newRow   = tableRef.insertRow(-1);
-//    upsert(newRow, storedObject);
-//    addCol(newRow, exception);
-//  }
+  function saveComplete(data, textStatus, jqXHR)
+  {
+	  alert('data=' + data + ', textStatus=' + textStatus + ', jqXHR=' + jqXHR);
+  }
+  
+  function saveFailed(jqXHR, textStatus, error)
+  {
+	  alert('Save Failed: ' + error);
+  }
+  
+  function editSave()
+  {
+    // do the save operation
+	$.post("/edit", $( "#editForm" ).serialize(), saveComplete).fail(saveFailed);
+//	document.getElementById('editForm').submit();
+	// now close the dalog
+	  editCancel();
+  }
+  
+  function editCancel()
+  {
+    var existingEditPanel = document.getElementById("editPanel");
+	
+	if(existingEditPanel != null)
+	{
+		editContainer.style.display='none'
+		$(existingEditPanel).remove();
+	}
+  }
+  
+  function openEditPanel(event)
+  {
+	var trElement = event.target.closest('tr');
+		
+	$(editContainer).width(trElement.scrollWidth); 
+	editContainer.style.display='block'
+  
+
+	  var pos = $(trElement).offset();
+	  pos.top -= parseInt($(pageContent).css("margin-top"));
+	  pos.left -= parseInt($(pageContent).css("margin-left"));
+	  
+	  var editPanel = 
+		  $("<div id=\"editPanel\"></div>")
+		  .css({
+		    position: "absolute",
+		    width: '100%',
+		    height: $(trElement).height(),
+		    top:  pos.top,
+		    left: pos.left,
+
+		    background: "#e8e8e8",
+		    
+		  })
+		  ;
+	  
+	  let buttonPos = $(editButtonBar).offset();
+	  buttonPos.top = $(trElement).offset().top + $(trElement).height();
+	  
+	  //$(editButtonBar).css("background", "#e8e8e8");
+//	  pos.top += $(editPanel).height();
+	  $(editButtonBar).offset(buttonPos);
+	  
+	  //$(editPanel).css("background", "transparent");
+	  
+	  editPanel.appendTo(editContainer);
+	  var editForm = $("<form id=\"editForm\" method=\"post\" action=\"/edit\"></form>");
+	  
+	  editForm.appendTo(editPanel);
+	  
+	  $(window).resize(function () {
+		  var editPanel = document.getElementById("editPanel");
+		  
+		  if(editPanel != null)
+		  {
+			$(editContainer).width(trElement.scrollWidth);
+			var editForm = document.getElementById("editForm");
+			var x=0;
+			for(i=0 ; i<editForm.children.length ; i++)
+			{
+				var editor = editForm.children[i];
+				var id = editor.id.substring(5);
+				var headerCell = document.getElementById(id);
+				
+				$(editor).css({
+				    width: $(headerCell).outerWidth(false),
+				    height: $(editPanel).height(),
+				    top: 0,
+				    left: x
+				})
+				x += $(headerCell).outerWidth(true);
+			}
+		  }
+		  //var trElement = $("#editPanel").closest('tr');
+		  
+	  })
+	  var x=0;
+	  
+	  for(i=0 ; i<header.cells.length ; i++)
+	  {
+		var cell = trElement.cells[i];
+		
+		if(cell.style.display != "none")
+		{
+//				$(cell).height();
+			var editor;
+			
+			var attrSpec = attributeSpecs[header.cells[i].id.substring(4)];
+			
+			editor = $("<textarea id=\"EDIT_" + header.cells[i].id + "\", name=\"" + attrSpec.id + "\">" + 
+					(attrSpec == null || attrSpec.editText == null ? attrSpec.text : attrSpec.editText) + "</textarea>");
+			editor.attrId = header.cells[i].id;
+			editor.id = 'EDIT_' + header.cells[i].id;
+			
+			if(attrSpec == null || !attrSpec.editable)
+			{
+				$(editor).prop('readonly', true);
+				$(editor).css("background", "#e8e8e8");
+			}
+			
+
+	    	editor.css({
+			    position: "absolute",
+			    width: $(cell).outerWidth(false),
+			    height: $(editPanel).height(),
+			    top: 0,
+			    left: x
+			}).appendTo(editForm);
+	    	//.css("position", "relative");
+			
+	    	x += $(cell).outerWidth(true);
+		}
+	  }
+  }

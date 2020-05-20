@@ -156,7 +156,7 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * @author Bruce Skingle
  *
  */
-abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
+public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
 {
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
   private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);

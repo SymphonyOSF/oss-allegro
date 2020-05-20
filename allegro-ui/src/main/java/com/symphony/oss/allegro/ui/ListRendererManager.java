@@ -60,10 +60,6 @@ class ListRendererManager extends BaseRendererManager
     with(Projection.ErrorAttribute.class, (out, projection) ->
     {
       out.print(toJson(projection, "<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>"));
-//      if(projection.getHoverText() == null)
-//        out.print("\"" + projection.getName() + "\": \"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\"");
-//      else
-//        out.print("\"" + projection.getName() + "\": [\"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\",\"" + projection.getHoverText() + "\"]");
     });
     
     with(Projection.AbsoluteHashAttribute.class, (out, projection) ->
@@ -72,11 +68,6 @@ class ListRendererManager extends BaseRendererManager
           panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
-      
-//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
-//          panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-//          projection.getValue().toStringBase64() + "</a>\"");
 
     });
     
@@ -86,11 +77,6 @@ class ListRendererManager extends BaseRendererManager
           panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
-      
-//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
-//          panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-//          projection.getValue().toStringBase64() + "</a>\"");
     });
     
     with(Projection.PartitionHashAttribute.class, (out, projection) ->
@@ -99,11 +85,6 @@ class ListRendererManager extends BaseRendererManager
           panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
           "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
-      
-//      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
-//          panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-//          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-//          projection.getValue().toStringBase64() + "</a>\"");
     });
   }
 

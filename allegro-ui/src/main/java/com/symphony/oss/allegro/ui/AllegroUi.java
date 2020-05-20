@@ -145,7 +145,10 @@ public class AllegroUi
             partitionObjectsViewProvider_, accessApi_, userApi_))
         .withPanel(objectExplorerPanel)
         .withPanel(new ObjectVersionsPanel(projectorManager, objectVersionsViewProvider_, accessApi_, userApi_))
-        .withPanel(new PodPanel(accessApi_, userApi_)).withLocalWebLogin();
+        .withPanel(new PodPanel(accessApi_, userApi_))
+        .withComponents(new EditObjectServlet(accessApi_, userApi_))
+        .withLocalWebLogin()
+        ;
   
     if (partitionBlotterPanel != null)
       serverBuilder.withPanel(partitionBlotterPanel);

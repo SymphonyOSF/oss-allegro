@@ -159,7 +159,7 @@ class ObjectVersionsPanel extends RenderingPanel
       
       view.forEach((partitionObject) ->
       {
-        render(out, partitionObject.getStoredObject().getBaseHash(), partitionObject);
+        render(out, partitionObject.getStoredObject().getAbsoluteHash(), partitionObject);
 
       });
 
