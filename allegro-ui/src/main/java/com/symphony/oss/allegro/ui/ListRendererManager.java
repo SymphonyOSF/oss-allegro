@@ -20,6 +20,7 @@ package com.symphony.oss.allegro.ui;
 
 import com.symphony.oss.allegro.ui.Projection.AbstractAttribute;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 class ListRendererManager extends BaseRendererManager
 {
@@ -66,7 +67,7 @@ class ListRendererManager extends BaseRendererManager
     {
       out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
 
     });
@@ -75,7 +76,7 @@ class ListRendererManager extends BaseRendererManager
     {
       out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
     });
     
@@ -83,7 +84,7 @@ class ListRendererManager extends BaseRendererManager
     {
       out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
           projection.getValue().toStringBase64() + "</a>"));
     });
   }
@@ -99,7 +100,12 @@ class ListRendererManager extends BaseRendererManager
     }
     else
     {
-      out.print("render('" + rowId + "', {");
+      out.print("render('" + rowId + "', '" + 
+          (
+            partitionObject.getStoredObject() instanceof IStoredApplicationObject 
+              ? ((IStoredApplicationObject)partitionObject.getStoredObject()).getThreadId() 
+              : null
+          ) + "', {");
       renderer.render(out, projection);
       out.println("});");
     }

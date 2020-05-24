@@ -28,17 +28,19 @@ import com.symphony.oss.commons.hash.Hash;
 public class Projection<T extends Projection<T>> extends Fluent<T>
 {
   public static final String ATTRIBUTE_SORT_KEY         = "Sort Key";
-  public static final String ATTRIBUTEID_SORT_KEY       = "_sortKey";
+  public static final String ATTRIBUTEID_SORT_KEY       = "sortKey";
   public static final String ATTRIBUTE_HEADER_TYPE      = "Header Type";
-  public static final String ATTRIBUTEID_HEADER_TYPE    = "_headerType";
+  public static final String ATTRIBUTEID_HEADER_TYPE    = "headerType";
   public static final String ATTRIBUTE_PAYLOAD_TYPE     = "Payload Type";
-  public static final String ATTRIBUTEID_PAYLOAD_TYPE   = "_payloadType";
+  public static final String ATTRIBUTEID_PAYLOAD_TYPE   = "payloadType";
   public static final String ATTRIBUTE_ABSOLUTE_HASH    = "Absolute Hash";
-  public static final String ATTRIBUTEID_ABSOLUTE_HASH  = "_absoluteHash";
+  public static final String ATTRIBUTEID_ABSOLUTE_HASH  = "absoluteHash";
   public static final String ATTRIBUTE_BASE_HASH        = "Base Hash";
-  public static final String ATTRIBUTEID_BASE_HASH      = "_baseHash";
+  public static final String ATTRIBUTEID_BASE_HASH      = "baseHash";
   public static final String ATTRIBUTE_PARTITION_HASH   = "Partition Hash";
-  public static final String ATTRIBUTEID_PARTITION_HASH = "_partitionHash";
+  public static final String ATTRIBUTEID_PARTITION_HASH = "partitionHash";
+  public static final String ATTRIBUTE_THREAD_ID        = "Thread ID";
+  public static final String ATTRIBUTEID_THREAD_ID      = "threadId";
   
   public Projection(Class<T> type)
   {
@@ -138,7 +140,7 @@ public class Projection<T extends Projection<T>> extends Fluent<T>
     {
       super(Attribute.class, name, id, value);
       
-      withEditable(true);
+//      withEditable(true);
     }
   }
   

@@ -27,16 +27,19 @@ import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHea
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
 
@@ -263,7 +266,10 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
    * @return The user object for the required user.
    * 
    * @throws NotFoundException If the given userName cannot be found.
+   * 
+   * @deprecated Use fetchUserByName()
    */
+  @Deprecated
   IUserV2 getUserByName(String userName) throws NotFoundException;
 
   /**
@@ -272,6 +278,49 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
    * @param userNames  The userName with which the required users log in.
    * 
    * @return A list of responses and errors.
+   * 
+   * @deprecated Use fetchUsersByName()
    */
+  @Deprecated
   IV2UserList getUsersByName(String... userNames);
+
+  /**
+   * Fetch information about a user given a user (login) name.
+   * 
+   * @param userName  The userName with which the required user logs in.
+   * 
+   * @return The user object for the required user.
+   * 
+   * @throws NotFoundException If the given userName cannot be found.
+   */
+  IUserV2 fetchUserByName(String userName) throws NotFoundException;
+
+  /**
+   * Fetch information about one or more users given a user (login) name.
+   * 
+   * @param userNames  The userName with which the required users log in.
+   * 
+   * @return A list of responses and errors.
+   */
+  IV2UserList fetchUsersByName(String... userNames);
+
+  /**
+   * Fetch information about streams (conversations or threads) the caller is a member of.
+   * 
+   * @param fetchStreamsRequest Request parameters.
+   * 
+   * @return A list of objects describing streams of which the caller is a member.
+   */
+  List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest);
+
+  /**
+   * Fetch information about a user given an external user ID.
+   * 
+   * @param userId  The external user ID of the required user.
+   * 
+   * @return The user object for the required user.
+   * 
+   * @throws NotFoundException If the given userName cannot be found.
+   */
+  IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException;
 }

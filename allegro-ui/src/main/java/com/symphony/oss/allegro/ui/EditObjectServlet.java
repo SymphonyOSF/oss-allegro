@@ -21,38 +21,42 @@ package com.symphony.oss.allegro.ui;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.google.common.collect.ImmutableSet;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.CanonException;
-import com.symphony.oss.commons.dom.json.IJsonDomNode;
 import com.symphony.oss.commons.dom.json.JsonString;
 import com.symphony.oss.commons.dom.json.MutableJsonObject;
 import com.symphony.oss.commons.hash.Hash;
-import com.symphony.oss.fugue.server.http.IUrlPathServlet;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
-public class EditObjectServlet extends HttpServlet implements IUrlPathServlet
+class EditObjectServlet extends AbstractObjectServlet
 {
   private static final long            serialVersionUID = 1L;
+  
+  static final ImmutableSet<String> reservedAttributes_ = new ImmutableSet.Builder<String>()
+      .add("absoluteHash")
+      .add("baseHash")
+      .add("prevHash")
+      .add("sortKey")
+      .add("partitionHash")
+      .add("headerType")
+      .add("payloadType")
+      .build();
 
   private final IAllegroMultiTenantApi accessApi_;
   private final IAllegroApi            userApi_;
 
-  public EditObjectServlet(IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  EditObjectServlet(IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
   {
     accessApi_ = accessApi;
     userApi_ = userApi;
@@ -103,7 +107,7 @@ public class EditObjectServlet extends HttpServlet implements IUrlPathServlet
       
       for(String name : params.keySet())
       {
-        if(!name.startsWith("_"))
+        if(!name.startsWith("_") && !reservedAttributes_.contains(name))
           newJson.add(name, new JsonString(params.get(name)[0]));
       }
       
@@ -138,22 +142,4 @@ public class EditObjectServlet extends HttpServlet implements IUrlPathServlet
     else
       throw new BadRequestException("You can't update an object of type " + storedObject.getCanonType());
   }
-
-  private Hash getHash(HttpServletRequest req, String name)
-  {
-    String s = req.getParameter(name);
-    
-    if(s == null)
-      throw new BadRequestException("Hash parameter \"" + name + "\" is required.");
-    
-    try
-    {
-      return Hash.ofBase64String(s);
-    }
-    catch(IllegalArgumentException e)
-    {
-      throw new BadRequestException("Parameter \"" + name + "\" is not a valid Hash value.");
-    }
-  }
-  
 }

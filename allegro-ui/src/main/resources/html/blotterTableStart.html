@@ -1,0 +1,98 @@
+		    <!-- START -->
+		    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+		    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+		    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.min.css">
+		    <div id="editContainer" class="blotter-modal">
+		      <div id="editButtonBar" class="edit-buttonbar">
+		        <button onclick="editSave()" >Save</button>
+		        <button onclick="editCancel()" >Cancel</button>
+		      </div></div>
+        <!-- <div id="chooserContainer" class="chooser-modal">
+          <div class="insert-contents">
+            <div id="chooserError" class="error"></div>
+            <h1 id="chooserTitle">Choose</h1>
+            <form id="chooserForm">
+              <table id="chooserPanel" class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+              </table>
+            </form>
+            <div id="chooserButtonBar" class="edit-buttonbar">
+              <button onclick="chooserSave()" >Select</button>
+              <button onclick="chooserCancel()" >Cancel</button>
+            </div>
+          </div>
+        </div> -->
+        <div id="chooserContainer" class="dialog-content">
+          <div class="insert-contents">
+            <div id="chooserError" class="error"></div>
+            <h1 id="chooserTitle">Choose</h1>
+            <form id="chooserForm">
+              <table id="chooserPanel" class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+              </table>
+            </form>
+          </div>
+        </div>
+        <!-- <div id="insertContainer" class="insert-modal">
+          <div class="insert-contents">
+            <div id="insertError" class="error"></div>
+            <h1>Object Parameters</h1>
+            <form id="insertForm">
+              <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+                <tr><th>Name</th><th>Value</th><th></th></tr>
+                <tr><td>Partition Hash</td><td><input type="text" name="partitionHash" size=48 class="sym-codespan" readonly></td><td></td></tr>
+                <tr><td>Thread ID</td><td><input type="text" name="threadId" size=36 class="sym-codespan"></td><td><button type="button" onclick="chooseThreadId(this)">Choose...</button></td></tr>
+                <tr><td>Sort Key</td><td><input type="text" name="sortKey" size=48 class="sym-codespan"></td><td></td></tr>
+              </table>
+              <input type="hidden" name="payload">
+            </form>
+            <h1>Payload</h1>
+            <form id="insertAttributesForm">
+              <table id="insertPanel" class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+                <tr><th>Name</th><th>Value</th><th></th></tr>
+              </table>
+            </form>
+            <div class="edit-buttonbar">
+              <form id="insertAddAttributeForm" style="display:inline">
+                <input type="text" name="attributeName">
+              </form><button onclick="insertAddAttribute()" >Add Attribute</button>
+            </div>
+            <div id="insertButtonBar" class="edit-buttonbar">
+              <button onclick="insertSave()" >Save</button>
+              <button onclick="insertCancel()" >Cancel</button>
+            </div>
+          </div>
+        </div> -->
+        <div id="insertContainer" class="dialog-content">
+          <div class="insert-contents">
+            <div id="insertError" class="error"></div>
+            <h1>Object Parameters</h1>
+            <form id="insertForm">
+              <table class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+                <tr><th>Name</th><th>Value</th><th></th></tr>
+                <tr><td>Partition Hash</td><td><input type="text" name="partitionHash" size=48 class="sym-codespan" readonly></td><td></td></tr>
+                <tr><td>Thread ID</td><td><input type="text" name="threadId" size=36 class="sym-codespan"></td><td><button type="button" onclick="chooseThreadId(this)">Choose...</button></td></tr>
+                <tr><td>Sort Key</td><td><input type="text" name="sortKey" size=48 class="sym-codespan"></td><td></td></tr>
+              </table>
+              <input type="hidden" name="payload">
+            </form>
+            <h1>Payload</h1>
+            <form id="insertAttributesForm">
+              <table id="insertPanel" class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white full-width">
+                <tr><th>Name</th><th>Value</th><th></th></tr>
+              </table>
+            </form>
+            <div class="edit-buttonbar">
+              <form id="insertAddAttributeForm" style="display:inline">
+                <input type="text" name="attributeName">
+              </form><button onclick="insertAddAttribute()" >Add Attribute</button>
+            </div>
+          </div>
+        </div>
+		    <div id="configure-menu" class="dropdown-content">
+		      <ul id="configure-menu-list"></ul>
+		    </div>
+		    <table id="blotter" class="w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white">
+		      <tr id="header" class="rowAction">
+            <td><a class="icon" href="javascript:showMenu('configure-menu');">&#x2699;</a></td>
+            <td><a class="icon" href="javascript:openInsertPanel();">+</a></td>
+		      </tr>
+		      <!-- END -->

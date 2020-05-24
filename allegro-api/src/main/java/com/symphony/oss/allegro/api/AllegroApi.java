@@ -22,10 +22,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +52,7 @@ import com.symphony.oss.allegro.api.auth.DummyAuthHandler;
 import com.symphony.oss.allegro.api.auth.IAuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.canon.runtime.EntityBuilder;
 import com.symphony.oss.canon.runtime.IEntity;
@@ -110,10 +115,16 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
+import com.symphony.oss.models.pod.canon.IStreamAttributes;
+import com.symphony.oss.models.pod.canon.IStreamFilter;
+import com.symphony.oss.models.pod.canon.IStreamType;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
 import com.symphony.oss.models.pod.canon.PodHttpModelClient;
 import com.symphony.oss.models.pod.canon.PodModel;
+import com.symphony.oss.models.pod.canon.StreamFilter;
+import com.symphony.oss.models.pod.canon.StreamType;
+import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 
 /**
  * Implementation of IAllegroApi, the main Allegro API class.
@@ -346,6 +357,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public IUserV2 getUserByName(String userName) throws NotFoundException
   {
+    return fetchUserByName(userName);
+  }
+
+  @Override
+  public IUserV2 fetchUserByName(String userName) throws NotFoundException
+  {
     if(userName.indexOf(',') != -1)
       throw new BadRequestException("Only a single userName may be passed, try getUsersByName() instead.");
     
@@ -365,6 +382,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public IV2UserList getUsersByName(String ...userNames)
   {
+    return fetchUsersByName(userNames);
+  }
+
+  @Override
+  public IV2UserList fetchUsersByName(String ...userNames)
+  {
     String userNamesList = String.join(",", userNames);
     
     return podApiClient_.newV3UsersGetHttpRequestBuilder()
@@ -373,6 +396,24 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withLocal(true)
         .build()
         .execute(httpClient_);
+  }
+  
+
+
+  @Override
+  public IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException
+  {
+    IV2UserList result = podApiClient_.newV3UsersGetHttpRequestBuilder()
+        .withSessionToken(authHandler_.getSessionToken())
+        .withUid(userId)
+        .withLocal(true)
+        .build()
+        .execute(httpClient_);
+    
+    if(result.getUsers().size()==1)
+      return result.getUsers().get(0);
+    
+    throw new NotFoundException("User not found " + result.getErrors());
   }
   
   @Override
@@ -444,6 +485,36 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
       }
     }
+  }
+
+  @Override
+  public List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest)
+  {
+    StreamFilter.Builder builder = new StreamFilter.Builder()
+      .withIncludeInactiveStreams(fetchStreamsRequest.isInactive())
+      ;
+    
+    if(!fetchStreamsRequest.getStreamTypes().isEmpty())
+    {
+      List<IStreamType> streamTypes = new LinkedList<>();
+      
+      for(StreamTypeEnum type : fetchStreamsRequest.getStreamTypes())
+        streamTypes.add(new StreamType.Builder().withType(type).build());
+      
+      builder.withStreamTypes(streamTypes);
+    }
+    
+    
+    List<IStreamAttributes> streams = podApiClient_.newV1StreamsListPostHttpRequestBuilder()
+        .withSessionToken(authHandler_.getSessionToken())
+        .withSkip(fetchStreamsRequest.getSkip())
+        .withLimit(fetchStreamsRequest.getLimit())
+        .withCanonPayload(builder.build())
+        .build()
+        .execute(httpClient_);
+
+    
+    return streams;
   }
   
   @Override

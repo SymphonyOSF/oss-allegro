@@ -45,11 +45,13 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  */
 public class ProjectorManager
 {
-  private static final ImmutableSet<String> reservedAttributes_ = new ImmutableSet.Builder<String>()
+  static final ImmutableSet<String> reservedAttributes_ = new ImmutableSet.Builder<String>()
       .add("baseHash")
       .add("prevHash")
       .add("sortKey")
       .add("partitionHash")
+      .add("headerType")
+      .add("payloadType")
       .build();
   
   private final ImmutableMap<Class<?>, IProjector<?, ?>> projectorMap_;

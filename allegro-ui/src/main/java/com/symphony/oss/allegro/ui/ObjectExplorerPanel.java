@@ -28,7 +28,6 @@ import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 class ObjectExplorerPanel extends RenderingPanel
@@ -38,7 +37,7 @@ class ObjectExplorerPanel extends RenderingPanel
 
   ObjectExplorerPanel(ProjectorManager projectorManager, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
   {
-    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager);
+    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager, true);
   }
   
   @Override
