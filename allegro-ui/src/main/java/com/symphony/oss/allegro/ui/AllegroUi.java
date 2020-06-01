@@ -141,7 +141,6 @@ public class AllegroUi
         partitionObjectsViewProvider_, accessApi_, userApi_);
     
     FugueHttpUiServer.Builder serverBuilder = new FugueHttpUiServer.Builder()
-        .withLocalWebLogin()
         .withApplicationName(builder.applicationName_)
         .withHttpPort(builder.httpPort_)
         .withResourceProvider(builder.resourceProvider_ == null
@@ -477,6 +476,7 @@ public class AllegroUi
     {
       FugueHttpUiServer server = new AllegroUi.Builder()
           .withCommandLine(argv)
+          .withHttpPort(4000)
           .build()
           .getHttpServer()
           ;
