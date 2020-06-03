@@ -27,6 +27,7 @@ import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -112,7 +113,6 @@ import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
-import com.symphony.oss.models.object.canon.PartitionsPartitionHashGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
@@ -216,19 +216,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     authzApiClient_  = new AuthzHttpModelClient(
         modelRegistry_,
         initUrl(builder.objectStoreUrl_, MultiTenantService.AUTHZ), null, jwtGenerator_);
-    
-    
-//    IMultiTenantServiceRegistry serviceRegistry = new IMultiTenantServiceRegistry()
-//        {
-//
-//          @Override
-//          public IServiceInfo fetchServiceInfo(MultiTenantService service)
-//          {
-//            // TODO Auto-generated method stub
-//            return null;
-//          }
-//      
-//        };
     
     entitlementValidator_ = new BaseEntitlementValidator(httpClient_, authzApiClient_, this);
     entitlementSpecAdaptor_ = new EntitlementSpecAdaptor(this);
@@ -554,7 +541,14 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       .execute(httpClient_);
   }
   
-
+  @Override
+  public void storeTransaction(Collection<IAbstractStoredApplicationObject> objects)
+  {
+    objectApiClient_.newObjectsTransactionPostHttpRequestBuilder()
+      .withCanonPayload(objects)
+      .build()
+      .execute(httpClient_);
+  }
   
   @Override
   public IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request)
@@ -1554,6 +1548,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     return fetchObject(partitionHash, SortKey.newBuilder().build(sortKey));
   }
   
+  @Override
   public IStoredApplicationObject fetchObject(Hash partitionHash, SortKey sortKey)
   {
     return objectApiClient_.newPartitionsPartitionHashSortKeyGetHttpRequestBuilder()
@@ -1579,7 +1574,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   {
     Hash    baseHash      = query.getBaseHash();
     String  after         = query.getAfter();
-    Integer limit           = query.getMaxItems();
     
     ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
         .withObjectHash(baseHash)

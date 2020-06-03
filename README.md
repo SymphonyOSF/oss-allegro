@@ -7,6 +7,51 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-06-03 Transactional Write
+A method was added to write multiple objects in an atomic transaction:
+
+```java
+  /**
+   * Store the given collection of objects in a single atomic transaction.
+   * 
+   * The underlying storage infrastructure has a limit on the number of items which can be stored in a single
+   * transaction (currently 25). Each object store object requires 4 rows in the underlying database so the
+   * current limit on the number of objects which can be successfully written in a single transaction is 
+   * currently 25 / 4 = 6. If too many objects are passed the request will fail throwing a BadRequestException
+   * and no change will have been made to the object store.
+   * 
+   * @param objects Objects to be stored.
+   * 
+   * @throws BadRequestException If the transaction is too large.
+   */
+  void storeTransaction(Collection<IAbstractStoredApplicationObject> objects);
+```
+
+## 2020-05-24 fetchUserById and fetchStreams
+Methods were added to fetch user info by numeric userId and stream membership for the calling user:
+
+```java
+  /**
+   * Fetch information about streams (conversations or threads) the caller is a member of.
+   * 
+   * @param fetchStreamsRequest Request parameters.
+   * 
+   * @return A list of objects describing streams of which the caller is a member.
+   */
+  List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest);
+
+  /**
+   * Fetch information about a user given an external user ID.
+   * 
+   * @param userId  The external user ID of the required user.
+   * 
+   * @return The user object for the required user.
+   * 
+   * @throws NotFoundException If the given userName cannot be found.
+   */
+  IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException;
+```
+ 
 ## 2020-05-07 Partition Methods
 Methods were added to fetch a Partition object (i.e. the object describing a partition including it's ID object), fetch
 an object based on it's partition and sort key, and to return the ModelRegistry used by Allegro.
