@@ -47,7 +47,7 @@ class PartitionBlotterPanel extends RenderingPanel
   PartitionBlotterPanel(ProjectorManager rendererManager, String feedName, PartitionProvider partitionProvider, PartitionObjectsViewProvider partitionObjectsViewProvider,
       IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
   {
-    super(PANEL_ID, PANEL_NAME, accessApi, userApi, rendererManager);
+    super(PANEL_ID, PANEL_NAME, accessApi, userApi, rendererManager, false);
     
     feedName_                     = feedName;
     partitionProvider_            = partitionProvider;
@@ -111,7 +111,7 @@ class PartitionBlotterPanel extends RenderingPanel
     
     startTable(out);
 
-    finishTable(out);
+    finishTable(out, partitionHash);
 
     PartitionObjectsView view = partitionObjectsViewProvider_.fetch(partitionHash);
 
@@ -183,7 +183,7 @@ class PartitionBlotterPanel extends RenderingPanel
       feedOut_.flush();
     }
 
-    public void objectUpserted(PartitionObject partitionObject)
+    public void objectUpserted(PartitionObject<?> partitionObject)
     {
       feedOut_.openElement("script");
       doObjectUpserted(partitionObject);

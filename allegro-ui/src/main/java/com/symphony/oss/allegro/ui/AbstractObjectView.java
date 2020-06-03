@@ -154,11 +154,14 @@ abstract class AbstractObjectView<T extends IAbstractStoredApplicationObject> im
   {
     String oldSortKey = hashIndex_.remove(getPrimaryKey(deletedApplicationObject));
     
-    objectMap_.remove(oldSortKey);
-    
-    for(FeedHandler listener : listeners_)
+    if(oldSortKey != null)
     {
-      listener.objectDeleted(getPrimaryKey(deletedApplicationObject));
+      objectMap_.remove(oldSortKey);
+      
+      for(FeedHandler listener : listeners_)
+      {
+        listener.objectDeleted(getPrimaryKey(deletedApplicationObject));
+      }
     }
   }
 

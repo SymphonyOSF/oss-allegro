@@ -46,7 +46,7 @@ class PartitionExplorerPanel extends RenderingPanel
 
   PartitionExplorerPanel(ProjectorManager projectorManager, PartitionBlotterPanel partitionBlotterPanel, PartitionProvider partitionProvider, PartitionObjectsViewProvider partitionObjectsViewProvider, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
   {
-    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager);
+    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager, false);
     
     partitionBlotterPanel_        = partitionBlotterPanel;
     partitionProvider_            = partitionProvider;
@@ -106,6 +106,13 @@ class PartitionExplorerPanel extends RenderingPanel
         partitionName = ((INamedUserIdObject) partitionId).getName();
       }
     }
+    
+    printPartition(out, partitionHash, partitionName, partition, loadAfter);
+  }
+  
+  void printPartition(UIHtmlWriter out, Hash partitionHash, String partitionName, IPartition partition, boolean loadAfter)
+  {
+    IUserIdObject partitionId = partition == null ? null : partition.getId();
     
     printHeader(out);
     
@@ -206,7 +213,7 @@ class PartitionExplorerPanel extends RenderingPanel
         view.loadAfter();
       
       
-      finishTable(out);
+      finishTable(out, partitionHash);
       
       view.forEach((partitionObject) ->
       {

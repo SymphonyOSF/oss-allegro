@@ -124,7 +124,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
       File file = new File(principalCredentialFile);
       
       if(!file.canRead())
-        throw new IllegalArgumentException("Credential file is unreadable");
+        throw new IllegalArgumentException("Credential file \""  + file.getAbsolutePath() + "\" is unreadable");
       
       try
       {
@@ -143,7 +143,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
       }
       catch (IOException e)
       {
-        throw new IllegalArgumentException("Unable to read credential file.", e);
+        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
       }
       
       return self();

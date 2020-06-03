@@ -20,54 +20,41 @@ package com.symphony.oss.allegro.ui;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
+import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 
 abstract class RenderingPanel extends AllegroUiPanel
 {
   private static final Logger log_ = LoggerFactory.getLogger(RenderingPanel.class);
-  private static final ImmutableMap<String, Boolean> initialColumnMap_;
 
   private static final String COL_PREFIX = "COL_";
 
   private static final String HIDE = "Hide";
   private static final String SHOW = "Show";
+  private static final String SCRIPT = "script";
+  private static final String SRC = "src";
 
   
   private final ProjectorManager       projectorManager_;
   private final ListRendererManager    listRendererManager_;
   private final SummaryRendererManager summaryRendererManager_;
+  private final boolean                absolute_;
 
   
-  
-  static
-  {
-    initialColumnMap_ = new ImmutableMap.Builder<String, Boolean>()
-        .put(Projection.ATTRIBUTE_SORT_KEY,       Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_ABSOLUTE_HASH,  Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_BASE_HASH,      Boolean.FALSE)
-        .put(Projection.ATTRIBUTE_PARTITION_HASH, Boolean.FALSE)
-        .put(Projection.ATTRIBUTE_HEADER_TYPE,    Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_PAYLOAD_TYPE,   Boolean.TRUE)
-        .put(Projection.ATTRIBUTE_PAYLOAD,        Boolean.TRUE)
-        .build();
-  }
-  
-  RenderingPanel(String id, String name, IAllegroMultiTenantApi accessApi, IAllegroApi userApi, ProjectorManager projectorManager)
+  RenderingPanel(String id, String name, IAllegroMultiTenantApi accessApi, IAllegroApi userApi, ProjectorManager projectorManager, boolean absolute)
   {
     super(id, name, accessApi, userApi);
     
     projectorManager_ = projectorManager;
     listRendererManager_ = new ListRendererManager(this, projectorManager_);
     summaryRendererManager_ = new SummaryRendererManager(this, projectorManager_);
-    
+    absolute_ = absolute;
     
   }
   
@@ -78,56 +65,19 @@ abstract class RenderingPanel extends AllegroUiPanel
 
   void finishPage(UIHtmlWriter out)
   {
-    for(Entry<String, Boolean> entry : initialColumnMap_.entrySet())
-    {
-      if(!entry.getValue())
-        out.println("hideCol('" + entry.getKey() + "');");
-    }
-
     out.closeElement(); // script
     out.flush();
   }
 
   void startTable(UIHtmlWriter out)
   {
-    out.openElement("div", ID, "configure-menu", CLASS, "dropdown-content");
-    out.openElement("ul", ID, "configure-menu-list");
-    
-    for(Entry<String, Boolean> entry : initialColumnMap_.entrySet())
-    {
-      out.openElement("li");
-      if(entry.getValue())
-        out.printElement("input", null, TYPE, CHECKBOX, ID, "CHECK_" + entry.getKey().replaceAll(" ", "_"),
-          ON_CHANGE, "toggleCol('" + entry.getKey() + "');", CHECKED);
-      else
-        out.printElement("input", null, TYPE, CHECKBOX, ID, "CHECK_" + entry.getKey().replaceAll(" ", "_"),
-            ON_CHANGE, "toggleCol('" + entry.getKey() + "');");
-      out.println(entry.getKey());
-      out.closeElement(); // li
-    }
-
-    out.closeElement(); // ul
-    out.closeElement(); // nav
-    
-    out.printElement("button", "Configure Table", CLASS, CLASS_DROP_BUTTON, ON_CLICK, "showMenu('configure-menu')");
-    out.openElement("table", "id", "blotter", "class", "w3-table w3-striped w3-bordered w3-border w3-hoverable w3-white");
-
-    out.openElement("tr", "id", "header");
-    for(Entry<String, Boolean> entry : initialColumnMap_.entrySet())
-    {
-      out.printElement("th", entry.getKey(), ID, COL_PREFIX + entry.getKey().replaceAll(" ", "_"));
-    }
-    
-    out.closeElement(); //tr 
+    include(out, "/html/blotterTableStart.html");
   }
-
-  void finishTable(UIHtmlWriter out)
+  
+  void include(UIHtmlWriter out, String resourceName)
   {
-    out.closeElement(); // table
-    
-    out.openElement("script");
-    
-    try(InputStreamReader in = new InputStreamReader(getClass().getResourceAsStream("/blotterFunc.js")))
+
+    try(InputStreamReader in = new InputStreamReader(getClass().getResourceAsStream(resourceName)))
     {
       char[] buf = new char[1024];
       int nbytes;
@@ -137,10 +87,21 @@ abstract class RenderingPanel extends AllegroUiPanel
     }
     catch (IOException e)
     {
-      log_.error("Failed to write functions", e);
+      log_.error("Failed to include " + resourceName, e);
     }
     
     out.println();
+  }
+
+  void finishTable(UIHtmlWriter out, Hash partitionHash)
+  {
+    out.println("</table>"); // table
+    
+    out.printElement("div", "", STYLE, "height:100px"); // space for the edit button bar to appear in for a single row table. 
+    out.printElement(SCRIPT, "", SRC, "/js/blotterFunc.js");
+    out.openElement("script");
+    out.println("var absolute = " + absolute_);
+    out.println("$(\"#insertForm\").find('input[name=\"partitionHash\"]').val('" + partitionHash + "');");
   }
   
   void renderSummary(UIHtmlWriter out, PartitionObject<?> partitionObject)

@@ -19,13 +19,20 @@
 package com.symphony.oss.allegro.ui;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.allegro.ui.Projection.Attribute;
 import com.symphony.oss.allegro.ui.Projection.AttributeSet;
+import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
+import com.symphony.oss.commons.dom.json.ImmutableJsonList;
+import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
+import com.symphony.oss.commons.dom.json.ImmutableJsonSet;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
@@ -38,6 +45,15 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  */
 public class ProjectorManager
 {
+  static final ImmutableSet<String> reservedAttributes_ = new ImmutableSet.Builder<String>()
+      .add("baseHash")
+      .add("prevHash")
+      .add("sortKey")
+      .add("partitionHash")
+      .add("headerType")
+      .add("payloadType")
+      .build();
+  
   private final ImmutableMap<Class<?>, IProjector<?, ?>> projectorMap_;
   private final ImmutableList<Class<?>>                  projectorTypeList_;
   private final IProjector<Object, ?>                    defaultProjector_;
@@ -100,7 +116,7 @@ public class ProjectorManager
       IProjector<IAbstractStoredApplicationObject, Projection.AttributeSet> abstractStoredObjectProjector = addProjector(IAbstractStoredApplicationObject.class, (object) ->
       {
         return new Projection.AttributeSet()
-            .with(Projection.ATTRIBUTE_SORT_KEY, object.getSortKey())
+            .with(Projection.ATTRIBUTE_SORT_KEY, Projection.ATTRIBUTEID_SORT_KEY, object.getSortKey())
             .with(new Projection.AbsoluteHashAttribute(object.getAbsoluteHash()))
             .with(new Projection.BaseHashAttribute(object.getBaseHash()))
             .with(new Projection.PartitionHashAttribute(object.getPartitionHash()))
@@ -118,32 +134,99 @@ public class ProjectorManager
           int     i         = fullType.lastIndexOf('.');
           
           if(i == -1)
-            projection.with(Projection.ATTRIBUTE_HEADER_TYPE, fullType);
+            projection.with(Projection.ATTRIBUTE_HEADER_TYPE, Projection.ATTRIBUTEID_HEADER_TYPE, fullType);
           else
-            projection.with(Projection.ATTRIBUTE_HEADER_TYPE, fullType.substring(i+1), fullType);
+            projection.with(
+                new Projection.Attribute(Projection.ATTRIBUTE_HEADER_TYPE, Projection.ATTRIBUTEID_HEADER_TYPE, fullType.substring(i+1))
+                  .withHoverText(fullType)
+                );
           
           if(object.getEncryptedPayload() != null)
-            projection.with(new Projection.ErrorAttribute(Projection.ATTRIBUTE_PAYLOAD_TYPE, "Unable to Decrypt"));
+            projection.with(new Projection.ErrorAttribute(Projection.ATTRIBUTE_PAYLOAD_TYPE, Projection.ATTRIBUTEID_PAYLOAD_TYPE, "Unable to Decrypt"));
         }
         
         return projection;
       });
       
-      payloadProjector_ = addProjector(IApplicationObjectPayload.class, (object) ->
+      payloadProjector_ = new IProjector<IApplicationObjectPayload, Projection.AttributeSet>()
       {
-        Projection.AttributeSet projection = storedObjectProjector.project(object.getStoredApplicationObject())
-            ;
+        @Override
+        public AttributeSet project(IApplicationObjectPayload object)
+        {
+          Projection.AttributeSet projection = storedObjectProjector.project(object.getStoredApplicationObject())
+              ;
+          
+          String  fullType  = object.getCanonType();
+          int     i         = fullType.lastIndexOf('.');
+          
+          if(i == -1)
+            projection.with(Projection.ATTRIBUTE_PAYLOAD_TYPE, Projection.ATTRIBUTEID_PAYLOAD_TYPE, fullType);
+          else
+            projection.with(
+                new Projection.Attribute(Projection.ATTRIBUTE_PAYLOAD_TYPE, Projection.ATTRIBUTEID_PAYLOAD_TYPE, fullType.substring(i+1))
+                  .withHoverText(fullType)
+                );
+          
+          return projection;
+        }
+    
+      };
+      
+      withProjector(IApplicationObjectPayload.class, (projection, object) ->
+      {
         
-        String  fullType  = object.getCanonType();
-        int     i         = fullType.lastIndexOf('.');
+        projectJsonObject(projection, object.getJsonObject(), "");
         
-        if(i == -1)
-          projection.with(Projection.ATTRIBUTE_PAYLOAD_TYPE, fullType);
-        else
-          projection.with(Projection.ATTRIBUTE_PAYLOAD_TYPE, fullType.substring(i+1), fullType);
-        
-        return projection;
       });
+    }
+    
+    private void projectJsonObject(AttributeSet projection, ImmutableJsonObject json, String prefix)
+    {
+      Iterator<String> it = json.getNameIterator();
+      
+      while(it.hasNext())
+      {
+        String name = it.next();
+        
+        if(!name.startsWith("_"))
+        {
+          if(prefix.length() > 0 || !reservedAttributes_.contains(name))
+            projectJsonItem(projection, json.get(name), prefix.length()==0 ? name : prefix + "." + name);
+        }
+      }
+    }
+
+    private void projectJsonItem(AttributeSet projection, IImmutableJsonDomNode item, String prefix)
+    {
+      if(item instanceof ImmutableJsonObject)
+      {
+        projectJsonObject(projection, (ImmutableJsonObject) item, prefix);
+      }
+      else if(item instanceof ImmutableJsonList)
+      {
+        projectJsonArray(projection, ((ImmutableJsonList) item).iterator(), prefix);
+      }
+      else if(item instanceof ImmutableJsonSet)
+      {
+        projectJsonArray(projection, ((ImmutableJsonSet) item).iterator(), prefix);
+      }
+      else
+      {
+        projection.with(new Projection.Attribute(prefix, prefix, item.toString())
+            .withEditable(true));
+      }
+    }
+
+    private void projectJsonArray(AttributeSet projection, Iterator<IImmutableJsonDomNode> it, String prefix)
+    {
+      int i=0;
+      
+      while(it.hasNext())
+      {
+        projectJsonItem(projection, it.next(), prefix.length()==0 ? String.valueOf(i) : prefix + "." + i);
+        
+        i++;
+      }
     }
     
     class ProjectionAdaptor<P extends IApplicationObjectPayload> implements IProjector<P, Projection.AttributeSet>
@@ -166,11 +249,25 @@ public class ProjectorManager
       }
     }
     
+    /**
+     * Return the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @return the default projector which is used as a last resort if no matching projector is defined.
+     */
     public IProjector<Object,?> getDefaultProjector()
     {
       return defaultProjector_;
     }
     
+    /**
+     * Add the given projector.
+     * 
+     * @param <P>         The concrete type of the payload on which this projector operates.
+     * @param type        The concrete type of the payload on which this projector operates.
+     * @param projector   The projector.
+     * 
+     * @return This (fluent method).
+     */
     public <P extends IApplicationObjectPayload> T withProjector(Class<P> type, IProjectionEnricher<P> projector)
     {
       projectorMap_.put(type, new ProjectionAdaptor<P>(projector));
@@ -179,8 +276,17 @@ public class ProjectorManager
       return self();
     }
 
-    
-    <C,P extends Projection> IProjector<C,P> addProjector(Class<C> type, IProjector<C,P> projector)
+    /**
+     * Add the given projector and return it.
+     * 
+     * @param <C>         The concrete type of the payload on which this projector operates.
+     * @param <P>         The concrete type of the projection returned by this projector.
+     * @param type        The concrete type of the payload on which this projector operates.
+     * @param projector   The projector.
+     * 
+     * @return            The projector.
+     */
+    <C,P extends Projection<?>> IProjector<C,P> addProjector(Class<C> type, IProjector<C,P> projector)
     {
       projectorMap_.put(type, projector);
       projectorTypeList_.add(type);
@@ -188,6 +294,13 @@ public class ProjectorManager
       return projector;
     }
     
+    /**
+     * Set the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @param defaultProjector the default projector which is used as a last resort if no matching projector is defined.
+     * 
+     * @return This (fluent method).
+     */
     public T withDefaultProjector(IProjector<Object,?> defaultProjector)
     {
       defaultProjector_ = defaultProjector;
@@ -203,9 +316,9 @@ public class ProjectorManager
    * 
    * @return A Projection of the given object containing the attributes to be rendered.
    */
-  public Projection project(PartitionObject<?> partitionObject)
+  public Projection<?> project(PartitionObject<?> partitionObject)
   {
-    Projection result =  null;
+    Projection<?> result =  null;
     IApplicationObjectPayload payload = partitionObject.getPayloadUnchecked();
     
     if(payload != null)

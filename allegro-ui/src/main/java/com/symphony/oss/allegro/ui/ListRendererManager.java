@@ -20,6 +20,7 @@ package com.symphony.oss.allegro.ui;
 
 import com.symphony.oss.allegro.ui.Projection.AbstractAttribute;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 class ListRendererManager extends BaseRendererManager
 {
@@ -36,14 +37,14 @@ class ListRendererManager extends BaseRendererManager
     {
       boolean first = true;
       
-      for(AbstractAttribute<?> attr : projection.getAttributes())
+      for(AbstractAttribute<?,?> attr : projection.getAttributes())
       {
         if(first)
           first = false;
         else
           out.print(", ");
         
-        IRenderer<Projection> renderer = getConsumer(attr.getClass());
+        IRenderer<Projection<?>> renderer = getConsumer(attr.getClass());
         
         if(renderer == null)
           out.print("\"" + attr.getName() + "\": \"" + attr.getValue() + "\"");
@@ -54,50 +55,44 @@ class ListRendererManager extends BaseRendererManager
     
     with(Projection.Attribute.class, (out, projection) ->
     {
-      if(projection.getHoverText() == null)
-        out.print("\"" + projection.getName() + "\": \"" + projection.getValue() + "\"");
-      else
-        out.print("\"" + projection.getName() + "\": [\"" + projection.getValue() + "\",\"" + projection.getHoverText() + "\"]");
+      out.print(toJson(projection));
     });
     
     with(Projection.ErrorAttribute.class, (out, projection) ->
     {
-      if(projection.getHoverText() == null)
-        out.print("\"" + projection.getName() + "\": \"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\"");
-      else
-        out.print("\"" + projection.getName() + "\": [\"<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>\",\"" + projection.getHoverText() + "\"]");
+      out.print(toJson(projection, "<span class=\\\"" + RenderingPanel.ERROR_CLASS + "\\\">" + projection.getValue() + "</span>"));
     });
     
     with(Projection.AbsoluteHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectExplorerPanel.PANEL_ID) + "?" + RenderingPanel.ABSOLUTE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
+          projection.getValue().toStringBase64() + "</a>"));
 
     });
     
     with(Projection.BaseHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(ObjectVersionsPanel.PANEL_ID) + "?" + RenderingPanel.BASE_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
+          projection.getValue().toStringBase64() + "</a>"));
     });
     
     with(Projection.PartitionHashAttribute.class, (out, projection) ->
     {
-      out.print("\"" + projection.getName() + "\": \"<a href=\\\"" +
+      out.print(toJson(projection, "<a href=\\\"" +
           panel.getPath(PartitionExplorerPanel.PANEL_ID) + "?" + RenderingPanel.PARTITION_HASH + "=" + projection.getValue().toStringUrlSafeBase64() +
-          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + "\\\">" +
-          projection.getValue().toStringBase64() + "</a>\"");
+          "\\\", " + RenderingPanel.CLASS + "=\\\"" + RenderingPanel.CODE_CLASS + " " + RenderingPanel.ROWACTION_CLASS + "\\\">" +
+          projection.getValue().toStringBase64() + "</a>"));
     });
   }
 
   void render(UIHtmlWriter out, Object rowId, PartitionObject<?> partitionObject)
   {
-    Projection projection = projectorManager_.project(partitionObject);
-    IRenderer<Projection> renderer = getConsumer(projection.getClass());
+    Projection<?> projection = projectorManager_.project(partitionObject);
+    IRenderer<Projection<?>> renderer = getConsumer(projection.getClass());
     
     if(renderer == null)
     {
@@ -105,7 +100,12 @@ class ListRendererManager extends BaseRendererManager
     }
     else
     {
-      out.print("render('" + rowId + "', {");
+      out.print("render('" + rowId + "', '" + 
+          (
+            partitionObject.getStoredObject() instanceof IStoredApplicationObject 
+              ? ((IStoredApplicationObject)partitionObject.getStoredObject()).getThreadId() 
+              : null
+          ) + "', {");
       renderer.render(out, projection);
       out.println("});");
     }

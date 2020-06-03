@@ -17,6 +17,7 @@
 package com.symphony.oss.allegro.api;
 
 import java.io.Closeable;
+import java.util.Collection;
 
 import javax.annotation.Nullable;
 
@@ -34,6 +35,7 @@ import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
@@ -46,6 +48,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.s2.authc.model.IAuthcContext;
 import com.symphony.s2.authc.model.IMultiTenantServiceRegistry;
 import com.symphony.s2.authz.canon.EntitlementAction;
@@ -92,6 +95,21 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @param object An Object to be stored.
    */
   void store(IAbstractStoredApplicationObject object);
+  
+  /**
+   * Store the given collection of objects in a single atomic transaction.
+   * 
+   * The underlying storage infrastructure has a limit on the number of items which can be stored in a single
+   * transaction (currently 25). Each object store object requires 4 rows in the underlying database so the
+   * current limit on the number of objects which can be successfully written in a single transaction is 
+   * currently 25 / 4 = 6. If too many objects are passed the request will fail throwing a BadRequestException
+   * and no change will have been made to the object store.
+   * 
+   * @param objects Objects to be stored.
+   * 
+   * @throws BadRequestException If the transaction is too large.
+   */
+  void storeTransaction(Collection<IAbstractStoredApplicationObject> objects);
 
   /**
    * Fetch objects from a partition.
@@ -447,6 +465,8 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   /**
    * Fetch an object by its Partition and Sort key.
    * 
+   * This is a convenience method which accepts a String value for the sortKey parameter.
+   * 
    * @param partitionHash The Partition of which the object is a member.
    * @param sortKey       The object's sort key.
    * 
@@ -456,4 +476,17 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @throws NotFoundException         If the requested object does not exist.
    */
   IStoredApplicationObject fetchObject(Hash partitionHash, String sortKey);
+
+  /**
+   * Fetch an object by its Partition and Sort key.
+   * 
+   * @param partitionHash The Partition of which the object is a member.
+   * @param sortKey       The object's sort key.
+   * 
+   * @return The required object.
+   * 
+   * @throws PermissionDeniedException If the caller does not have access to the required object.
+   * @throws NotFoundException         If the requested object does not exist.
+   */
+  IStoredApplicationObject fetchObject(Hash partitionHash, SortKey sortKey);
 }

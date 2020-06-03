@@ -31,11 +31,13 @@ import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.IUIPanel;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIPanel;
+import com.symphony.oss.models.object.canon.INamedUserIdObject;
 import com.symphony.oss.models.object.canon.IUserIdObject;
 
 abstract class AllegroUiPanel extends UIPanel implements IUIPanel
 {
   static final String CODE_CLASS = "sym-codespan";
+  static final String ROWACTION_CLASS = "rowAction";
   static final String ERROR_CLASS = "error";
   static final String CLASS_DROP_BUTTON = "dropbtn";
   
@@ -118,7 +120,7 @@ abstract class AllegroUiPanel extends UIPanel implements IUIPanel
     }
   }
   
-  IUserIdObject getPartitionId(HttpServletRequest req, UIHtmlWriter out)
+  INamedUserIdObject getPartitionId(HttpServletRequest req, UIHtmlWriter out)
   {
     String name = req.getParameter(PARTITION_ID);
     
@@ -127,8 +129,8 @@ abstract class AllegroUiPanel extends UIPanel implements IUIPanel
     
     IEntity id = userApi_.getModelRegistry().parseOne(new StringReader(name));
     
-    if(id instanceof IUserIdObject)
-      return (IUserIdObject)id;
+    if(id instanceof INamedUserIdObject)
+      return (INamedUserIdObject)id;
     
     out.printError("Invalid Partition ID");
 

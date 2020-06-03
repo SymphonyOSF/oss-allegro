@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
+import com.symphony.oss.canon.runtime.exception.DeletedException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.commons.hash.Hash;
@@ -39,7 +40,7 @@ class ObjectVersionsPanel extends RenderingPanel
 
   ObjectVersionsPanel(ProjectorManager projectorManager, ObjectVersionsViewProvider objectVersionsViewProvider, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
   {
-    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager);
+    super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager, true);
     
     objectVersionsViewProvider_ = objectVersionsViewProvider;
   }
@@ -70,6 +71,10 @@ class ObjectVersionsPanel extends RenderingPanel
     catch(PermissionDeniedException e)
     {
       out.printError("Object Access Denied");
+    }
+    catch(DeletedException e)
+    {
+      out.printError("Object Has Been Deleted");
     }
     catch(NotFoundException e)
     {
@@ -145,7 +150,10 @@ class ObjectVersionsPanel extends RenderingPanel
           printObject(out, "Decrypted Payload", currentPartitionObject.getPayloadUnchecked());
         }
       }
+    }
 
+    if(baseHash != null)
+    {
       out.printElement("h2", "Object Versions");
       
       startTable(out);
@@ -155,14 +163,14 @@ class ObjectVersionsPanel extends RenderingPanel
       if(loadAfter)
         view.loadAfter();
       
-      finishTable(out);
+      finishTable(out, partitionHash);
       
       view.forEach((partitionObject) ->
       {
-        render(out, partitionObject.getStoredObject().getBaseHash(), partitionObject);
-
+        render(out, partitionObject.getStoredObject().getAbsoluteHash(), partitionObject);
+  
       });
-
+  
       finishPage(out);
       
       if(view.hasMoreAfter())

@@ -20,6 +20,7 @@ package com.symphony.oss.allegro.ui;
 
 import java.net.URL;
 import java.security.PrivateKey;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -47,6 +48,8 @@ import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.pod.canon.IStreamAttributes;
+import com.symphony.oss.models.pod.canon.IStreamType;
 
 /**
  * Main class for the Allegro UI.
@@ -82,6 +85,8 @@ public class AllegroUi
     instanceId_ = builder.instanceId_;
   
     userApi_ = builder.userApiBuilder_.build();
+    
+    debug();
   
     if (builder.principalCredentialFile_ == null)
     {
@@ -132,20 +137,29 @@ public class AllegroUi
       feedSubscriber_.start();
     }
   
+    PartitionExplorerPanel partitionExplorer = new PartitionExplorerPanel(projectorManager, partitionBlotterPanel, partitionProvider_,
+        partitionObjectsViewProvider_, accessApi_, userApi_);
+    
     FugueHttpUiServer.Builder serverBuilder = new FugueHttpUiServer.Builder()
-        .withLocalWebLogin()
         .withApplicationName(builder.applicationName_)
         .withHttpPort(builder.httpPort_)
         .withResourceProvider(builder.resourceProvider_ == null
           ? new FugueResourceProvider()
           : builder.resourceProvider_
         )
+        .withResourceProvider(new AllegroResourceProvider())
         .withApplicationName(builder.applicationName_)
-        .withDefaultPanel(new PartitionExplorerPanel(projectorManager, partitionBlotterPanel, partitionProvider_,
-            partitionObjectsViewProvider_, accessApi_, userApi_))
+        .withDefaultPanel(partitionExplorer)
         .withPanel(objectExplorerPanel)
         .withPanel(new ObjectVersionsPanel(projectorManager, objectVersionsViewProvider_, accessApi_, userApi_))
-        .withPanel(new PodPanel(accessApi_, userApi_)).withLocalWebLogin();
+        .withPanel(new PodPanel(accessApi_, userApi_))
+        .withPanel(new UpsertPartitionPanel(partitionExplorer, accessApi_, userApi_))
+        .withComponents(new EditObjectServlet(accessApi_, userApi_))
+        .withComponents(new InsertObjectServlet(accessApi_, userApi_))
+        .withComponents(new DeleteObjectServlet(accessApi_, userApi_))
+        .withComponents(new ChooseStreamsServlet(userApi_))
+        .withLocalWebLogin()
+        ;
   
     if (partitionBlotterPanel != null)
       serverBuilder.withPanel(partitionBlotterPanel);
@@ -153,6 +167,18 @@ public class AllegroUi
     httpServer_ = serverBuilder.build();
   }
   
+  private void debug()
+  {
+//    AllegroApi allegro = (AllegroApi) userApi_;
+//    List<IStreamAttributes> streams = allegro.fetchStreams();
+//    
+//    for(IStreamAttributes stream : streams)
+//    {
+//      System.err.println(stream);
+//    }
+//    System.err.println("End debug");
+  }
+
   /**
    * Return the HTTP server.
    * 
@@ -388,7 +414,7 @@ public class AllegroUi
       return self();
     }
   
-    public <C, P extends Projection> IProjector<C, P> addProjector(Class<C> type, IProjector<C, P> projector)
+    public <C, P extends Projection<?>> IProjector<C, P> addProjector(Class<C> type, IProjector<C, P> projector)
     {
       return projectorBuilder_.addProjector(type, projector);
     }
@@ -450,6 +476,7 @@ public class AllegroUi
     {
       FugueHttpUiServer server = new AllegroUi.Builder()
           .withCommandLine(argv)
+          .withHttpPort(4000)
           .build()
           .getHttpServer()
           ;

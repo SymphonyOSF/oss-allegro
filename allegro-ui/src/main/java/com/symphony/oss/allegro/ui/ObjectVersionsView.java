@@ -59,6 +59,6 @@ class ObjectVersionsView extends AbstractObjectView<IAbstractStoredApplicationOb
   @Override
   String getSortKey(IAbstractStoredApplicationObject storedObject)
   {
-    return storedObject.getSortKey() + "#" + storedObject.getAbsoluteHash();
+    return storedObject.getCreatedDate() + "#" + storedObject.getAbsoluteHash();
   }
 }
