@@ -18,10 +18,20 @@
 
 package com.symphony.oss.allegro.api;
 
-import org.apache.commons.codec.binary.Base64;
+import static org.junit.Assert.assertEquals;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.commons.codec.binary.Base64;
+import org.junit.Test;
+
+import com.symphony.oss.fugue.pipeline.FatalConsumerException;
+import com.symphony.oss.fugue.pipeline.IConsumer;
+import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
-import com.symphony.oss.fugue.trace.NoOpTraceContextTransaction;
+import com.symphony.oss.fugue.trace.NoOpTraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
@@ -39,6 +49,8 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 @SuppressWarnings("javadoc")
 public class TestConsumerManager
 {
+  private static final Class<?>[] NUMERIC_TYPES = {Number.class, Integer.class, Double.class};
+  
 //  private static final Class<?>[] APPLICATION_TYPES = {IPrincipal.class, Pod.class, IEnvironment.class, IFeed.class};
   private static final Class<?>[] LIVECURRENT_TYPES = {ISocialMessage.class, ISignalNotification.class, ILiveCurrentMessage.class};
   
@@ -101,30 +113,92 @@ public class TestConsumerManager
       throw new RuntimeException("Not implemented");
     }
   };
-  private static final ITraceContext trace = NoOpTraceContextTransaction.INSTANCE.open();
   
-  private Class<?>  consumedType_;
-  private Object    consumedObject_;
-  
-  private ConsumerManager createConsumerManager(Class<?> ...types)
+  static class ConsumerManagerTester
   {
-    ConsumerManager.Builder consumerManager =  new ConsumerManager.Builder();
-    
-    addTypes(consumerManager, types);
-    
-    return consumerManager.build();
-  }
-  
-  private void addTypes(ConsumerManager.Builder consumerManager, Class<?>... types)
-  {
+    ConsumerManager.Builder builder;
+    List<Class<?>>    consumedTypes_   = new LinkedList<>();
+    List<Object>      consumedObjects_ = new LinkedList<>();
+    List<Object>      defaultObjects_  = new LinkedList<>();
+    IConsumer<Object> defaultConsumer  = new IConsumer<Object>()
+        {
 
-    for(Class<?> type : types)
-      consumerManager.withConsumer(type, (v, trace) -> 
-      {
-        consumedType_ = type;
-        consumedObject_ = v;
-      });
+          @Override
+          public void close()
+          {
+          }
+
+          @Override
+          public void consume(Object item, ITraceContext trace)
+          {
+            defaultObjects_.add(item);
+          }
+        };
+    
+    ConsumerManagerTester(Class<?> ...types)
+    {
+      builder =  new ConsumerManager.Builder();
+      
+      for(Class<?> type : types)
+        builder.withConsumer(type, (v, trace) -> 
+        {
+          consumedTypes_.add(type);
+          consumedObjects_.add(v);
+        });
+    }
   }
+  
+  @Test
+  public void testSimpleDefaultConsumer() throws RetryableConsumerException, FatalConsumerException
+  {
+    ConsumerManagerTester consumerManagerTester = new ConsumerManagerTester(NUMERIC_TYPES);
+    
+    ISimpleRetryableConsumer<Object> defaultConsumer = new ISimpleRetryableConsumer<Object>()
+        {
+          @Override
+          public void consume(Object item, ITraceContext trace)
+          {
+            consumerManagerTester.defaultObjects_.add(item);
+          }
+        };
+        
+    ConsumerManager consumerManager = consumerManagerTester.builder
+      .withDefaultConsumer(defaultConsumer)
+      .build();
+    
+    String payload = "HELLO";
+    
+    consumerManager.consume(payload, NoOpTraceContext.INSTANCE, OPENER);
+    
+    assertEquals(1, consumerManagerTester.defaultObjects_.size());
+    assertEquals(payload, consumerManagerTester.defaultObjects_.get(0));
+  }
+  
+  
+//  private static final ITraceContext trace = NoOpTraceContextTransaction.INSTANCE.open();
+//  
+//  private Class<?>  consumedType_;
+//  private Object    consumedObject_;
+//  
+//  private ConsumerManager createConsumerManager(Class<?> ...types)
+//  {
+//    ConsumerManager.Builder consumerManager =  new ConsumerManager.Builder();
+//    
+//    addTypes(consumerManager, types);
+//    
+//    return consumerManager.build();
+//  }
+//  
+//  private void addTypes(ConsumerManager.Builder consumerManager, Class<?>... types)
+//  {
+//
+//    for(Class<?> type : types)
+//      consumerManager.withConsumer(type, (v, trace) -> 
+//      {
+//        consumedType_ = type;
+//        consumedObject_ = v;
+//      });
+//  }
 
 //  @Test
 //  public void testExact()

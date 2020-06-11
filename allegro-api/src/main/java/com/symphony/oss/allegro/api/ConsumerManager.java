@@ -18,7 +18,6 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.fugue.pipeline.IConsumer;
 import com.symphony.oss.fugue.pipeline.IErrorConsumer;
 import com.symphony.oss.fugue.pipeline.IRetryableConsumer;
 import com.symphony.oss.fugue.pipeline.ISimpleErrorConsumer;
@@ -188,7 +187,7 @@ public class ConsumerManager extends AbstractConsumerManager
      * @return This (fluent method).
      */
     @Override
-    public Builder withDefaultConsumer(IConsumer<Object> defaultConsumer)
+    public Builder withDefaultConsumer(IRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
     }

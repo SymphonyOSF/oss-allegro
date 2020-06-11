@@ -18,6 +18,8 @@
 
 package com.symphony.oss.allegro.api;
 
+import com.symphony.oss.fugue.pipeline.FatalConsumerException;
+import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
@@ -44,7 +46,7 @@ public class ReceivedChatMessageAdaptor extends AbstractAdaptor<IReceivedChatMes
   }
 
   @Override
-  public final void consume(IReceivedChatMessage message, ITraceContext trace)
+  public final void consume(IReceivedChatMessage message, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
   {
     if(message instanceof IReceivedSocialMessage)
     {

@@ -260,7 +260,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * This method makes a synchronous or asynchronous request depending on whether the consumer provided by the request object
    * is a <code>ConsumerManager</code> or an <code>AsyncConsumerManager</code>
    * <p>
-   * <h1>Synchronous Invocation</h1>
+   * <h4>Synchronous Invocation</h4>
    * It is up to the server to decide how many objects to return, if there are more objects available than requested this does
    * NOT guarantee that the full number of objects requested will be returned.
    * <p>
@@ -284,7 +284,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * <p>
    * In the case of a synchronous invocation this method returns <code>null</code>
    * <p>
-   * <h1>Asynchronous Invocation</h1>
+   * <h4>Asynchronous Invocation</h4>
    * This invocation style uses two thread pools to asynchronously fetch messages.
    * <p>
    * The start() method must be called on the returned subscriber to begin processing messages.

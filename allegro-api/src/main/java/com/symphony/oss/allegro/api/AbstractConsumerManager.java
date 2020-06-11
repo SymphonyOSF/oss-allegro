@@ -93,7 +93,7 @@ public abstract class AbstractConsumerManager
   private final ImmutableList<Class<?>>                       consumerTypeList_;
   private final boolean                                       hasApplicationTypes_;
   private final boolean                                       hasChatTypes_;
-  private final IConsumer<Object>                             defaultConsumer_;
+  private final IRetryableConsumer<Object>                    defaultConsumer_;
   private final IErrorConsumer<Object>                        unprocessableMessageConsumer_;
     
   AbstractConsumerManager(AbstractBuilder<?,?> builder)
@@ -120,7 +120,7 @@ public abstract class AbstractConsumerManager
     private List<Class<?>>                                   consumerTypeList_             = new LinkedList<>();
     private boolean                                          hasApplicationTypes_;
     private boolean                                          hasChatTypes_;
-    private IConsumer<Object>                                defaultConsumer_              = new IThreadSafeConsumer<Object>()
+    private IRetryableConsumer<Object>                       defaultConsumer_              = new IThreadSafeConsumer<Object>()
       {
         @Override
         public synchronized void consume(Object item, ITraceContext trace)
@@ -152,7 +152,7 @@ public abstract class AbstractConsumerManager
       super(type);
     }
     
-    protected IConsumer<Object> getDefaultConsumer()
+    protected IRetryableConsumer<Object> getDefaultConsumer()
     {
       return defaultConsumer_;
     }
@@ -210,7 +210,7 @@ public abstract class AbstractConsumerManager
       });
     }
     
-    protected T withDefaultConsumer(IConsumer<Object> defaultConsumer)
+    protected T withDefaultConsumer(IRetryableConsumer<Object> defaultConsumer)
     {
       defaultConsumer_ = defaultConsumer;
       

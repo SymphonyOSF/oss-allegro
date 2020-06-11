@@ -21,7 +21,6 @@ package com.symphony.oss.allegro.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.fugue.pipeline.IConsumer;
 import com.symphony.oss.fugue.pipeline.IRetryableConsumer;
 import com.symphony.oss.fugue.trace.ITraceContext;
 
@@ -31,7 +30,7 @@ abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
   
   private final Class<T> payloadType_;
   
-  protected IConsumer<Object>           defaultConsumer_ = new IConsumer<Object>()
+  protected IRetryableConsumer<Object>           defaultConsumer_ = new IRetryableConsumer<Object>()
   {
     @Override
     public synchronized void consume(Object item, ITraceContext trace)
@@ -53,7 +52,7 @@ abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
     return payloadType_;
   }
 
-  public void setDefaultConsumer(IConsumer<Object> defaultConsumer)
+  public void setDefaultConsumer(IRetryableConsumer<Object> defaultConsumer)
   {
     defaultConsumer_ = defaultConsumer;
   }

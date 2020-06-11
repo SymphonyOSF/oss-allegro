@@ -24,7 +24,7 @@
     <version>0.2.6-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
-  
+    
   <repositories>
     <repository>
         <id>local-maven-repo</id>
@@ -138,11 +138,10 @@
       <artifactId>messageml</artifactId>
       <version>${messageml.version}</version>
     </dependency>
-    
+
     <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt</artifactId>
-        <version>0.6.0</version>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-impl</artifactId>
     </dependency>
     
     <dependency>
