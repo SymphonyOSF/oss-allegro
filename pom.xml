@@ -22,7 +22,7 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.2.0</version><!-- oss-parent-pom -->
+		<version>0.2.2</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
@@ -67,12 +67,12 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>  
     
-    <oss.commons.version>0.1.0</oss.commons.version>
-    <oss.canon.version>0.1.0</oss.canon.version>
-    <oss.fugue.version>0.1.0</oss.fugue.version>
+    <oss.commons.version>0.1.1</oss.commons.version>
+    <oss.canon.version>0.1.1</oss.canon.version>
+    <oss.fugue.version>0.1.1</oss.fugue.version>
     <symphony.security.version>1.57.2</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.5.0</oss.models.version>
+    <oss.models.version>0.5.1</oss.models.version>
   </properties>
   
   <modules>
