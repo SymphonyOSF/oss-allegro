@@ -7,6 +7,28 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-06-22 Added Certificate Authentication
+Allegro can now authenticate using client certificates. To do you you need to pass
++ The name of a .p12 file containing the client certificate and private key
++ The password for the certificate file
++ The session auth URL for your pod, for a pod with the url https://yourname.symphony.com this is typically 
+https://yourname-api.symphony.com or https://yourname.symphony.com:8444 or https://yourname-api.symphony.com:8444
++ The key manager auth URL for your pod.
+
+For example:
+
+```java
+allegroApi_ = new AllegroApi.Builder()
+      .withPodUrl(podUrl_)
+      .withObjectStoreUrl(objectStoreUrl_)
+      .withCertFilePath(certFile_)
+      .withCertFilePassword(certPassword_)
+      .withSessionAuthUrl(sessionAuthUrl_)
+      .withKeyAuthUrl(keyAuthUrl_)
+      .build();
+```
+
+
 ## 2020-06-03 Transactional Write
 A method was added to write multiple objects in an atomic transaction:
 

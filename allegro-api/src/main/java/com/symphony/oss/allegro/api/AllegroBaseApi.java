@@ -245,8 +245,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
   extends BaseAbstractBuilder<T, B>
   {
-    protected PrivateKey                      rsaCredential_;
-    protected PemPrivateKey                   rsaPemCredential_;
     protected CipherSuiteId                   cipherSuiteId_;
     protected ICipherSuite                    cipherSuite_;
     protected CloseableHttpClient             httpclient_;
@@ -258,7 +256,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     private TrustStrategy                     sslTrustStrategy_     = null;
     protected ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
     protected int                             maxHttpConnections_   = 200;
-
+    protected PrivateKey                      rsaCredential_;
+    protected PemPrivateKey                   rsaPemCredential_;
     
     public AbstractBuilder(Class<T> type)
     {
@@ -284,61 +283,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
     {
       traceFactory_ = traceFactory;
-      
-      return self();
-    }
-    
-    public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
-    {
-      rsaPemCredential_ = rsaPemCredential;
-      
-      return self();
-    }
-    
-    public T withRsaPemCredential(String rsaPemCredential)
-    {
-      checkCredentialNotNull(rsaPemCredential);
-      
-      rsaPemCredential_ = PemPrivateKey.newBuilder().build(rsaPemCredential);
-      
-      return self();
-    }
-    
-    private void checkCredentialNotNull(Object credential)
-    {
-      if(credential == null)
-        throw new IllegalArgumentException("Credential is required");
-    }
-
-    public T withRsaCredential(PrivateKey rsaCredential)
-    {
-      checkCredentialNotNull(rsaCredential);
-      
-      rsaCredential_ = rsaCredential;
-      
-      return self();
-    }
-    
-    public T withRsaPemCredentialFile(String rsaPemCredentialFile)
-    {
-      if(rsaPemCredentialFile == null)
-        return self();
-      
-      checkCredentialNotNull(rsaPemCredentialFile);
-      
-      File file = new File(rsaPemCredentialFile);
-      
-      if(!file.canRead())
-        throw new IllegalArgumentException("Credential file \"" + file.getAbsolutePath() + "\" is unreadable");
-      
-      try
-      {
-        rsaPemCredential_ = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
-      }
-      catch (IOException e)
-      {
-        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
-      }
       
       return self();
     }
@@ -418,12 +362,58 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       
       return self();
     }
+    
+    public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
+    {
+      rsaPemCredential_ = rsaPemCredential;
+      
+      return self();
+    }
+    
+    public T withRsaPemCredential(String rsaPemCredential)
+    {
+      if(rsaPemCredential == null)
+        rsaPemCredential_ = null;
+      else
+        rsaPemCredential_ = PemPrivateKey.newBuilder().build(rsaPemCredential);
+      
+      return self();
+    }
+
+    public T withRsaCredential(PrivateKey rsaCredential)
+    {
+      rsaCredential_ = rsaCredential;
+      
+      return self();
+    }
+    
+    public T withRsaPemCredentialFile(String rsaPemCredentialFile)
+    {
+      if(rsaPemCredentialFile == null)
+        return self();
+      
+      File file = new File(rsaPemCredentialFile);
+      
+      if(!file.canRead())
+        throw new IllegalArgumentException("Credential file \"" + file.getAbsolutePath() + "\" is unreadable");
+      
+      try
+      {
+        rsaPemCredential_ = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
+      }
+      catch (IOException e)
+      {
+        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
+      }
+      
+      return self();
+    }
 
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
-
+      
       cipherSuite_ = cipherSuiteId_ == null ? CipherSuite.getDefault() : CipherSuite.get(cipherSuiteId_);
       
       for(String resourceName : trustedCertResources_)

@@ -22,14 +22,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import javax.annotation.Nullable;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
@@ -48,6 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.symphony.oss.allegro.api.auth.AuthHandler;
+import com.symphony.oss.allegro.api.auth.CertAuthHandler;
 import com.symphony.oss.allegro.api.auth.DummyAuthHandler;
 import com.symphony.oss.allegro.api.auth.IAuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
@@ -116,7 +114,6 @@ import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
-import com.symphony.oss.models.pod.canon.IStreamFilter;
 import com.symphony.oss.models.pod.canon.IStreamType;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
@@ -201,6 +198,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     authHandler_    = builder.sessionToken_ != null
         ? new DummyAuthHandler(builder.sessionToken_, builder.keymanagerToken_, builder.cookieStore_, builder.podUrl_)
+        : builder.certFilePath_ != null ? new CertAuthHandler(builder.cookieStore_, builder.podUrl_, builder.certFilePath_, builder.certFilePassword_, builder.sessionAuthUrl_, builder.keyAuthUrl_)
         : new AuthHandler(httpClient_, builder.cookieStore_, builder.podUrl_, builder.rsaCredential_, userName_);
     
     log_.info("sbe auth....");
@@ -1588,10 +1586,14 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
   extends AllegroBaseApi.AbstractBuilder<T, B>
   {
-    protected URL                           podUrl_;
-    protected String                        userName_;
-    protected String                        sessionToken_;
-    protected String                        keymanagerToken_;
+    protected URL           podUrl_;
+    protected String        userName_;
+    protected String        sessionToken_;
+    protected String        keymanagerToken_;
+    protected String        certFilePath_;
+    protected String        certFilePassword_;
+    protected String        sessionAuthUrl_;
+    protected String        keyAuthUrl_;
 
     public AbstractBuilder(Class<T> type)
     {
@@ -1640,6 +1642,70 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       return self();
     }
 
+    public T withSessionAuthUrl(URL sessionAuthUrl)
+    {
+      sessionAuthUrl_ = sessionAuthUrl.toString();
+      
+      return self();
+    }
+
+    public T withSessionAuthUrl(String sessionAuthUrl)
+    {
+      if(sessionAuthUrl != null)
+      {
+        try
+        {
+          new URL(sessionAuthUrl);
+        }
+        catch (MalformedURLException e)
+        {
+          throw new IllegalArgumentException("Invalid sessionAuthUrl", e);
+        }
+      }
+      sessionAuthUrl_ = sessionAuthUrl;
+      
+      return self();
+    }
+
+    public T withKeyAuthUrl(URL keyAuthUrl)
+    {
+      keyAuthUrl_ = keyAuthUrl.toString();
+      
+      return self();
+    }
+
+    public T withKeyAuthUrl(String keyAuthUrl)
+    {
+      if(keyAuthUrl != null)
+      {
+        try
+        {
+          new URL(keyAuthUrl);
+        }
+        catch (MalformedURLException e)
+        {
+          throw new IllegalArgumentException("Invalid keyAuthUrl", e);
+        }
+      }
+      keyAuthUrl_ = keyAuthUrl;
+      
+      return self();
+    }
+
+    public T withCertFilePath(String certFilePath)
+    {
+      certFilePath_ = certFilePath;
+      
+      return self();
+    }
+
+    public T withCertFilePassword(String certFilePassword)
+    {
+      certFilePassword_ = certFilePassword;
+      
+      return self();
+    }
+
     @Override
     protected void validate(FaultAccumulator faultAccumulator)
     {
@@ -1652,15 +1718,23 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       }
       else
       {
-        if(rsaCredential_ == null)
+        if(certFilePath_ != null)
+        {
+          faultAccumulator.checkNotNull(certFilePassword_, "With Cert File, Cert File Password");
+          faultAccumulator.checkNotNull(sessionAuthUrl_, "With Cert File, Session Auth URL");
+          faultAccumulator.checkNotNull(keyAuthUrl_, "With Cert File, Key Auth URL");
+        }
+        else if(rsaCredential_ == null)
         {
           if(rsaPemCredential_ == null)
             faultAccumulator.error("rsaCredential is required");
           
           rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+          
+          faultAccumulator.checkNotNull(userName_, "With RSA Credential, User Name");
         }
         
-        faultAccumulator.checkNotNull(userName_, "User Name");
+        
       }
       faultAccumulator.checkNotNull(podUrl_, "Pod URL");
     }
