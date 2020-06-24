@@ -124,38 +124,38 @@ object containing the private RSA key to authenticate as that service account, a
 The following required parameters must be provided in the configuration when client certificate authentication with a
 separate file is used:
 
-### authCertFile
+### AuthCertFile
 The name of a PKCS#12 (.p12) file containing the client certificate and matching private key to authenticate with.
 
-### authCertFilePassword
+### AuthCertFilePassword
 The password required to access the authCertFile.
 
-### sessionAuthUrl
+### SessionAuthUrl
 The URL for the pod session authentication URL for your pod. Typically for a pod with the URL **https://yourname.symphony.com**
 this will be one of **https://yourname-api.symphony.com**, **https://yourname.symphony.com:8444** or 
 **https://yourname-api.symphony.com:8444**.
 
-### keyAuthUrl
+### KeyAuthUrl
 The URL for the key manager session authentication URL for your pod.
 
 ## Client Certificate Authentication - Inline Configuration: Required Configuration Parameters
 The following required parameters must be provided in the configuration when client certificate authentication with in-line
 configuration is used:
 
-### authCert
+### AuthCert
 The PEM encoded client certificate to authenticate with. This must be a string containing the Base64 encoded binary
 enclosed within __\-\-\-\-\-BEGIN CERTIFICATE\-\-\-\-\-__ and __\-\-\-\-\-END CERTIFICATE\-\-\-\-\-__
 
-### authCertPrivateKey
+### AuthCertPrivateKey
 The PEM encoded private key matching the given client certificate. This must be a string containing the Base64 encoded binary
 enclosed within __\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-__ and __\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-__
 
-### sessionAuthUrl
+### SessionAuthUrl
 The URL for the pod session authentication URL for your pod. Typically for a pod with the URL **https://yourname.symphony.com**
 this will be one of **https://yourname-api.symphony.com**, **https://yourname.symphony.com:8444** or 
 **https://yourname-api.symphony.com:8444**.
 
-### keyAuthUrl
+### KeyAuthUrl
 The URL for the key manager session authentication URL for your pod.
 
 ## Optional Parameters
@@ -193,7 +193,7 @@ A **ConnectionSettings** object (which configures how HTTP connections are made 
 ## ConnectionSettings
 A **ConnectionSettings** object can contain the following attributes:
 
-### sslTrustStrategy
+### SslTrustStrategy
 May be used to relax server SSL certificate validation with one of the following values. **FOR DEVELOPMENT USE ONLY**.
 
 #### TRUST_ALL_CERTS
