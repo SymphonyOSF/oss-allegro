@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.auth;
+package com.symphony.oss.allegro.api;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.cookie.BasicClientCookie;
-
-import com.symphony.oss.models.auth.canon.INamedToken;
 
 /**
  * AuthHandler implementation using specified tokens.
@@ -47,6 +45,11 @@ public class DummyAuthHandler implements IAuthHandler
     podDomain_ = podUrl.getHost();
   }
   
+  @Override
+  public void close()
+  {
+  }
+
   @Override
   public void authenticate(boolean authSession, boolean authKeyManager)
   {

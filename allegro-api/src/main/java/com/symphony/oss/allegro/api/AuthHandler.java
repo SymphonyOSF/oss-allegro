@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Symphony Communication Services, LLC.
+ * Copyright 2019 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,34 +14,34 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.auth;
+package com.symphony.oss.allegro.api;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
-import java.security.KeyStore;
-
-import javax.net.ssl.SSLContext;
+import java.security.PrivateKey;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.ssl.SSLContexts;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.http.client.IJwtAuthenticationProvider;
+import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.models.auth.canon.AuthHttpModelClient;
 import com.symphony.oss.models.auth.canon.AuthModel;
-import com.symphony.oss.models.auth.canon.AuthenticatePostHttpRequest;
-import com.symphony.oss.models.auth.canon.AuthenticatePostHttpRequestBuilder;
 import com.symphony.oss.models.auth.canon.INamedToken;
+import com.symphony.oss.models.auth.canon.IToken;
+import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequest;
+import com.symphony.oss.models.auth.canon.PubkeyAuthenticatePostHttpRequestBuilder;
+import com.symphony.oss.models.auth.canon.Token;
 
 /**
- * Handler for the bot Certificate authentication mechanism.
+ * Handler for the bot RSA authentication mechanism.
  * 
  * This class attempts to extract the userId from the received token, if we can do this and if the returned userId is not an internal one
  * (i.e. we are not on one of the special pods with a different internal podId) we can avoid making calls to podInfo and accountInfo.
@@ -49,69 +49,79 @@ import com.symphony.oss.models.auth.canon.INamedToken;
  * @author Bruce Skingle
  *
  */
-public class CertAuthHandler implements IAuthHandler
+public class AuthHandler implements IAuthHandler
 {
-  private final CloseableHttpClient        httpClient_;
+  private static final Logger log_ = LoggerFactory.getLogger(AuthHandler.class);
+  
+  private final CloseableHttpClient        podHttpClient_;
+  private final CloseableHttpClient        kmHttpClient_;
   private final CookieStore                cookieStore_;
+  private final PrivateKey                 rsaCredential_;
   private final IModelRegistry             modelRegistry_;
-  private final AuthHttpModelClient        keyManagerClient_;
+  private final IJwtAuthenticationProvider authProvider_;
+  private AuthHttpModelClient              keyManagerClient_;
   private final AuthHttpModelClient        podClient_;
 
   private INamedToken                      keyManagerToken_;
   private INamedToken                      sessionToken_;
   private String                           podDomain_;
   private String                           keyManagerDomain_;
-  private SSLContext sslContext_;
   
-  public CertAuthHandler(CookieStore cookieStore, URL podUrl, String keyStorePath, String keyStorePassword, String sessionAuthUrl, String keyManagerAuthUrl)
+  public AuthHandler(AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
-    cookieStore_    = cookieStore;
+    // builder.cookieStore_, builder.config_.getPodUrl(), builder.rsaCredential_
+    
+    podHttpClient_  = builder.getPodHttpClient();
+    kmHttpClient_   = builder.getKeyManagerHttpClient();
+    cookieStore_    = builder.cookieStore_;
+    rsaCredential_  = builder.rsaCredential_;
     modelRegistry_  = new ModelRegistry().withFactories(AuthModel.FACTORIES);
     
-    podDomain_ = podUrl.getHost();
+    authProvider_   = new Rs512JwtGenerator(rsaCredential_)
+        .withSubject(serviceAccountName)
+        .withTTL(300000)  // 5 minutes, this is the max allowed by Symphony RSA authentication.
+        ;
+    
+    podDomain_ = builder.config_.getPodUrl().getHost();
     
     podClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        sessionAuthUrl, "/sessionauth/v1", null);
-    
-    keyManagerClient_ = new AuthHttpModelClient(
-        modelRegistry_,
-        keyManagerAuthUrl, "/keyauth/v1", null);
-    try
-    {
-      sslContext_ = SSLContexts.custom()
-          .loadKeyMaterial(readStore(keyStorePath, keyStorePassword), keyStorePassword.toCharArray())
-          .build();
-  
-      httpClient_ = HttpClients.custom().setSSLContext(sslContext_).build();
-    }
-    catch(GeneralSecurityException | IOException e)
-    {
-      throw new IllegalStateException("Unable to read client certificate", e);
-    }
+        builder.config_.getPodUrl(), "/login", null);
   }
   
-  KeyStore readStore(String keyStorePath, String keyStorePassword) throws GeneralSecurityException, IOException
+  @Override
+  public void close()
   {
-    try (InputStream keyStoreStream = new FileInputStream(keyStorePath)) {
-        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        keyStore.load(keyStoreStream, keyStorePassword.toCharArray());
-        return keyStore;
+    try
+    {
+      podHttpClient_.close();
+      kmHttpClient_.close();
     }
-}
-  
+    catch (IOException e)
+    {
+      log_.error("Unable to close HttpClient", e);
+    }
+  }
+
   @Override
   public void authenticate(boolean authSession, boolean authKeyManager)
   {
+    String jwtToken = authProvider_.createJwt();
+    IToken token;
+
+    token = new Token.Builder()
+      .withToken(jwtToken)
+      .build();
+    
     if(authSession)
     {
-      sessionToken_    = authenticate(podClient_);
+      sessionToken_    = authenticate(podHttpClient_, podClient_, token);
       addCookie("skey", sessionToken_, podDomain_);
     }
     
     if(authKeyManager)
     {
-      keyManagerToken_ = authenticate(keyManagerClient_);
+      keyManagerToken_ = authenticate(kmHttpClient_, keyManagerClient_, token);
       addCookie("kmsession", keyManagerToken_, keyManagerDomain_);
     }
   }
@@ -145,18 +155,22 @@ public class CertAuthHandler implements IAuthHandler
     cookieStore_.addCookie(cookie);
   }
 
-  private INamedToken authenticate(AuthHttpModelClient client)
+  private INamedToken authenticate(CloseableHttpClient httpClient, AuthHttpModelClient client, IToken token)
   {
-    AuthenticatePostHttpRequest request = new AuthenticatePostHttpRequestBuilder(client)
-        //.withCanonPayload(token)
+    PubkeyAuthenticatePostHttpRequest request = new PubkeyAuthenticatePostHttpRequestBuilder(client)
+        .withCanonPayload(token)
         .build();
       
-      return request.execute(httpClient_);
+      return request.execute(httpClient);
   }
 
   @Override
   public void setKeyManagerUrl(String keyManagerUrl)
   {
+    keyManagerClient_ = new AuthHttpModelClient(
+        modelRegistry_,
+        keyManagerUrl, null, null);
+    
     try
     {
       keyManagerDomain_ = new URL(keyManagerUrl).getHost();

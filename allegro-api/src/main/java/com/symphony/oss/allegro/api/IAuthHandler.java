@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.auth;
+package com.symphony.oss.allegro.api;
 
-public interface IAuthHandler
+import java.io.Closeable;
+
+public interface IAuthHandler extends Closeable
 {
 
   void authenticate(boolean authSession, boolean authKeyManager);

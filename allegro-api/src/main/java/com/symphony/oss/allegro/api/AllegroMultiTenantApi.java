@@ -20,6 +20,7 @@ package com.symphony.oss.allegro.api;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.canon.runtime.ModelRegistry;
@@ -28,6 +29,8 @@ import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.ObjectModel;
@@ -43,19 +46,18 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   {
     super(builder);
     
-    userId_ = builder.userId_;
+    userId_ = builder.config_.getUserId();
     
     jwtBuilder_ = new Rs512JwtGenerator(builder.rsaCredential_)
         .withClaim("userId", String.valueOf(userId_))
         ;
     
-    if(builder.keyId_ != null)
-      jwtBuilder_.withClaim("kid", builder.keyId_);
+    if(builder.config_.getKeyId() != null)
+      jwtBuilder_.withClaim("kid", builder.config_.getKeyId());
   }
   
   public static class Builder extends AbstractBuilder<Builder, IAllegroMultiTenantApi>
   {
-
     public Builder()
     {
       super(Builder.class);
@@ -66,7 +68,6 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       return new AllegroMultiTenantApi(this);
     }
-    
   }
   
   /**
@@ -83,39 +84,52 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
   protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
-  extends AllegroBaseApi.AbstractBuilder<T, B>
+  extends AllegroBaseApi.AbstractBuilder<IAllegroMultiTenantConfiguration,
+    AllegroMultiTenantConfiguration.AbstractAllegroMultiTenantConfigurationBuilder<?, IAllegroMultiTenantConfiguration>, T, B>
   {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     
-    protected PodAndUserId userId_;
-    protected String       keyId_;
-    
     public AbstractBuilder(Class<T> type)
     {
-      super(type);
+      super(type, new AllegroMultiTenantConfiguration.Builder());
+    }
+
+    @Override
+    public T withConfiguration(Reader reader)
+    {
+      withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroMultiTenantConfiguration.TYPE_ID, IAllegroMultiTenantConfiguration.class));
+      
+      return self();
     }
     
+    @Deprecated
     public T withUserId(PodAndUserId userId)
     {
-      userId_ = userId;
+      configBuilder_.withUserId(userId);
+      builderSet_ = true;
       
       return self();
     }
     
+    @Deprecated
     public T withUserId(long userId)
     {
-      userId_ = PodAndUserId.newBuilder().build(userId);
+      configBuilder_.withUserId(userId);
+      builderSet_ = true;
       
       return self();
     }
     
+    @Deprecated
     public T withKeyId(String keyId)
     {
-      keyId_ = keyId;
+      configBuilder_.withKeyId(keyId);
+      builderSet_ = true;
       
       return self();
     }
     
+    @Deprecated
     public T withPrincipalCredentialFile(String principalCredentialFile)
     {
       if(principalCredentialFile == null)
@@ -137,9 +151,9 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
         IImmutableJsonDomNode json = JacksonAdaptor.adapt(MAPPER.readTree(file)).immutify();
         PrincipalCredential principalCredential = new PrincipalCredential((ImmutableJsonObject)json, modelRegistry);
         
-        rsaCredential_ = principalCredential.getPrivateKey();
-        keyId_ = principalCredential.getKeyId().toString();
-        userId_ = principalCredential.getUserId();
+        withRsaCredential(principalCredential.getPrivateKey());
+        withKeyId(principalCredential.getKeyId().toString());
+        withUserId(principalCredential.getUserId());
       }
       catch (IOException e)
       {
@@ -154,15 +168,10 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super.validate(faultAccumulator);
       
-      if(rsaCredential_ == null)
-      {
-        if(rsaPemCredential_ == null)
+      if(config_.getRsaPemCredentialFile() == null && config_.getRsaPemCredential() == null)
           faultAccumulator.error("rsaCredential is required");
-        
-        rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
-      }
       
-      faultAccumulator.checkNotNull(userId_, "User ID");
+      faultAccumulator.checkNotNull(config_.getUserId(), "User ID");
     }
   }
 

@@ -9,13 +9,75 @@ a builder, to which the various parameters are passed with fluent setter methods
 
 ```
 allegroApi_ = new AllegroApi.Builder()
-  .withPodUrl(podUrl)
-  .withUserName(userName)
-  .withRsaPemCredentialFile(credentialFile)
+  .withConfiguration(new AllegroConfiguration.Builder()
+    .withPodUrl(podUrl_)
+    .withApiUrl(objectStoreUrl_)
+    .withUserName(serviceAccount_)
+    .withRsaPemCredentialFile(credentialFile_)
+    .withAuthCertFile(certFile_)
+    .withAuthCertFilePassword(certPassword_)
+    .withSessionAuthUrl(sessionAuthUrl_)
+    .withKeyAuthUrl(keyAuthUrl_)
+    .withApiConnectionSettings(new ConnectionSettings.Builder()
+      .withSslTrustStrategy(SslTrustStrategy.TRUST_ALL_CERTS)
+      .withProxyUrl(proxyUrl_)
+      .build())
+    .build())
+  .withFactories(CalendarModel.FACTORIES)
   .build();
-
-System.out.println(allegroApi_.getSessioninfo());
+  
+ System.out.println("Allegro configuration = " + allegroApi_.getConfiguration());
 ```
+
+With effect from release 0.3.2 support has been added for Client Certificate Authentication and outbound web proxies.
+This led to a significant increase in the number of configuration options which in turn led to a redesign of the way
+in which this configuration is passed.
+
+The bulk of the configuration options are now passed as a Canon AllegroConfiguration object (or for the multi tenant
+version of the API an AllegroMultiTenantConfiguration object). It is still possible to specify all options in a 
+single fluent statement as in the example above, but the configuration object can also be passed as a JSON String,
+as in the example below, or as a file containing a JSON object by calling the .withConfigurationFile(fileName) method.
+
+```
+allegroApi_ = new AllegroApi.Builder()
+  .withConfiguration("{\n" + 
+      "  \"_type\":\"com.symphony.s2.model.allegro.AllegroConfiguration\",\n" + 
+      "  \"_version\":\"1.0\",\n" + 
+      "  \"apiConnectionSettings\":{\n" + 
+      "    \"_type\":\"com.symphony.s2.model.allegro.ConnectionSettings\",\n" + 
+      "    \"_version\":\"1.0\",\n" + 
+      "    \"maxHttpConnections\":200,\n" + 
+      "    \"sslTrustStrategy\":\"TRUST_ALL_CERTS\"\n" + 
+      "  },\n" + 
+      "  \"apiUrl\":\"https://dev.api.symphony.com\",\n" + 
+      "  \"authCertFile\":\"/Users/bruce/credentials/allegroCerts/certs/allegroBot.p12\",\n" + 
+      "  \"authCertFilePassword\":\"changeit\",\n" + 
+      "  \"keyAuthUrl\":\"https://psdev-api.symphony.com:8444\",\n" + 
+      "  \"podUrl\":\"https://psdev.symphony.com\",\n" + 
+      "  \"sessionAuthUrl\":\"https://psdev-api.symphony.com:8444\"\n" + 
+      "}")
+  .withFactories(CalendarModel.FACTORIES)
+  .build();
+```
+
+Options which are tightly bound to the application code, such as model factories and trace context factories are still
+set directly on the builder and are not included in the configuration object. The intention is that this allows all
+configuration options which need to be obtained at run time as a single file or JSON object.
+
+Many existing fluent setters on AllegroApi.Builder are now deprecated, and operate by constructing a configuration
+object under the covers. The deprecated methods will continue to function for the time being, but cannot be mixed 
+with the new .withConfiguration(configuration) methods, if both are called an exception will be thrown.
+
+AllegroApi now has a .getConfiguration() method which can be used to obtain the JSON configuration which was, or could be used
+to provide the current working configuration. This can be used as in the example above to obtain the JSON equivalent for
+a working configuration and can be used with existing code which calls now deprecated methods on the AllegroApi.Builder.
+
+API callers are encouraged to migrate to the new format asap.
+
+## Security Considerations
+The configuration allows for the provision of RSA or client certificate credentials in a separate file, or in-line in
+the configuration object itself. Obviously, these credentials are sensitive and must be stored in files with the
+most restrictive access permissions possible.
 
 ## Required Parameters
 The following required parameters must be provided:
