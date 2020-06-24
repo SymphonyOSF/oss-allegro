@@ -62,7 +62,7 @@ allegroApi_ = new AllegroApi.Builder()
 
 Options which are tightly bound to the application code, such as model factories and trace context factories are still
 set directly on the builder and are not included in the configuration object. The intention is that this allows all
-configuration options which need to be obtained at run time as a single file or JSON object.
+configuration options which need to be obtained at run time to be passed as a single file or JSON object.
 
 Many existing fluent setters on AllegroApi.Builder are now deprecated, and operate by constructing a configuration
 object under the covers. The deprecated methods will continue to function for the time being, but cannot be mixed 
@@ -79,14 +79,18 @@ The configuration allows for the provision of RSA or client certificate credenti
 the configuration object itself. Obviously, these credentials are sensitive and must be stored in files with the
 most restrictive access permissions possible.
 
-## Required Parameters
-The following required parameters must be provided:
+## Required Configuration Parameters
+The following required parameters must be provided in the configuration:
 
 ### PodUrl
 The URL of your Symphony pod, either as a **String** or a **URL** object.
 Allegro authenticates to the pod to obtain a session token and makes various calls to APIs provided by the pod.
 
 The URL of a pod is typically https://companyname.symphony.com where __companyname__ is your company's name.
+
+## RSA Authentication - File Configuration: Required Configuration Parameters
+The following required parameters must be provided in the configuration when RSA authentication with a
+separate file configuration is used:
 
 ### UserName
 The name of the service account which you will use, as a **String**.
@@ -102,38 +106,125 @@ enclosed within __\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-__ and __\-\-\-\-\-EN
 
 For a description about how to create an RSA authentication credential, see [developers.symphony.com](https://developers.symphony.com/restapi/docs/rsa-bot-authentication-workflow).
 
-Only one of **RsaPemCredentialFile** and **RsaPemCredential** need be set.
+## RSA Authentication - Inline Configuration: Required Configuration Parameters
+The following required parameters must be provided in the configuration when RSA authentication with in-line
+configuration is used:
+
+### UserName
+The name of the service account which you will use, as a **String**.
+
+You (or your Symphony administrator) choose the name of your service account when you create it through the
+Admin Console.
 
 ### RsaPemCredential
-A **PrivateKey** containing the private RSA key to authenticate as that service account, or a **PemPrivateKey**
-object containing the key as a PEM encoded String.
+A **PemPrivateKey**
+object containing the private RSA key to authenticate as that service account, as a PEM encoded String.
 
-Only one of **RsaPemCredentialFile** and **RsaPemCredential** need be set.
+## Client Certificate Authentication - File Configuration: Required Configuration Parameters
+The following required parameters must be provided in the configuration when client certificate authentication with a
+separate file is used:
+
+### authCertFile
+The name of a PKCS#12 (.p12) file containing the client certificate and matching private key to authenticate with.
+
+### authCertFilePassword
+The password required to access the authCertFile.
+
+### sessionAuthUrl
+The URL for the pod session authentication URL for your pod. Typically for a pod with the URL **https://yourname.symphony.com**
+this will be one of **https://yourname-api.symphony.com**, **https://yourname.symphony.com:8444** or 
+**https://yourname-api.symphony.com:8444**.
+
+### keyAuthUrl
+The URL for the key manager session authentication URL for your pod.
+
+## Client Certificate Authentication - Inline Configuration: Required Configuration Parameters
+The following required parameters must be provided in the configuration when client certificate authentication with in-line
+configuration is used:
+
+### authCert
+The PEM encoded client certificate to authenticate with. This must be a string containing the Base64 encoded binary
+enclosed within __\-\-\-\-\-BEGIN CERTIFICATE\-\-\-\-\-__ and __\-\-\-\-\-END CERTIFICATE\-\-\-\-\-__
+
+### authCertPrivateKey
+The PEM encoded private key matching the given client certificate. This must be a string containing the Base64 encoded binary
+enclosed within __\-\-\-\-\-BEGIN RSA PRIVATE KEY\-\-\-\-\-__ and __\-\-\-\-\-END RSA PRIVATE KEY\-\-\-\-\-__
+
+### sessionAuthUrl
+The URL for the pod session authentication URL for your pod. Typically for a pod with the URL **https://yourname.symphony.com**
+this will be one of **https://yourname-api.symphony.com**, **https://yourname.symphony.com:8444** or 
+**https://yourname-api.symphony.com:8444**.
+
+### keyAuthUrl
+The URL for the key manager session authentication URL for your pod.
 
 ## Optional Parameters
 The following optional parameters may also be provided:
 
-### ObjectStoreUrl
-The URL of the object store server endpoint you will connect to, either as a **String** or a **URL** object.
+### ApiUrl (formerly ObjectStoreUrl)
+The URL of the object store and other multi-tenant service endpoints you will connect to, either as a **String** or a **URL** object.
 
 For production pods, you do not need to specify the API URL (which is actually __api.symphony.com__), for pods in
 non-production environments you need to specify the appropriate URL (__dev.api.symphony.com__, __qa.api.symphony.com__,
 __uat.api.symphony.com__ etc).
 
-### Factories
-One or more Canon factories to be used to deserialise received objects. This can be used where the application domain
-objects are defined by Canon schemas to allow the API to do type sensitive routing for consumers and the like.
-
 ### CipherSuite
 The name of the Cipher Suite to use. The default is the only valid value at this time, this parameter is reserved for
 future use, so it should currently not be set by callers.
 
-### TrustAllSslCerts
+### DefaultConnectionSettings
+A **ConnectionSettings** object (see below) which configures how HTTP connections are made to all endpoints.
+
+### ApiConnectionSettings
+A **ConnectionSettings** object (which configures how HTTP connections are made to API endpoints.
+
+### PodConnectionSettings
+A **ConnectionSettings** object (which configures how HTTP connections are made to Pod endpoints.
+
+### KeyManagerConnectionSettings
+A **ConnectionSettings** object (which configures how HTTP connections are made to Key Manager endpoints.
+
+### CertSessionAuthConnectionSettings
+A **ConnectionSettings** object (which configures how HTTP connections are made to the client certificate authentication pod endpoint.
+
+### CertKeyAuthConnectionSettings
+A **ConnectionSettings** object (which configures how HTTP connections are made to the client certificate authentication key manager endpoint.
+
+## ConnectionSettings
+A **ConnectionSettings** object can contain the following attributes:
+
+### sslTrustStrategy
+May be used to relax server SSL certificate validation with one of the following values. **FOR DEVELOPMENT USE ONLY**.
+
+#### TRUST_ALL_CERTS
 May be used to suppress server SSL certificate validation. **FOR DEVELOPMENT USE ONLY**.
 
-### TrustSelfSignedSslCerts
+#### TRUST_SELF_SIGNED_CERTS
 May be used to suppress rejection of self signed server SSL certificates. **FOR DEVELOPMENT USE ONLY**.
 
-### TrustedSslCertResources
+### TrustedCertResources
 One or more Strings containing the names of Java resources which contain PEM encoded certificates to be used as trust anchors.
 This is a slightly less dangerous alternative to **withTrustAllSslCerts**. **FOR DEVELOPMENT USE ONLY**.
+
+### TrustedCerts
+One or more Strings containing the PEM encoded certificates to be used as trust anchors.
+This is a slightly less dangerous alternative to **withTrustAllSslCerts**. **FOR DEVELOPMENT USE ONLY**.
+
+### MaxHttpConnections
+Set a limit on the number of concurrent HTTP connections allowed for each HTTP configuration. The default is 200.
+The limit is shared among all the interfaces sharing the same ConnectionSettings.
+
+### ProxyUrl
+A URL specifying the HTTP proxy which is to be used for connections. The proxy URL should normally be specified with the **http**
+protocol, since for SSL tunnelled connections the client normally connects to the proxy using HTTP and then upgrades to SSL.
+This is typically a value like **http://proxy.yourname.com:8888***.
+
+## Optional Builder Parameters
+The following optional parameters may also be provided directly on the builder:
+
+### Factories
+One or more Canon factories to be used to deserialise received objects. This can be used where the application domain
+objects are defined by Canon schemas to allow the API to do type sensitive routing for consumers and the like.
+
+### TraceFactory
+A trace context factory which will be used to create trace contexts for red dye trace logging.
