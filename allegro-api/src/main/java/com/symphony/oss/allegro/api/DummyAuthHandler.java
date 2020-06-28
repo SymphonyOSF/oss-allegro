@@ -18,9 +18,12 @@ package com.symphony.oss.allegro.api;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.function.Supplier;
 
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.cookie.BasicClientCookie;
+
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 
 /**
  * AuthHandler implementation using specified tokens.
@@ -30,16 +33,22 @@ import org.apache.http.impl.cookie.BasicClientCookie;
  */
 public class DummyAuthHandler implements IAuthHandler
 {
-  private final String      sessionToken_;
-  private final String      keyManagerToken_;
-  private final CookieStore cookieStore_;
-  private final String      podDomain_;
-  private String            keyManagerDomain_;
+  private static final long      RETRY_LIMIT = 30000;
+
+  private final Supplier<String> sessionTokenSupplier_;
+  private final Supplier<String> keyManagerTokenSupplier_;
+  private final CookieStore      cookieStore_;
+  private final String           podDomain_;
+  private String                 sessionToken_;
+  private String                 keyManagerToken_;
+  private String                 keyManagerDomain_;
+  private long                   sessionAuthTime_;
+  private long                   reauthTime_;
   
-  public DummyAuthHandler(String sessionToken, String keyManagerToken, CookieStore cookieStore, URL podUrl)
+  public DummyAuthHandler(Supplier<String> sessionTokenSupplier, Supplier<String> keyManagerTokenSupplier, CookieStore cookieStore, URL podUrl)
   {
-    sessionToken_ = sessionToken;
-    keyManagerToken_ = keyManagerToken;
+    sessionTokenSupplier_ = sessionTokenSupplier;
+    keyManagerTokenSupplier_ = keyManagerTokenSupplier;
     cookieStore_    = cookieStore;
     
     podDomain_ = podUrl.getHost();
@@ -51,13 +60,44 @@ public class DummyAuthHandler implements IAuthHandler
   }
 
   @Override
-  public void authenticate(boolean authSession, boolean authKeyManager)
+  public long getSessionAuthTime()
+  {
+    return sessionAuthTime_;
+  }
+
+  @Override
+  public synchronized ResponseHandlerAction reauthenticate(String usedSessionToken)
+  {
+    // If the token has changed then another thread reauthenticated and we can just retry.
+    if(usedSessionToken != null && !usedSessionToken.equals(sessionToken_))
+      return ResponseHandlerAction.RETRY;
+    
+    // If we reauthenticated very recently then do nothing, the caller will just get the 401.
+    
+    if(reauthTime_ - System.currentTimeMillis() < RETRY_LIMIT)
+      return ResponseHandlerAction.CONTINUE;
+    
+    reauthTime_ = System.currentTimeMillis();
+    
+    authenticate(true, true);
+    return ResponseHandlerAction.RETRY;
+  }
+
+  @Override
+  public synchronized void authenticate(boolean authSession, boolean authKeyManager)
   {
     if(authSession)
+    {
+      sessionToken_ = sessionTokenSupplier_.get();
       addCookie("skey", sessionToken_, podDomain_);
+      sessionAuthTime_ = System.currentTimeMillis();
+    }
     
     if(authKeyManager)
+    {
+      keyManagerToken_ = keyManagerTokenSupplier_.get();
       addCookie("kmsession", keyManagerToken_, keyManagerDomain_);
+    }
   }
 
   private void addCookie(String name, String sessionToken, String domain)

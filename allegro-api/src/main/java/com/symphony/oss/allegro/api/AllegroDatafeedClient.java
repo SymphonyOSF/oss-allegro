@@ -21,6 +21,7 @@ package com.symphony.oss.allegro.api;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -29,6 +30,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
+import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
 import com.symphony.oss.canon.runtime.jjwt.JwtBase;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
@@ -42,7 +44,7 @@ import com.symphony.oss.models.internal.pod.canon.IEvents;
 import com.symphony.oss.models.internal.pod.canon.IFeed;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 
-public class AllegroDatafeedClient
+class AllegroDatafeedClient
 {
   private final ServiceTokenManager        serviceTokenManager_;
   private final ModelRegistry              modelRegistry_;
@@ -51,7 +53,7 @@ public class AllegroDatafeedClient
 
   private String                           datafeed2Token_;
   
-  public AllegroDatafeedClient(ServiceTokenManager serviceTokenManager, ModelRegistry modelRegistry, CloseableHttpClient httpClient, URL podUrl)
+  AllegroDatafeedClient(ServiceTokenManager serviceTokenManager, ModelRegistry modelRegistry, CloseableHttpClient httpClient, URL podUrl, Map<Integer, IResponseHandler> responseHandlerMap)
   {
     serviceTokenManager_ = serviceTokenManager;
     modelRegistry_ = modelRegistry;
@@ -68,7 +70,7 @@ public class AllegroDatafeedClient
     
     datafeed2ApiClient_ = new PodInternalHttpModelClient(
         modelRegistry_,
-        podUrl, null, datafeed2JwtGenerator);
+        podUrl, null, datafeed2JwtGenerator, responseHandlerMap);
   }
   
   List<FeedId> listFeeds()

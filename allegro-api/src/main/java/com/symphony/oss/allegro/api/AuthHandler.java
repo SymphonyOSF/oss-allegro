@@ -31,6 +31,7 @@ import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IJwtAuthenticationProvider;
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.models.auth.canon.AuthHttpModelClient;
 import com.symphony.oss.models.auth.canon.AuthModel;
@@ -51,7 +52,8 @@ import com.symphony.oss.models.auth.canon.Token;
  */
 public class AuthHandler implements IAuthHandler
 {
-  private static final Logger log_ = LoggerFactory.getLogger(AuthHandler.class);
+  private static final Logger              log_        = LoggerFactory.getLogger(AuthHandler.class);
+  private static final long                RETRY_LIMIT = 30000;
   
   private final CloseableHttpClient        podHttpClient_;
   private final CloseableHttpClient        kmHttpClient_;
@@ -66,6 +68,8 @@ public class AuthHandler implements IAuthHandler
   private INamedToken                      sessionToken_;
   private String                           podDomain_;
   private String                           keyManagerDomain_;
+  private long                             sessionAuthTime_;
+  private long                             reauthTime_;
   
   public AuthHandler(AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
@@ -86,7 +90,7 @@ public class AuthHandler implements IAuthHandler
     
     podClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        builder.config_.getPodUrl(), "/login", null);
+        builder.config_.getPodUrl(), "/login", null, null);
   }
   
   @Override
@@ -104,7 +108,31 @@ public class AuthHandler implements IAuthHandler
   }
 
   @Override
-  public void authenticate(boolean authSession, boolean authKeyManager)
+  public synchronized ResponseHandlerAction reauthenticate(String usedSessionToken)
+  {
+    // If the token has changed then another thread reauthenticated and we can just retry.
+    if(usedSessionToken != null && !usedSessionToken.equals(sessionToken_.getToken()))
+      return ResponseHandlerAction.RETRY;
+    
+    // If we reauthenticated very recently then do nothing, the caller will just get the 401.
+    
+    if(System.currentTimeMillis() - reauthTime_ < RETRY_LIMIT)
+      return ResponseHandlerAction.CONTINUE;
+    
+    reauthTime_ = System.currentTimeMillis();
+    
+    authenticate(true, true);
+    return ResponseHandlerAction.RETRY;
+  }
+
+  @Override
+  public long getSessionAuthTime()
+  {
+    return sessionAuthTime_;
+  }
+
+  @Override
+  public synchronized void authenticate(boolean authSession, boolean authKeyManager)
   {
     String jwtToken = authProvider_.createJwt();
     IToken token;
@@ -117,6 +145,7 @@ public class AuthHandler implements IAuthHandler
     {
       sessionToken_    = authenticate(podHttpClient_, podClient_, token);
       addCookie("skey", sessionToken_, podDomain_);
+      sessionAuthTime_ = System.currentTimeMillis();
     }
     
     if(authKeyManager)
@@ -169,7 +198,7 @@ public class AuthHandler implements IAuthHandler
   {
     keyManagerClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        keyManagerUrl, null, null);
+        keyManagerUrl, null, null, null);
     
     try
     {

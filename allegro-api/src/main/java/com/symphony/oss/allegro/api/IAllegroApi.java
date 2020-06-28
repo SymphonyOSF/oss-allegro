@@ -61,6 +61,14 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   static final String SYMPHONY_DEV_QA_INTERMEDIATE_CERT = "/certs/symphony/devQaIntermediate.pem";
   /** Resource path for Symphony dev certificate */
   static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
+
+  /**
+   * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
+   * skey in private methods intended for use by Symphony clients.
+   *
+   * @return The session token.
+   */
+  String getSessionToken();
   
   /**
    * Force authentication.

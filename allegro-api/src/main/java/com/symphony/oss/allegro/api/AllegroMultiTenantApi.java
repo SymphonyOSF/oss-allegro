@@ -19,6 +19,7 @@
 package com.symphony.oss.allegro.api;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
@@ -35,8 +36,15 @@ import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.s2.authc.canon.AuthcModel;
+import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
 
+/**
+ * Implementation of IAllegroMultiTenantApi, the main Allegro Multi Tenant API class.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
 {
   private final PodAndUserId      userId_;
@@ -45,19 +53,28 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
   {
     super(builder);
-    
-    userId_ = builder.config_.getUserId();
+
+    userId_ = builder.configuredUserId_;
     
     jwtBuilder_ = new Rs512JwtGenerator(builder.rsaCredential_)
         .withClaim("userId", String.valueOf(userId_))
         ;
     
-    if(builder.config_.getKeyId() != null)
-      jwtBuilder_.withClaim("kid", builder.config_.getKeyId());
+    if(builder.keyId_ != null)
+      jwtBuilder_.withClaim("kid", builder.keyId_);
   }
   
+  /**
+   * Builder.
+   * 
+   * @author Bruce Skingle
+   *
+   */
   public static class Builder extends AbstractBuilder<Builder, IAllegroMultiTenantApi>
   {
+    /**
+     * Constructor.
+     */
     public Builder()
     {
       super(Builder.class);
@@ -88,7 +105,10 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     AllegroMultiTenantConfiguration.AbstractAllegroMultiTenantConfigurationBuilder<?, IAllegroMultiTenantConfiguration>, T, B>
   {
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    
+
+    protected PodAndUserId            configuredUserId_;
+    protected String                  keyId_;
+   
     public AbstractBuilder(Class<T> type)
     {
       super(type, new AllegroMultiTenantConfiguration.Builder());
@@ -168,10 +188,38 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super.validate(faultAccumulator);
       
-      if(config_.getRsaPemCredentialFile() == null && config_.getRsaPemCredential() == null)
-          faultAccumulator.error("rsaCredential is required");
+      if(config_.getPrincipalCredentialFile() != null)
+      {
+        File file = new File(config_.getPrincipalCredentialFile());
+        
+        if(!file.canRead())
+          throw new IllegalArgumentException("PrincipalCredential file \"" + file.getAbsolutePath() + "\" is unreadable");
+        
+        try(Reader reader = new FileReader(file))
+        {
+          IPrincipalCredential principalCredential = allegroModelRegistry_.parseOne(reader, PrincipalCredential.TYPE_ID, IPrincipalCredential.class);
+          
+          rsaCredential_    = cipherSuite_.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
+          keyId_            = principalCredential.getKeyId().toString();
+          configuredUserId_ = principalCredential.getUserId();
+        }
+        catch (IOException e)
+        {
+          throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
+        }
+      }
+      else
+      {
+        keyId_ = config_.getKeyId();
+        configuredUserId_ = config_.getUserId();
+      }
       
-      faultAccumulator.checkNotNull(config_.getUserId(), "User ID");
+      if(rsaCredential_ == null)
+      {
+        faultAccumulator.error("rsaCredential is required");
+      }
+      
+      faultAccumulator.checkNotNull(configuredUserId_, "User ID");
     }
   }
 
@@ -182,7 +230,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   }
 
   @Override
-  public String getSessionToken()
+  public String getApiAuthorizationToken()
   {
     return jwtBuilder_.createJwt();
   }

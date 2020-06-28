@@ -16,8 +16,6 @@
 
 package com.symphony.oss.allegro.api;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -25,6 +23,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +32,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
@@ -57,6 +57,9 @@ import com.symphony.oss.canon.runtime.EntityBuilder;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
+import com.symphony.oss.canon.runtime.http.client.IResponseHandlerContext;
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
 import com.symphony.oss.commons.dom.json.IJsonDomNode;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
@@ -72,11 +75,9 @@ import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
-import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
@@ -144,7 +145,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private static final int                      ENCRYPTION_ORDINAL         = 0;
   private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
   
-  private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
+  private static final ObjectMapper             AUTO_CLOSE_MAPPER          = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
 
   private final PodAndUserId                    userId_;
   private final String                          userName_;
@@ -155,6 +156,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final PodInternalHttpModelClient      podInternalApiClient_;
   private final KmInternalHttpModelClient       kmInternalClient_;
   private final AllegroCryptoClient             cryptoClient_;
+  private final AllegroDatafeedClient           datafeedClient_;
   private final IPodInfo                        podInfo_;
   private final AllegroDataProvider             dataProvider_;
   private final V4MessageTransformer            messageTramnsformer_;
@@ -169,11 +171,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final Supplier<X509Certificate>       podCertProvider_;
 
   private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
+  private ServiceTokenManager                   serviceTokenManager_;
 
-  
-  private AllegroDatafeedClient datafeedClient_;
-
-  private ServiceTokenManager serviceTokenManager_;
+  private Map<Integer, IResponseHandler> responseHandlerMap_ = new HashMap<>();
   
   /**
    * Constructor.
@@ -205,17 +205,19 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
 
     podApiClient_ = new PodHttpModelClient(
         modelRegistry_,
-        builder.config_.getPodUrl(), "/pod", null);
+        builder.config_.getPodUrl(), "/pod", null, responseHandlerMap_);
     
     authHandler_    = createAuthHandler(builder); 
     
     log_.info("sbe auth....");
     authHandler_.authenticate(true, false);
     
+    responseHandlerMap_.put(401, new AuthResponseHandler());
+    
     log_.info("fetch podInfo_....");
     podInternalApiClient_ = new PodInternalHttpModelClient(
         modelRegistry_,
-        builder.config_.getPodUrl(), null, null);
+        builder.config_.getPodUrl(), null, null, responseHandlerMap_);
     
     accountInfoProvider_ = new Supplier<IAccountInfo>()
     {
@@ -272,7 +274,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     kmInternalClient_ = new KmInternalHttpModelClient(
         modelRegistry_,
-        podInfo_.getKeyManagerUrl(), null, null);
+        podInfo_.getKeyManagerUrl(), null, null, responseHandlerMap_);
     
     dataProvider_ = new AllegroDataProvider(podHttpClient_, podApiClient_, podInfo_, authHandler_.getSessionToken());
 
@@ -288,34 +290,42 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     log_.info("userId_ = " + userId_);
     
-    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, podHttpClient_);
+    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, podHttpClient_, authHandler_);
     
-    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, podHttpClient_, builder.config_.getPodUrl());
+    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, podHttpClient_, builder.config_.getPodUrl(), responseHandlerMap_);
     
     log_.info("allegroApi constructor done.");
+  }
+  
+  private class AuthResponseHandler implements IResponseHandler
+  {
+    @Override
+    public IResponseHandlerContext prepare()
+    {
+      return new AuthResponseHandlerContext();
+    }
+  }
+  
+  private class AuthResponseHandlerContext implements IResponseHandlerContext
+  {
+    String sessionToken = authHandler_.getSessionToken();
+    
+    @Override
+    public ResponseHandlerAction handle(CloseableHttpResponse response)
+    {
+      return authHandler_.reauthenticate(sessionToken);
+    }
+    
   }
 
   private IAuthHandler createAuthHandler(AbstractBuilder<?, ?> builder)
   {
 
-    if(builder.sessionToken_ != null)
-      return new DummyAuthHandler(builder.sessionToken_, builder.keymanagerToken_, builder.cookieStore_, builder.config_.getPodUrl());
+    if(builder.sessionTokenSupplier_ != null)
+      return new DummyAuthHandler(builder.sessionTokenSupplier_, builder.keyManagerTokenSupplier_, builder.cookieStore_, builder.config_.getPodUrl());
     
     if(builder.config_.getAuthCertFile() != null || builder.config_.getAuthCert() != null)
       return new CertAuthHandler(builder);
-    
-    
-//    if(builder.config_.getAuthCertFile() != null)
-//      return new CertAuthHandler(builder.cookieStore_, builder.config_.getPodUrl(),
-//          builder.config_.getAuthCertFile(), builder.config_.getAuthCertFilePassword(), builder.config_.getSessionAuthUrl(), builder.config_.getKeyAuthUrl());
-//    
-//    if(builder.config_.getAuthCert() != null)
-//    {
-//      return new CertAuthHandler(builder.cookieStore_, builder.config_.getPodUrl(),
-//          cipherSuite_.certificateFromPem(builder.config_.getAuthCert()),
-//          cipherSuite_.privateKeyFromPem(builder.config_.getAuthCertPrivateKey()),
-//          builder.config_.getSessionAuthUrl(), builder.config_.getKeyAuthUrl());
-//    }
     
     return new AuthHandler(builder, userName_);
   }
@@ -375,6 +385,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public String getSessionToken()
   {
     return authHandler_.getSessionToken();
+  }
+  
+  @Override
+  public String getApiAuthorizationToken()
+  {
+    return serviceTokenManager_.getCommonJwt();
   }
 
   @Override
@@ -1639,8 +1655,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
   AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
   {
-    protected String            sessionToken_;
-    protected String            keymanagerToken_;
+    private Supplier<String> sessionTokenSupplier_;
+    private Supplier<String> keyManagerTokenSupplier_;
     
     private CloseableHttpClient podHttpClient_;
     private CloseableHttpClient keyManagerHttpClient_;
@@ -1753,16 +1769,50 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       return self();
     }
     
+    /**
+     * Set a fixed session token.
+     * 
+     * @param sessionToken An externally provided session token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withSessionTokenSupplier instead.
+     */
+    @Deprecated
     public T withSessionToken(String sessionToken)
     {
-      sessionToken_ = sessionToken;
+      sessionTokenSupplier_ = () -> sessionToken;
       
       return self();
     }
     
+    /**
+     * Set a fixed key manager token.
+     * 
+     * @param keymanagerToken An externally provided key manager token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withKeymanagerTokenSupplier instead.
+     */
+    @Deprecated
     public T withKeymanagerToken(String keymanagerToken)
     {
-      keymanagerToken_ = keymanagerToken;
+      keyManagerTokenSupplier_ = () -> keymanagerToken;
+      
+      return self();
+    }
+    
+    public T withSessionTokenSupplier(Supplier<String> sessionTokenSupplier)
+    {
+      sessionTokenSupplier_ = sessionTokenSupplier;
+      
+      return self();
+    }
+    
+    public T withKeymanagerTokenSupplier(Supplier<String> keymanagerTokenSupplier)
+    {
+      keyManagerTokenSupplier_ = keymanagerTokenSupplier;
       
       return self();
     }
@@ -1797,9 +1847,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     {
       super.validate(faultAccumulator);
       
-      if(sessionToken_ != null || keymanagerToken_!= null )
+      if(sessionTokenSupplier_ != null || keyManagerTokenSupplier_!= null )
       {
-        if(sessionToken_ == null || keymanagerToken_== null )
+        if(sessionTokenSupplier_ == null || keyManagerTokenSupplier_== null )
           faultAccumulator.error("SessionToekn and KeymanagerToken must be specified together");
       }
       else

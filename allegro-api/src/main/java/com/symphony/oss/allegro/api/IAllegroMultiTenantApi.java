@@ -83,12 +83,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   PodAndUserId getUserId();
   
   /**
-   * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
-   * skey in private methods intended for use by Symphony clients.
-   * <p>
-   * @return The session token.
+   * Return the authorization token for calls to API endpoints.
+   * 
+   * @return The authorization token for calls to API endpoints.
    */
-  String getSessionToken();
+  String getApiAuthorizationToken();
   
   /**
    * Store the given object.

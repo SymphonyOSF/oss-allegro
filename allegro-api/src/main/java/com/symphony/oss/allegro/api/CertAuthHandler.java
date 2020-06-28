@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 import com.symphony.oss.models.auth.canon.AuthHttpModelClient;
 import com.symphony.oss.models.auth.canon.AuthModel;
 import com.symphony.oss.models.auth.canon.AuthenticatePostHttpRequest;
@@ -53,8 +54,9 @@ import com.symphony.oss.models.auth.canon.INamedToken;
  */
 class CertAuthHandler implements IAuthHandler
 {
-  private static final Logger log_ = LoggerFactory.getLogger(CertAuthHandler.class);
-  private static final String DEFAULT_PASSWORD = "changeit";
+  private static final Logger       log_             = LoggerFactory.getLogger(CertAuthHandler.class);
+  private static final String       DEFAULT_PASSWORD = "changeit";
+  private static final long         RETRY_LIMIT      = 30000;
   
   private final CloseableHttpClient        podHttpClient_;
   private final CloseableHttpClient        kmHttpClient_;
@@ -67,59 +69,9 @@ class CertAuthHandler implements IAuthHandler
   private INamedToken                      sessionToken_;
   private String                           podDomain_;
   private String                           keyManagerDomain_;
+  private long                             sessionAuthTime_;
+  private long                             reauthTime_;
   
-//  public CertAuthHandler(CookieStore cookieStore, URL podUrl, String keyStorePath, String keyStorePassword, URL sessionAuthUrl, URL keyManagerAuthUrl)
-//  {
-//    this(cookieStore, podUrl, readKeyStore(keyStorePath, keyStorePassword), keyStorePassword, sessionAuthUrl, keyManagerAuthUrl);
-//  }
-//  
-//  public CertAuthHandler(CookieStore cookieStore, URL podUrl, X509Certificate authCert, PrivateKey authCertPrivateKey, URL sessionAuthUrl, URL keyManagerAuthUrl)
-//  {
-//    this(cookieStore, podUrl, createKeyStore(authCert, authCertPrivateKey), DEFAULT_PASSWORD, sessionAuthUrl, keyManagerAuthUrl);
-//  }
-//  
-//  private CertAuthHandler(CookieStore cookieStore, URL podUrl, KeyStore keyStore, String keyStorePassword, URL sessionAuthUrl, URL keyManagerAuthUrl)
-//  {
-//    cookieStore_    = cookieStore;
-//    modelRegistry_  = new ModelRegistry().withFactories(AuthModel.FACTORIES);
-//    
-//    podDomain_ = podUrl.getHost();
-//    
-//    podClient_ = new AuthHttpModelClient(
-//        modelRegistry_,
-//        sessionAuthUrl, "/sessionauth/v1", null);
-//    
-//    keyManagerClient_ = new AuthHttpModelClient(
-//        modelRegistry_,
-//        keyManagerAuthUrl, "/keyauth/v1", null);
-//    try
-//    {
-//      sslContext_ = SSLContexts.custom()
-//          .loadKeyMaterial(keyStore, keyStorePassword.toCharArray())
-//          .build();
-//  
-//      httpClient_ = HttpClients.custom().setSSLContext(sslContext_).build();
-//    }
-//    catch(GeneralSecurityException e)
-//    {
-//      throw new IllegalStateException("Unable to initialize client certificate", e);
-//    }
-//    
-//  }
-  /*
-   * if(builder.config_.getAuthCertFile() != null)
-      return new CertAuthHandler(builder.cookieStore_, builder.config_.getPodUrl(),
-          builder.config_.getAuthCertFile(), builder.config_.getAuthCertFilePassword(), builder.config_.getSessionAuthUrl(), builder.config_.getKeyAuthUrl());
-    
-    if(builder.config_.getAuthCert() != null)
-    {
-      return new CertAuthHandler(builder.cookieStore_, builder.config_.getPodUrl(),
-          cipherSuite_.certificateFromPem(builder.config_.getAuthCert()),
-          cipherSuite_.privateKeyFromPem(builder.config_.getAuthCertPrivateKey()),
-          builder.config_.getSessionAuthUrl(), builder.config_.getKeyAuthUrl());
-    }
-   */
-
   CertAuthHandler(AbstractBuilder<?, ?> builder)
   {
     cookieStore_    = builder.cookieStore_;
@@ -129,11 +81,11 @@ class CertAuthHandler implements IAuthHandler
     
     podClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        builder.config_.getSessionAuthUrl(), "/sessionauth/v1", null);
+        builder.config_.getSessionAuthUrl(), "/sessionauth/v1", null, null);
     
     keyManagerClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        builder.config_.getKeyAuthUrl(), "/keyauth/v1", null);
+        builder.config_.getKeyAuthUrl(), "/keyauth/v1", null, null);
     
     try
     {
@@ -187,47 +139,38 @@ class CertAuthHandler implements IAuthHandler
     }
   }
 
-//  static KeyStore readKeyStore(String keyStorePath, String keyStorePassword)
-//  {
-//    try (InputStream keyStoreStream = new FileInputStream(keyStorePath)) {
-//        KeyStore keyStore = KeyStore.getInstance("PKCS12");
-//        keyStore.load(keyStoreStream, keyStorePassword.toCharArray());
-//        return keyStore;
-//    }
-//    catch(GeneralSecurityException | IOException e)
-//    {
-//      throw new IllegalStateException("Unable to read client certificate", e);
-//    }
-//  }
-  
-//  static KeyStore createKeyStore(X509Certificate authCert, PrivateKey authCertPrivateKey)
-//  {
-//    X509Certificate[] certs = new X509Certificate[1];
-//    
-//    certs[0] = authCert;
-//    
-//    try
-//    {
-//      KeyStore keyStore = KeyStore.getInstance("PKCS12");
-//      keyStore.load(null, DEFAULT_PASSWORD.toCharArray());
-//      
-//      keyStore.setKeyEntry("client", authCertPrivateKey, DEFAULT_PASSWORD.toCharArray(), certs);
-//      
-//      return keyStore;
-//    }
-//    catch(GeneralSecurityException | IOException e)
-//    {
-//      throw new IllegalStateException("Unable to read client certificate", e);
-//    }
-//  }
+  @Override
+  public synchronized ResponseHandlerAction reauthenticate(String usedSessionToken)
+  {
+    // If the token has changed then another thread reauthenticated and we can just retry.
+    if(usedSessionToken != null && !usedSessionToken.equals(sessionToken_.getToken()))
+      return ResponseHandlerAction.RETRY;
+    
+    // If we reauthenticated very recently then do nothing, the caller will just get the 401.
+    
+    if(reauthTime_ - System.currentTimeMillis() < RETRY_LIMIT)
+      return ResponseHandlerAction.CONTINUE;
+    
+    reauthTime_ = System.currentTimeMillis();
+    
+    authenticate(true, true);
+    return ResponseHandlerAction.RETRY;
+  }
+
+  @Override
+  public long getSessionAuthTime()
+  {
+    return sessionAuthTime_;
+  }
   
   @Override
-  public void authenticate(boolean authSession, boolean authKeyManager)
+  public synchronized void authenticate(boolean authSession, boolean authKeyManager)
   {
     if(authSession)
     {
       sessionToken_    = authenticate(podHttpClient_, podClient_);
       addCookie("skey", sessionToken_, podDomain_);
+      sessionAuthTime_ = System.currentTimeMillis();
     }
     
     if(authKeyManager)

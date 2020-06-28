@@ -20,15 +20,21 @@ package com.symphony.oss.allegro.api;
 
 import java.io.Closeable;
 
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
+
 public interface IAuthHandler extends Closeable
 {
 
   void authenticate(boolean authSession, boolean authKeyManager);
+  
+  ResponseHandlerAction reauthenticate(String usedSessionToken);
 
   String getKeyManagerToken();
 
   String getSessionToken();
 
   void setKeyManagerUrl(String keyManagerUrl);
+
+  long getSessionAuthTime();
 
 }

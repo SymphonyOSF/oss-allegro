@@ -175,25 +175,25 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     @Override
     public void authenticate(RequestBuilder builder)
     {
-      builder.addHeader(JwtBase.AUTH_HEADER_KEY, JwtBase.AUTH_HEADER_VALUE_PREFIX + getSessionToken());
+      builder.addHeader(JwtBase.AUTH_HEADER_KEY, JwtBase.AUTH_HEADER_VALUE_PREFIX + getApiAuthorizationToken());
     }
   };
 
 
-  final IAllegroBaseConfiguration       config_;
-  final ModelRegistry                   modelRegistry_;
-  final CoreHttpModelClient             coreApiClient_;
-  final ObjectHttpModelClient           objectApiClient_;
-  final AuthcHttpModelClient            authcApiClient_;
-  final AuthzHttpModelClient            authzApiClient_;
-  final BaseEntitlementValidator        entitlementValidator_;
-  final EntitlementSpecAdaptor          entitlementSpecAdaptor_;
-  final ITraceContextTransactionFactory traceFactory_;
+  final IAllegroBaseConfiguration            config_;
+  final ModelRegistry                        modelRegistry_;
+  final CoreHttpModelClient                  coreApiClient_;
+  final ObjectHttpModelClient                objectApiClient_;
+  final AuthcHttpModelClient                 authcApiClient_;
+  final AuthzHttpModelClient                 authzApiClient_;
+  final BaseEntitlementValidator             entitlementValidator_;
+  final EntitlementSpecAdaptor               entitlementSpecAdaptor_;
+  final ITraceContextTransactionFactory      traceFactory_;
 
-  final CloseableHttpClient             apiHttpClient_;
-  
-  private final Map<ServiceId, IServiceInfo>   serviceMap_ = new HashMap<>();
-  private RemoteJwtAuthenticator authenticator_;
+  final CloseableHttpClient                  apiHttpClient_;
+
+  private final Map<ServiceId, IServiceInfo> serviceMap_   = new HashMap<>();
+  private RemoteJwtAuthenticator             authenticator_;
 
   
   AllegroBaseApi(AbstractBuilder<? extends IAllegroBaseConfiguration, ?, ?, ?> builder)
@@ -214,23 +214,21 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
     apiHttpClient_     = builder.getApiHttpClient();
     
-        //builder.config_.getEffectiveApiConnectionSettings().createHttpClient(builder.cipherSuite_, builder.cookieStore_);
-    
     coreApiClient_  = new CoreHttpModelClient(
         modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_);
+        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     objectApiClient_  = new ObjectHttpModelClient(
         modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_);
+        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     authcApiClient_  = new AuthcHttpModelClient(
         modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHC), null, jwtGenerator_);
+        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHC), null, jwtGenerator_, null);
     
     authzApiClient_  = new AuthzHttpModelClient(
         modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHZ), null, jwtGenerator_);
+        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHZ), null, jwtGenerator_, null);
     
     entitlementValidator_ = new BaseEntitlementValidator(apiHttpClient_, authzApiClient_, this);
     entitlementSpecAdaptor_ = new EntitlementSpecAdaptor(this);
@@ -262,29 +260,22 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     T extends AbstractBuilder<C,CB,T,B>, B extends IAllegroMultiTenantApi>
   extends BaseAbstractBuilder<T, B>
   {
-    protected CB configBuilder_;
-    protected ConnectionSettings.Builder              connectionSettingsBuilder_ = new ConnectionSettings.Builder();
-    protected boolean                                 builderSet_;
+    protected CB                              configBuilder_;
+    protected ConnectionSettings.Builder      connectionSettingsBuilder_ = new ConnectionSettings.Builder();
+    protected boolean                         builderSet_;
 
-    private C         setConfig_;
-//    protected ConnectionSettings                      apiConnectionSettings_;
-    
-//    protected CipherSuiteId                   cipherSuiteId_;
-//    protected CloseableHttpClient             httpclient_;
-//    protected String                          objectStoreUrl_       = "https://api.symphony.com";
-    protected CookieStore                     cookieStore_ = new BasicCookieStore();
-    protected List<IEntityFactory<?, ?, ?>>   factories_            = new LinkedList<>();
-    protected ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
-    protected ModelRegistry                   allegroModelRegistry_ = new ModelRegistry().withFactories(AllegroModel.FACTORIES);
-//    
-//    protected PemPrivateKey                   rsaPemCredential_;
-    
-
-    protected C         config_;
+    protected CookieStore                     cookieStore_               = new BasicCookieStore();
+    protected List<IEntityFactory<?, ?, ?>>   factories_                 = new LinkedList<>();
+    protected ITraceContextTransactionFactory traceFactory_              = new NoOpContextFactory();
+    protected ModelRegistry                   allegroModelRegistry_      = new ModelRegistry()
+        .withFactories(AllegroModel.FACTORIES)
+        .withFactories(AuthcModel.FACTORIES);
+    protected C                               config_;
     protected ICipherSuite                    cipherSuite_;
     protected PrivateKey                      rsaCredential_;
-    private CloseableHttpClient defaultHttpClient_;
-    private CloseableHttpClient apiHttpClient_;
+    private C                                 setConfig_;
+    private CloseableHttpClient               defaultHttpClient_;
+    private CloseableHttpClient               apiHttpClient_;
     
     public AbstractBuilder(Class<T> type, CB configBuilder)
     {
@@ -295,13 +286,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       if(configBuilder_.getApiUrl() == null)
         configBuilder_.withApiUrl("https://api.symphony.com");
     }
-    
-//    public T withApiConnectionSettings(ConnectionSettings apiConnectionSettings)
-//    {
-//      apiConnectionSettings_ = apiConnectionSettings;
-//      
-//      return self();
-//    }
     
     protected synchronized CloseableHttpClient getDefaultHttpClient()
     {
@@ -577,117 +561,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         rsaCredential_ = cipherSuite_.privateKeyFromPem(config_.getRsaPemCredential());
       }
-      
-//      
-//      
-//      for(String resourceName : trustedCertResources_)
-//      {
-//        trustedCerts_.add(cipherSuite_.certificateFromPemResource(resourceName));
-//      }
-//      
-//      cookieStore_ = new BasicCookieStore();
-//      
-//      HttpClientBuilder httpBuilder = HttpClients.custom()
-//          .setDefaultCookieStore(cookieStore_)
-//          .setConnectionManager(createConnectionManager());
-//      
-//      HttpHost proxy = new HttpHost("127.0.0.1", 8888, "https");
-//      
-//      httpBuilder.setProxy(proxy);
-//      
-//      httpclient_ = httpBuilder
-//          .build();
-//      
-//      try {
-//        HttpHost target = new HttpHost("dev.api.symphony.com", 443, "https");
-//        //HttpHost proxy = new HttpHost("proxy host", 3128);
-//
-//        RequestConfig config = RequestConfig.custom()
-//                .setProxy(proxy)
-//                .build();
-//        HttpGet httpget = new HttpGet("/path");
-//        //httpget.setConfig(config);
-//
-//        System.out.println("Executing request " + httpget.getRequestLine() + " to " + target + " via " + proxy);
-//
-//        CloseableHttpResponse response = httpclient_.execute(target, httpget);
-//        try {
-//            System.out.println("----------------------------------------");
-//            System.out.println(response.getStatusLine());
-//            System.out.println(EntityUtils.toString(response.getEntity()));
-//        } finally {
-//            response.close();
-//        }
-//    } catch(IOException | RuntimeException e) {
-//        log_.error("FAILED", e);
-//    }
     }
-    
-//    private PoolingHttpClientConnectionManager createConnectionManager()
-//    {
-//      
-//      PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-//      
-//      
-//      if(!trustedCerts_.isEmpty() || sslTrustStrategy_ != null)
-//      {
-//        SSLConnectionSocketFactory sslsf = configureTrust();
-//        
-//        //httpBuilder.setSSLSocketFactory(sslsf);
-//        
-//        Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder.<ConnectionSocketFactory> create()
-//            .register("http", new PlainConnectionSocketFactory())
-//            .register("https", sslsf)
-//            .build();
-//        
-//        connectionManager = new PoolingHttpClientConnectionManager(socketFactoryRegistry);
-//        
-//      }
-//      else
-//      {
-//        connectionManager = new PoolingHttpClientConnectionManager();
-//      }
-//      
-//      connectionManager.setDefaultMaxPerRoute(maxHttpConnections_);
-//      connectionManager.setMaxTotal(maxHttpConnections_);
-//      
-//      return connectionManager;
-//    }
-//
-//    private SSLConnectionSocketFactory configureTrust()
-//    {
-//      try
-//      {
-//        KeyStore trustStore  = KeyStore.getInstance(KeyStore.getDefaultType());
-//        trustStore.load(null);
-//        
-//        int n=1;
-//        
-//        for(X509Certificate trustedCert : trustedCerts_)
-//        {
-//          trustStore.setCertificateEntry("cert" + n++, trustedCert);
-//        }
-//        
-//        // Trust own CA and all self-signed certs
-//        SSLContext sslcontext = org.apache.http.ssl.SSLContexts.custom()
-//                .loadTrustMaterial(trustStore, sslTrustStrategy_)
-//                .build();
-//
-//        SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(
-//                sslcontext,
-//                null,
-//                null,
-//                (HostnameVerifier)null);
-//        
-//        return sslsf;
-//        
-//        
-//      }
-//      catch(GeneralSecurityException | IOException e)
-//      {
-//        throw new IllegalStateException("Failed to configure SSL trust", e);
-//      }
-//    }
   }
 
   @Override
