@@ -16,17 +16,25 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.auth;
+package com.symphony.oss.allegro.api;
 
-public interface IAuthHandler
+import java.io.Closeable;
+
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
+
+public interface IAuthHandler extends Closeable
 {
 
   void authenticate(boolean authSession, boolean authKeyManager);
+  
+  ResponseHandlerAction reauthenticate(String usedSessionToken);
 
   String getKeyManagerToken();
 
   String getSessionToken();
 
   void setKeyManagerUrl(String keyManagerUrl);
+
+  long getSessionAuthTime();
 
 }

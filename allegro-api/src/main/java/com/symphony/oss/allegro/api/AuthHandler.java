@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api.auth;
+package com.symphony.oss.allegro.api;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PrivateKey;
@@ -23,10 +24,14 @@ import java.security.PrivateKey;
 import org.apache.http.client.CookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.cookie.BasicClientCookie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IJwtAuthenticationProvider;
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.models.auth.canon.AuthHttpModelClient;
 import com.symphony.oss.models.auth.canon.AuthModel;
@@ -47,7 +52,11 @@ import com.symphony.oss.models.auth.canon.Token;
  */
 public class AuthHandler implements IAuthHandler
 {
-  private final CloseableHttpClient        httpClient_;
+  private static final Logger              log_        = LoggerFactory.getLogger(AuthHandler.class);
+  private static final long                RETRY_LIMIT = 30000;
+  
+  private final CloseableHttpClient        podHttpClient_;
+  private final CloseableHttpClient        kmHttpClient_;
   private final CookieStore                cookieStore_;
   private final PrivateKey                 rsaCredential_;
   private final IModelRegistry             modelRegistry_;
@@ -59,12 +68,17 @@ public class AuthHandler implements IAuthHandler
   private INamedToken                      sessionToken_;
   private String                           podDomain_;
   private String                           keyManagerDomain_;
+  private long                             sessionAuthTime_;
+  private long                             reauthTime_;
   
-  public AuthHandler(CloseableHttpClient httpClient, CookieStore cookieStore, URL podUrl, PrivateKey rsaCredential, String serviceAccountName)
+  public AuthHandler(AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
-    httpClient_     = httpClient;
-    cookieStore_    = cookieStore;
-    rsaCredential_  = rsaCredential;
+    // builder.cookieStore_, builder.config_.getPodUrl(), builder.rsaCredential_
+    
+    podHttpClient_  = builder.getPodHttpClient();
+    kmHttpClient_   = builder.getKeyManagerHttpClient();
+    cookieStore_    = builder.cookieStore_;
+    rsaCredential_  = builder.rsaCredential_;
     modelRegistry_  = new ModelRegistry().withFactories(AuthModel.FACTORIES);
     
     authProvider_   = new Rs512JwtGenerator(rsaCredential_)
@@ -72,15 +86,53 @@ public class AuthHandler implements IAuthHandler
         .withTTL(300000)  // 5 minutes, this is the max allowed by Symphony RSA authentication.
         ;
     
-    podDomain_ = podUrl.getHost();
+    podDomain_ = builder.config_.getPodUrl().getHost();
     
     podClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        podUrl, "/login", null);
+        builder.config_.getPodUrl(), "/login", null, null);
   }
   
   @Override
-  public void authenticate(boolean authSession, boolean authKeyManager)
+  public void close()
+  {
+    try
+    {
+      podHttpClient_.close();
+      kmHttpClient_.close();
+    }
+    catch (IOException e)
+    {
+      log_.error("Unable to close HttpClient", e);
+    }
+  }
+
+  @Override
+  public synchronized ResponseHandlerAction reauthenticate(String usedSessionToken)
+  {
+    // If the token has changed then another thread reauthenticated and we can just retry.
+    if(usedSessionToken != null && !usedSessionToken.equals(sessionToken_.getToken()))
+      return ResponseHandlerAction.RETRY;
+    
+    // If we reauthenticated very recently then do nothing, the caller will just get the 401.
+    
+    if(System.currentTimeMillis() - reauthTime_ < RETRY_LIMIT)
+      return ResponseHandlerAction.CONTINUE;
+    
+    reauthTime_ = System.currentTimeMillis();
+    
+    authenticate(true, true);
+    return ResponseHandlerAction.RETRY;
+  }
+
+  @Override
+  public long getSessionAuthTime()
+  {
+    return sessionAuthTime_;
+  }
+
+  @Override
+  public synchronized void authenticate(boolean authSession, boolean authKeyManager)
   {
     String jwtToken = authProvider_.createJwt();
     IToken token;
@@ -91,13 +143,14 @@ public class AuthHandler implements IAuthHandler
     
     if(authSession)
     {
-      sessionToken_    = authenticate(podClient_, token);
+      sessionToken_    = authenticate(podHttpClient_, podClient_, token);
       addCookie("skey", sessionToken_, podDomain_);
+      sessionAuthTime_ = System.currentTimeMillis();
     }
     
     if(authKeyManager)
     {
-      keyManagerToken_ = authenticate(keyManagerClient_, token);
+      keyManagerToken_ = authenticate(kmHttpClient_, keyManagerClient_, token);
       addCookie("kmsession", keyManagerToken_, keyManagerDomain_);
     }
   }
@@ -131,13 +184,13 @@ public class AuthHandler implements IAuthHandler
     cookieStore_.addCookie(cookie);
   }
 
-  private INamedToken authenticate(AuthHttpModelClient client, IToken token)
+  private INamedToken authenticate(CloseableHttpClient httpClient, AuthHttpModelClient client, IToken token)
   {
     PubkeyAuthenticatePostHttpRequest request = new PubkeyAuthenticatePostHttpRequestBuilder(client)
         .withCanonPayload(token)
         .build();
       
-      return request.execute(httpClient_);
+      return request.execute(httpClient);
   }
 
   @Override
@@ -145,7 +198,7 @@ public class AuthHandler implements IAuthHandler
   {
     keyManagerClient_ = new AuthHttpModelClient(
         modelRegistry_,
-        keyManagerUrl, null, null);
+        keyManagerUrl, null, null, null);
     
     try
     {

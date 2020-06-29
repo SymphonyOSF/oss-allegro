@@ -67,7 +67,8 @@ class AllegroCryptoClient
 {
   public static final CipherSuiteId       ThreadSeurityContextCipherSuiteId = CipherSuiteId.RSA2048_AES256;
 
-  private final CloseableHttpClient        httpclient_;
+  private final CloseableHttpClient        podHttpClient_;
+  private final CloseableHttpClient        kmHttpClient_;
   private final PodInternalHttpModelClient podInternalApiClient_;
   private final KmInternalHttpModelClient  kmInternalClient_;
   private final IPodInfo                   podInfo_;
@@ -85,12 +86,14 @@ class AllegroCryptoClient
 
 
   
-  AllegroCryptoClient(CloseableHttpClient httpclient, PodInternalHttpModelClient podInternalApiClient,
-      KmInternalHttpModelClient kmInternalClient, IPodInfo podInfo, PodAndUserId internalUserId,
+  AllegroCryptoClient(CloseableHttpClient podHttpClient, PodInternalHttpModelClient podInternalApiClient,
+      CloseableHttpClient kmHttpClient, KmInternalHttpModelClient kmInternalClient,
+      IPodInfo podInfo, PodAndUserId internalUserId,
       Supplier<IAccountInfo> accountInfoProvider, ModelRegistry modelRegistry)
   {
-    httpclient_ = httpclient;
+    podHttpClient_ = podHttpClient;
     podInternalApiClient_ = podInternalApiClient;
+    kmHttpClient_ = kmHttpClient;
     kmInternalClient_ = kmInternalClient;
     podInfo_ = podInfo;
     internalUserId_ = internalUserId;
@@ -103,12 +106,12 @@ class AllegroCryptoClient
     
     IUserKeys userKeys = kmInternalClient_.newKeysMeGetHttpRequestBuilder()
         .build()
-        .execute(httpclient_);
+        .execute(kmHttpClient_);
     
-    accountKeyCache_ = new AccountKeyCache(httpclient_, podInternalApiClient_, userKeys);
-    contentKeyCache_ = new ContentKeyCache(httpclient_, podInternalApiClient_, accountKeyCache_, internalUserId);
-    threadRotationIdCache_ = new ThreadRotationIdCache(httpclient_, podInternalApiClient_);
-    entityKeyCache_ = new EntityKeyCache(httpclient_, kmInternalClient_, accountKeyCache_, internalUserId, clientCryptoHandler_);
+    accountKeyCache_ = new AccountKeyCache(podHttpClient_, podInternalApiClient_, userKeys);
+    contentKeyCache_ = new ContentKeyCache(podHttpClient_, podInternalApiClient_, accountKeyCache_, internalUserId);
+    threadRotationIdCache_ = new ThreadRotationIdCache(podHttpClient_, podInternalApiClient_);
+    entityKeyCache_ = new EntityKeyCache(kmHttpClient_, kmInternalClient_, accountKeyCache_, internalUserId, clientCryptoHandler_);
   }
 
   RotationId getRotationForThread(ThreadId threadId)

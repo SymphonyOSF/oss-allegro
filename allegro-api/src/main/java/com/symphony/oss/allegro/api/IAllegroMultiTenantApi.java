@@ -41,6 +41,7 @@ import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
@@ -82,12 +83,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   PodAndUserId getUserId();
   
   /**
-   * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
-   * skey in private methods intended for use by Symphony clients.
-   * <p>
-   * @return The session token.
+   * Return the authorization token for calls to API endpoints.
+   * 
+   * @return The authorization token for calls to API endpoints.
    */
-  String getSessionToken();
+  String getApiAuthorizationToken();
   
   /**
    * Store the given object.
@@ -426,7 +426,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * <p>
    * @return A CloseableHttpClient.
    */
-  CloseableHttpClient getHttpClient();
+  CloseableHttpClient getApiHttpClient();
 
   /**
    * Return an authenticator which can be used to authenticate requests from regular or multi-tenant service accounts.
@@ -489,4 +489,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @throws NotFoundException         If the requested object does not exist.
    */
   IStoredApplicationObject fetchObject(Hash partitionHash, SortKey sortKey);
+
+  /**
+   * Return the current configuration.
+   * 
+   * @return The current configuration.
+   */
+  IAllegroBaseConfiguration getConfiguration();
 }

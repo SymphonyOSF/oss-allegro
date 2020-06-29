@@ -23,28 +23,41 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.symphony.oss.canon.runtime.exception.ServerErrorException;
 import com.symphony.oss.models.internal.pod.canon.ITokenHolder;
+import com.symphony.oss.models.internal.pod.canon.ITokenResponse;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.impl.DefaultJwtParser;
+import io.jsonwebtoken.Jwts;
 
 class ServiceTokenManager
 {
+  private static final Logger              log_             = LoggerFactory.getLogger(AllegroBaseApi.class);
+
+  private static final long SESSION_EXPIRY_TIME = 60 * 60 * 1000; // 1 hour in millis
+  
   private final PodInternalHttpModelClient podInternalApiClient_;
   private final CloseableHttpClient        httpClient_;
+  private final IAuthHandler               authHandler_;
 
   private Map<String, String>              serviceTokenMap_ = new HashMap<>();
   private Map<String, Long>                expiryMap_       = new HashMap<>();
-  private JwtParser                        jwtParser_       = new DefaultJwtParser();
+  private JwtParser                        jwtParser_       = Jwts.parserBuilder().build(); //new DefaultJwtParser();
+  private String                           commonJwt_;
+  private long                             commonJwtExpires_;
+  private boolean                          commonJwtUnavailable_;
   
-  ServiceTokenManager(PodInternalHttpModelClient podInternalApiClient, CloseableHttpClient httpClient)
+  ServiceTokenManager(PodInternalHttpModelClient podInternalApiClient, CloseableHttpClient httpClient, IAuthHandler authHandler)
   {
     podInternalApiClient_ = podInternalApiClient;
-    httpClient_ = httpClient;
+    httpClient_           = httpClient;
+    authHandler_          = authHandler;
   }
   
   private Claims decodeTokenClaims(String token)
@@ -86,5 +99,47 @@ class ServiceTokenManager
     }
     
     return serviceTokenMap_.get(serviceId);
+  }
+  
+  synchronized String getCommonJwt()
+  {
+    if(!commonJwtUnavailable_)
+    {
+      try
+      {
+        if(System.currentTimeMillis() > commonJwtExpires_)
+        {
+          ITokenResponse tokenResponse = podInternalApiClient_.newLoginIdmTokensPostHttpRequestBuilder()
+            .build()
+            .execute(httpClient_)
+            ;
+          
+          int expiresIn = tokenResponse.getExpiresIn() == null ? 300 : tokenResponse.getExpiresIn();
+          
+          commonJwtExpires_ = (expiresIn - 30) * 1000 + System.currentTimeMillis();
+          commonJwt_ = tokenResponse.getAccessToken();
+        }
+        
+        return commonJwt_;
+      }
+      catch(ServerErrorException e)
+      {
+        log_.warn("Common JWT unavailable from pod.", e);
+        commonJwtUnavailable_ = true;
+      }
+    }
+    return getAuthToken();
+    //return getServiceToken("datafeed2");
+  }
+  
+  synchronized String getAuthToken()
+  {
+    if(System.currentTimeMillis() > commonJwtExpires_)
+    {
+      authHandler_.authenticate(true, false);
+      commonJwtExpires_ = SESSION_EXPIRY_TIME - 30000 + System.currentTimeMillis();
+    }
+    
+    return authHandler_.getSessionToken();
   }
 }

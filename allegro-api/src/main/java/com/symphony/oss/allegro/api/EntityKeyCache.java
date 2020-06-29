@@ -90,8 +90,6 @@ class EntityKeyCache
       .execute(httpclient_)
       ;
     
-    System.err.println("wrappedEntityKeyResponse=" + wrappedEntityKeyResponse);
-    
     WrappedKey wrappedKey = wrappedEntityKeyResponse.getEntityKey();
     
     byte[] entityKey = unwrapContentKey(wrappedKey.getValue().toByteArray());

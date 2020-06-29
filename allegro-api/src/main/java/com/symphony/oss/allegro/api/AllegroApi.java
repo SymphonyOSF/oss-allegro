@@ -17,22 +17,24 @@
 package com.symphony.oss.allegro.api;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.ssl.SSLContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.symphonyoss.symphony.messageml.MessageMLContext;
@@ -47,9 +49,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.symphony.oss.allegro.api.auth.AuthHandler;
-import com.symphony.oss.allegro.api.auth.DummyAuthHandler;
-import com.symphony.oss.allegro.api.auth.IAuthHandler;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
@@ -58,6 +57,9 @@ import com.symphony.oss.canon.runtime.EntityBuilder;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
+import com.symphony.oss.canon.runtime.http.client.IResponseHandlerContext;
+import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
 import com.symphony.oss.commons.dom.json.IJsonDomNode;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
@@ -72,7 +74,10 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.EntityJson;
+import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
@@ -116,7 +121,6 @@ import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
-import com.symphony.oss.models.pod.canon.IStreamFilter;
 import com.symphony.oss.models.pod.canon.IStreamType;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
@@ -141,7 +145,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private static final int                      ENCRYPTION_ORDINAL         = 0;
   private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
   
-  private static final ObjectMapper  AUTO_CLOSE_MAPPER = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
+  private static final ObjectMapper             AUTO_CLOSE_MAPPER          = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
 
   private final PodAndUserId                    userId_;
   private final String                          userName_;
@@ -152,10 +156,13 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final PodInternalHttpModelClient      podInternalApiClient_;
   private final KmInternalHttpModelClient       kmInternalClient_;
   private final AllegroCryptoClient             cryptoClient_;
+  private final AllegroDatafeedClient           datafeedClient_;
   private final IPodInfo                        podInfo_;
   private final AllegroDataProvider             dataProvider_;
   private final V4MessageTransformer            messageTramnsformer_;
   private final EncryptionHandler               agentEncryptionHandler_;
+  private final CloseableHttpClient             podHttpClient_;
+  private final CloseableHttpClient             keyManagerHttpClient_;
 
   private PodAndUserId                          internalUserId_;
   private PodId                                 podId_;
@@ -164,11 +171,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   private final Supplier<X509Certificate>       podCertProvider_;
 
   private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
+  private ServiceTokenManager                   serviceTokenManager_;
 
-  
-  private AllegroDatafeedClient datafeedClient_;
-
-  private ServiceTokenManager serviceTokenManager_;
+  private Map<Integer, IResponseHandler> responseHandlerMap_ = new HashMap<>();
   
   /**
    * Constructor.
@@ -181,7 +186,10 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     log_.info("AllegroApi constructor start");
     
-    userName_ = builder.userName_;
+    podHttpClient_        = builder.getPodHttpClient();
+    keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
+    
+    userName_ = builder.config_.getUserName();
     
     modelRegistry_
         .withFactories(CryptoModel.FACTORIES)
@@ -197,19 +205,19 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
 
     podApiClient_ = new PodHttpModelClient(
         modelRegistry_,
-        builder.podUrl_, "/pod", null);
+        builder.config_.getPodUrl(), "/pod", null, responseHandlerMap_);
     
-    authHandler_    = builder.sessionToken_ != null
-        ? new DummyAuthHandler(builder.sessionToken_, builder.keymanagerToken_, builder.cookieStore_, builder.podUrl_)
-        : new AuthHandler(httpClient_, builder.cookieStore_, builder.podUrl_, builder.rsaCredential_, userName_);
+    authHandler_    = createAuthHandler(builder); 
     
     log_.info("sbe auth....");
     authHandler_.authenticate(true, false);
     
+    responseHandlerMap_.put(401, new AuthResponseHandler());
+    
     log_.info("fetch podInfo_....");
     podInternalApiClient_ = new PodInternalHttpModelClient(
         modelRegistry_,
-        builder.podUrl_, null, null);
+        builder.config_.getPodUrl(), null, null, responseHandlerMap_);
     
     accountInfoProvider_ = new Supplier<IAccountInfo>()
     {
@@ -223,7 +231,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
           value_ = podInternalApiClient_.newWebcontrollerMaestroAccountGetHttpRequestBuilder()
               .withClienttype(clientType_)
               .build()
-              .execute(httpClient_);
+              .execute(podHttpClient_);
         }
         return value_;
       }
@@ -241,7 +249,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
           log_.info("fetch podCert....");
           IPodCertificate podCert = podApiClient_.newV1PodcertGetHttpRequestBuilder()
               .build()
-              .execute(httpClient_);
+              .execute(podHttpClient_);
             
           log_.info("fetch podCert....got " + podCert.getCertificate());
           value_ = cipherSuite_.certificateFromPem(podCert.getCertificate());
@@ -266,11 +274,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     kmInternalClient_ = new KmInternalHttpModelClient(
         modelRegistry_,
-        podInfo_.getKeyManagerUrl(), null, null);
+        podInfo_.getKeyManagerUrl(), null, null, responseHandlerMap_);
     
-    dataProvider_ = new AllegroDataProvider(httpClient_, podApiClient_, podInfo_, authHandler_.getSessionToken());
+    dataProvider_ = new AllegroDataProvider(podHttpClient_, podApiClient_, podInfo_, authHandler_.getSessionToken());
 
-    cryptoClient_ = new AllegroCryptoClient(httpClient_, podInternalApiClient_, kmInternalClient_,
+    cryptoClient_ = new AllegroCryptoClient(podHttpClient_, podInternalApiClient_,
+        keyManagerHttpClient_, kmInternalClient_,
         podInfo_, internalUserId_,
         accountInfoProvider_,
         modelRegistry_);
@@ -281,11 +290,62 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     log_.info("userId_ = " + userId_);
     
-    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, httpClient_);
+    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, podHttpClient_, authHandler_);
     
-    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, httpClient_, builder.podUrl_);
+    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, podHttpClient_, builder.config_.getPodUrl(), responseHandlerMap_);
     
     log_.info("allegroApi constructor done.");
+  }
+  
+  private class AuthResponseHandler implements IResponseHandler
+  {
+    @Override
+    public IResponseHandlerContext prepare()
+    {
+      return new AuthResponseHandlerContext();
+    }
+  }
+  
+  private class AuthResponseHandlerContext implements IResponseHandlerContext
+  {
+    String sessionToken = authHandler_.getSessionToken();
+    
+    @Override
+    public ResponseHandlerAction handle(CloseableHttpResponse response)
+    {
+      return authHandler_.reauthenticate(sessionToken);
+    }
+    
+  }
+
+  private IAuthHandler createAuthHandler(AbstractBuilder<?, ?> builder)
+  {
+
+    if(builder.sessionTokenSupplier_ != null)
+      return new DummyAuthHandler(builder.sessionTokenSupplier_, builder.keyManagerTokenSupplier_, builder.cookieStore_, builder.config_.getPodUrl());
+    
+    if(builder.config_.getAuthCertFile() != null || builder.config_.getAuthCert() != null)
+      return new CertAuthHandler(builder);
+    
+    return new AuthHandler(builder, userName_);
+  }
+  
+
+
+  @Override
+  public void close()
+  {
+    super.close();
+    try
+    {
+      podHttpClient_.close();
+      keyManagerHttpClient_.close();
+      authHandler_.close();
+    }
+    catch (IOException e)
+    {
+      log_.error("Unable to close HttpClient", e);
+    }
   }
 
   @Override
@@ -325,6 +385,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public String getSessionToken()
   {
     return authHandler_.getSessionToken();
+  }
+  
+  @Override
+  public String getApiAuthorizationToken()
+  {
+    return serviceTokenManager_.getCommonJwt();
   }
 
   @Override
@@ -371,7 +437,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withUsername(userName)
         .withLocal(true)
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
     
     if(result.getUsers().size()==1)
       return result.getUsers().get(0);
@@ -395,7 +461,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withUsername(userNamesList)
         .withLocal(true)
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
   }
   
 
@@ -408,7 +474,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withUid(userId)
         .withLocal(true)
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
     
     if(result.getUsers().size()==1)
       return result.getUsers().get(0);
@@ -423,14 +489,14 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withSessionToken(authHandler_.getSessionToken())
         .withUid(userId_)
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
   }
 
   private IPodInfo getPodInfo()
   {
     return podInternalApiClient_.newWebcontrollerPublicPodInfoGetHttpRequestBuilder()
         .build()
-        .execute(httpClient_)
+        .execute(podHttpClient_)
         .getData();
   }
 
@@ -440,7 +506,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return podApiClient_.newV2SessioninfoGetHttpRequestBuilder()
         .withSessionToken(authHandler_.getSessionToken())
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
   }
 
   @Override
@@ -451,7 +517,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     ISocialMessage encryptedMessage = podInternalApiClient_.newWebcontrollerDataqueryRetrieveMessagePayloadGetHttpRequestBuilder()
       .withMessageId(urlSafeMessageId)
       .build()
-      .execute(httpClient_);
+      .execute(podHttpClient_);
     
     return encryptedMessage.toString();
   }
@@ -469,7 +535,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
           .withLimit(request.getMaxItems())
           .withExcludeFields("tokenIds")
           .build()
-          .execute(httpClient_);
+          .execute(podHttpClient_);
         
       for(IMessageEnvelope envelope : thread.getEnvelopes())
       {
@@ -511,7 +577,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         .withLimit(fetchStreamsRequest.getLimit())
         .withCanonPayload(builder.build())
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
 
     
     return streams;
@@ -1193,7 +1259,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       podInternalApiClient_.newWebcontrollerIngestorV2MessageServicePostHttpRequestBuilder()
         .withMessagepayload(encryptedSocialMessage.toString())
         .build()
-        .execute(httpClient_);
+        .execute(podHttpClient_);
     }
     catch (InvalidInputException | ProcessingException | IOException e)
     {
@@ -1586,51 +1652,187 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
   static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
-  extends AllegroBaseApi.AbstractBuilder<T, B>
+  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
+  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
   {
-    protected URL                           podUrl_;
-    protected String                        userName_;
-    protected String                        sessionToken_;
-    protected String                        keymanagerToken_;
+    private Supplier<String> sessionTokenSupplier_;
+    private Supplier<String> keyManagerTokenSupplier_;
+    
+    private CloseableHttpClient podHttpClient_;
+    private CloseableHttpClient keyManagerHttpClient_;
+    private CloseableHttpClient certSessionAuthHttpClient_;
+    private CloseableHttpClient certKeyAuthHttpClient_;
+    private CloseableHttpClient defaultCertAuthHttpClient_;
 
-    public AbstractBuilder(Class<T> type)
+    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
     {
-      super(type);
+      super(type, builder);
     }
     
+    @Override
+    public T withConfiguration(Reader reader)
+    {
+      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
+    }
+
+    public synchronized CloseableHttpClient getPodHttpClient()
+    {
+      if(podHttpClient_ == null)
+      {
+        if(config_.getPodConnectionSettings() == null)
+        {
+          podHttpClient_ = getDefaultHttpClient();
+        }
+        else
+        {
+          podHttpClient_ = config_.getPodConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+        }
+      }
+      
+      return podHttpClient_;
+    }
+    
+    public synchronized CloseableHttpClient getKeyManagerHttpClient()
+    {
+      if(keyManagerHttpClient_ == null)
+      {
+        if(config_.getKeyManagerConnectionSettings() == null)
+        {
+          keyManagerHttpClient_ = getDefaultHttpClient();
+        }
+        else
+        {
+          keyManagerHttpClient_ = config_.getKeyManagerConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+        }
+      }
+      
+      return keyManagerHttpClient_;
+    }
+    
+    protected synchronized CloseableHttpClient getDefaultCertAuthHttpClient(SSLContextBuilder sslContextBuilder)
+    {
+      if(defaultCertAuthHttpClient_ == null)
+      {
+        if(config_.getDefaultConnectionSettings() == null)
+        {
+          defaultCertAuthHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+        }
+        else
+        {
+          defaultCertAuthHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+        }
+      }
+      
+      return defaultCertAuthHttpClient_;
+    }
+    
+    public synchronized CloseableHttpClient getCertSessionAuthHttpClient(SSLContextBuilder sslContextBuilder)
+    {
+      if(certSessionAuthHttpClient_ == null)
+      {
+        if(config_.getCertSessionAuthConnectionSettings() == null)
+        {
+          certSessionAuthHttpClient_ = getDefaultCertAuthHttpClient(sslContextBuilder);
+        }
+        else
+        {
+          certSessionAuthHttpClient_ = config_.getCertSessionAuthConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+        }
+      }
+      
+      return certSessionAuthHttpClient_;
+    }
+    
+    public synchronized CloseableHttpClient getCertKeyAuthHttpClient(SSLContextBuilder sslContextBuilder)
+    {
+      if(certKeyAuthHttpClient_ == null)
+      {
+        if(config_.getCertKeyAuthConnectionSettings() == null)
+        {
+          certKeyAuthHttpClient_ = getDefaultCertAuthHttpClient(sslContextBuilder);
+        }
+        else
+        {
+          certKeyAuthHttpClient_ = config_.getCertKeyAuthConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+        }
+      }
+      
+      return certKeyAuthHttpClient_;
+    }
+    
+    @Deprecated
     public T withUserName(String serviceAccountName)
     {
-      userName_ = serviceAccountName;
+      configBuilder_.withUserName(serviceAccountName);
+      builderSet_ = true;
       
       return self();
     }
     
+    /**
+     * Set a fixed session token.
+     * 
+     * @param sessionToken An externally provided session token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withSessionTokenSupplier instead.
+     */
+    @Deprecated
     public T withSessionToken(String sessionToken)
     {
-      sessionToken_ = sessionToken;
+      sessionTokenSupplier_ = () -> sessionToken;
       
       return self();
     }
     
+    /**
+     * Set a fixed key manager token.
+     * 
+     * @param keymanagerToken An externally provided key manager token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withKeymanagerTokenSupplier instead.
+     */
+    @Deprecated
     public T withKeymanagerToken(String keymanagerToken)
     {
-      keymanagerToken_ = keymanagerToken;
+      keyManagerTokenSupplier_ = () -> keymanagerToken;
+      
+      return self();
+    }
+    
+    public T withSessionTokenSupplier(Supplier<String> sessionTokenSupplier)
+    {
+      sessionTokenSupplier_ = sessionTokenSupplier;
+      
+      return self();
+    }
+    
+    public T withKeymanagerTokenSupplier(Supplier<String> keymanagerTokenSupplier)
+    {
+      keyManagerTokenSupplier_ = keymanagerTokenSupplier;
       
       return self();
     }
 
+    @Deprecated
     public T withPodUrl(URL podUrl)
     {
-      podUrl_ = podUrl;
+      configBuilder_.withPodUrl(podUrl);
+      builderSet_ = true;
       
       return self();
     }
 
+    @Deprecated
     public T withPodUrl(String podUrl)
     {
       try
       {
-        podUrl_ = new URL(podUrl);
+        configBuilder_.withPodUrl(new URL(podUrl));
+        builderSet_ = true;
       }
       catch (MalformedURLException e)
       {
@@ -1645,24 +1847,37 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     {
       super.validate(faultAccumulator);
       
-      if(sessionToken_ != null || keymanagerToken_!= null )
+      if(sessionTokenSupplier_ != null || keyManagerTokenSupplier_!= null )
       {
-        if(sessionToken_ == null || keymanagerToken_== null )
+        if(sessionTokenSupplier_ == null || keyManagerTokenSupplier_== null )
           faultAccumulator.error("SessionToekn and KeymanagerToken must be specified together");
       }
       else
       {
-        if(rsaCredential_ == null)
+
+        if(config_.getAuthCertFile() != null)
         {
-          if(rsaPemCredential_ == null)
+          faultAccumulator.checkNotNull(config_.getAuthCertFilePassword(), "With Auth Cert File, Cert File Password");
+          faultAccumulator.checkNotNull(config_.getSessionAuthUrl(), "With Auth Cert File, Session Auth URL");
+          faultAccumulator.checkNotNull(config_.getKeyAuthUrl(), "With Auth Cert File, Key Auth URL");
+        }
+        else if(config_.getAuthCert() != null)
+        {
+          faultAccumulator.checkNotNull(config_.getAuthCertPrivateKey(), "With Auth Cert, Auth Cert Private Key");
+          faultAccumulator.checkNotNull(config_.getSessionAuthUrl(), "With Auth Cert, Session Auth URL");
+          faultAccumulator.checkNotNull(config_.getKeyAuthUrl(), "With Auth Cert, Key Auth URL");
+        }
+        else if(rsaCredential_ == null)
+        {
+          if(rsaCredential_ == null)
             faultAccumulator.error("rsaCredential is required");
           
-          rsaCredential_ = cipherSuite_.privateKeyFromPem(rsaPemCredential_);
+          faultAccumulator.checkNotNull(config_.getUserName(), "With RSA Credential, User Name");
         }
         
-        faultAccumulator.checkNotNull(userName_, "User Name");
+        
       }
-      faultAccumulator.checkNotNull(podUrl_, "Pod URL");
+      faultAccumulator.checkNotNull(config_.getPodUrl(), "Pod URL");
     }
   }
   
@@ -1679,7 +1894,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
      */
     public Builder()
     {
-      super(Builder.class);
+      super(Builder.class, new AllegroConfiguration.Builder());
     }
 
     @Override
