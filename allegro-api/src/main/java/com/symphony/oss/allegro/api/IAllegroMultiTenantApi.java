@@ -18,6 +18,7 @@ package com.symphony.oss.allegro.api;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nullable;
 
@@ -30,6 +31,7 @@ import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchPartitionUsersRequest;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
@@ -47,6 +49,7 @@ import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
@@ -454,7 +457,18 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The Partition object which describes the partition.
    */
   IPartition fetchPartition(PartitionQuery query);
-
+  
+  
+  /**
+   * Fetch a Partition Users.
+   * 
+   * @param query The query parameters for the Partition required.
+   * 
+   * @return TODO.
+   */
+  List<IUserPermissionsRequest> fetchPartitionUsers(PartitionQuery query);
+  
+  
   /**
    * Return the ModelRegistry used by Allegro.
    * 
@@ -496,4 +510,5 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The current configuration.
    */
   IAllegroBaseConfiguration getConfiguration();
+
 }

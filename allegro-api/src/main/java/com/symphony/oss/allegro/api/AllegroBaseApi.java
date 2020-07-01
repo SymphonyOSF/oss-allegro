@@ -53,6 +53,7 @@ import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
+import com.symphony.oss.allegro.api.request.FetchPartitionUsersRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
@@ -109,6 +110,7 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.PartitionsPartitionHashUsersGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
@@ -986,6 +988,19 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           .build()
         .execute(apiHttpClient_);
   }
+  
+  @Override
+  public List<IUserPermissionsRequest> fetchPartitionUsers(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+
+    return objectApiClient_
+        .newPartitionsPartitionHashUsersGetHttpRequestBuilder()
+         .withPartitionHash(partitionHash)
+         .build()
+        .execute(apiHttpClient_);
+
+  }
 
   @Override
   public EncryptedApplicationObjectBuilder newEncryptedApplicationObjectBuilder()
@@ -1753,4 +1768,35 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
     }
   }
+
+
+//	@Override
+//	public List<IUserPermissionsRequest> fetchPartitionUsers(FetchPartitionUsersRequest request) {
+//		 try (ITraceContextTransaction parentTraceTransaction = traceFactory_
+//			        .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
+//			    {
+//			      ITraceContext parentTrace = parentTraceTransaction.open();
+//
+//			        Hash    partitionHash = request.getHash(getUserId());
+//
+//			        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchPartitionObjects",
+//			            partitionHash.toString()))
+//			        {
+//			          ITraceContext trace = traceTransaction.open();
+//
+//
+//			            PartitionsPartitionHashUsersGetHttpRequestBuilder pageRequest = objectApiClient_
+//			                .newPartitionsPartitionHashUsersGetHttpRequestBuilder()
+//			                  .withPartitionHash(partitionHash);
+//
+//			            List<IUserPermissionsRequest> page = pageRequest
+//			                .build()
+//			                .execute(httpClient_);
+//
+//			        
+//			      }
+//			    }
+//		return null;
+//
+//	}
 }
