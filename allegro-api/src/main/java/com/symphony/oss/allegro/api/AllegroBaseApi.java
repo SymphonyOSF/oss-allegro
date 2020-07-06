@@ -53,7 +53,6 @@ import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
-import com.symphony.oss.allegro.api.request.FetchPartitionUsersRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
@@ -105,12 +104,12 @@ import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeade
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
-import com.symphony.oss.models.object.canon.PartitionsPartitionHashUsersGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
 import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
@@ -990,7 +989,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
   
   @Override
-  public List<IUserPermissionsRequest> fetchPartitionUsers(PartitionQuery query)
+  public IPageOfUserPermissions fetchPartitionUsers(PartitionQuery query)
   {
     Hash          partitionHash   = query.getHash(getUserId());
 
