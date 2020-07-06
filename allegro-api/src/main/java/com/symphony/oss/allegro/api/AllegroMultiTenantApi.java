@@ -237,6 +237,4 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   {
     return jwtBuilder_.createJwt();
   }
-
-
 }
