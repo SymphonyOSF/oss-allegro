@@ -47,6 +47,7 @@ import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
@@ -454,7 +455,18 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The Partition object which describes the partition.
    */
   IPartition fetchPartition(PartitionQuery query);
-
+  
+  
+  /**
+   * Fetch a Partition Users.
+   * 
+   * @param query The query parameters for the Partition required.
+   * 
+   * @return The User Permissions assigned.
+   */
+  IPageOfUserPermissions fetchPartitionUsers(PartitionQuery query);
+  
+  
   /**
    * Return the ModelRegistry used by Allegro.
    * 
@@ -496,4 +508,5 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The current configuration.
    */
   IAllegroBaseConfiguration getConfiguration();
+
 }

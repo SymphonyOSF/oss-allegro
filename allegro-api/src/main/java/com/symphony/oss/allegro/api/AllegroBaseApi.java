@@ -104,6 +104,7 @@ import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeade
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
@@ -985,6 +986,19 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           .withPartitionHash(partitionHash)
           .build()
         .execute(apiHttpClient_);
+  }
+  
+  @Override
+  public IPageOfUserPermissions fetchPartitionUsers(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+
+    return objectApiClient_
+        .newPartitionsPartitionHashUsersGetHttpRequestBuilder()
+         .withPartitionHash(partitionHash)
+         .build()
+        .execute(apiHttpClient_);
+
   }
 
   @Override

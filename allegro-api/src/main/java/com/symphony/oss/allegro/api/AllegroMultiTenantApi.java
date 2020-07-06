@@ -22,8 +22,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
