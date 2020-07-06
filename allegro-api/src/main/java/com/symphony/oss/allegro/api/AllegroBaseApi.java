@@ -1768,34 +1768,4 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     }
   }
 
-
-//	@Override
-//	public List<IUserPermissionsRequest> fetchPartitionUsers(FetchPartitionUsersRequest request) {
-//		 try (ITraceContextTransaction parentTraceTransaction = traceFactory_
-//			        .createTransaction("fetchPartitionSetObjects", String.valueOf(request.hashCode())))
-//			    {
-//			      ITraceContext parentTrace = parentTraceTransaction.open();
-//
-//			        Hash    partitionHash = request.getHash(getUserId());
-//
-//			        try (ITraceContextTransaction traceTransaction = parentTrace.createSubContext("fetchPartitionObjects",
-//			            partitionHash.toString()))
-//			        {
-//			          ITraceContext trace = traceTransaction.open();
-//
-//
-//			            PartitionsPartitionHashUsersGetHttpRequestBuilder pageRequest = objectApiClient_
-//			                .newPartitionsPartitionHashUsersGetHttpRequestBuilder()
-//			                  .withPartitionHash(partitionHash);
-//
-//			            List<IUserPermissionsRequest> page = pageRequest
-//			                .build()
-//			                .execute(httpClient_);
-//
-//			        
-//			      }
-//			    }
-//		return null;
-//
-//	}
 }
