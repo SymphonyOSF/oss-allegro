@@ -191,7 +191,16 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super.validate(faultAccumulator);
       
-      if(config_.getPrincipalCredentialFile() != null)
+      if(config_.getPrincipalCredential() != null) {
+        
+        IPrincipalCredential principalCredential = config_.getPrincipalCredential();
+        
+        rsaCredential_    = cipherSuite_.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
+        keyId_            = principalCredential.getKeyId().toString();
+        configuredUserId_ = principalCredential.getUserId();
+        
+      }
+      else if(config_.getPrincipalCredentialFile() != null)
       {
         File file = new File(config_.getPrincipalCredentialFile());
         

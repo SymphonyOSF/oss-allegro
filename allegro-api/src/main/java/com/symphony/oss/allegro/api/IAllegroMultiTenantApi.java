@@ -26,6 +26,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
@@ -254,6 +255,23 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The feed object.
    */
   IFeed upsertFeed(UpsertFeedRequest request);
+  
+  /**
+   * Delete a feed with the given details. A feed is identified by a hash,
+   * feeds can only be deleted by the creator.
+   * e.g.
+   * <p>
+   * <pre>{@code
+              allegroApi_.deleteFeed(new FeedId.Builder()
+              .withId(feed.getId())
+              .build()
+              );
+          
+   * }</pre>
+   * <p>
+   * @param request The details of the feed to be created or returned.
+   */
+  void deleteFeed(FeedId feed);
   
   /**
    * Fetch objects from the given feed.

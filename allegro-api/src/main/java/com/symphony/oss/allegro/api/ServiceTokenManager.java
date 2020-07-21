@@ -124,7 +124,7 @@ class ServiceTokenManager
       }
       catch(ServerErrorException e)
       {
-        log_.warn("Common JWT unavailable from pod.", e);
+        log_.warn("Common JWT unavailable from pod.");
         commonJwtUnavailable_ = true;
       }
     }
