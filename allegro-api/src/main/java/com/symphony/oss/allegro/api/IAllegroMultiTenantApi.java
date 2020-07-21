@@ -257,31 +257,21 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   IFeed upsertFeed(UpsertFeedRequest request);
   
   /**
-   * Delete (insert or update as necessary) a feed with the given details. A feed is identified by a hash,
-   * feeds can only be created with the userId of the creator.
-   * <p>
-   * This operation creates the feed if necessary and can also subscribe the feed to one or more partitions if it is not
-   * already subscribed. This method is idempotent.
-   * <p>
+   * Delete a feed with the given details. A feed is identified by a hash,
+   * feeds can only be deleted by the creator.
    * e.g.
    * <p>
    * <pre>{@code
-      IFeed feed = allegroApi_.upsertFeed(
-        new UpsertFeedRequest.Builder()
-          .withName("MyFeedName")
-          .withPartitionHashes(allegroApi_.getPartitionHash(
-              new FetchPartitionRequest.Builder()
-                .withName("MyPartitionName")
-                .withOwner(ownerUserId)
-                .build()
-              ))
-          .build()
-          );
+              allegroApi_.deleteFeed(new FeedId.Builder()
+              .withId(feed.getId())
+              .build()
+              );
+          
    * }</pre>
    * <p>
    * @param request The details of the feed to be created or returned.
    */
-  void deleteFeed(FeedId feed, PodAndUserId owner);
+  void deleteFeed(FeedId feed);
   
   /**
    * Fetch objects from the given feed.

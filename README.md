@@ -10,15 +10,13 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 ## 2020-07-21 Added Feed cancellation Endpoint
 Allegro can now delete a feed and its feeds related entries from the ObjectStore. To do you you need to pass
 + The IFeedId object
-+ A userId which is authorized to delete such feed
 
 For example:
 
 ```java
     	    allegroApi_.deleteFeed(new FeedId.Builder()
     	        .withId(feed.getId())
-    	        .build(), 
-    	        userid);
+    	        .build());
 ```
 
 ## 2020-06-22 Added Certificate Authentication

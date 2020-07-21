@@ -798,10 +798,10 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
   
   @Override
-  public void deleteFeed(FeedId feedId, PodAndUserId owner)
+  public void deleteFeed(FeedId feedId)
   {    
      objectApiClient_.newFeedsFeedHashDeleteHttpRequestBuilder()
-        .withFeedHash(feedId.getHash(owner))
+        .withFeedHash(feedId.getHash(getUserId()))
       .build()
       .execute(apiHttpClient_)
       ;
