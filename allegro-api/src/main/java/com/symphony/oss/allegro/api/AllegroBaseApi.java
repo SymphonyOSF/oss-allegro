@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
+import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
@@ -791,6 +792,16 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withPartitionSelections(request.getPartitionSelections(getUserId()))
         .withUserPermissions(userPermissions)
         .build())
+      .build()
+      .execute(apiHttpClient_)
+      ;
+  }
+  
+  @Override
+  public void deleteFeed(FeedId feedId, PodAndUserId owner)
+  {    
+     objectApiClient_.newFeedsFeedHashDeleteHttpRequestBuilder()
+        .withFeedHash(feedId.getHash(owner))
       .build()
       .execute(apiHttpClient_)
       ;

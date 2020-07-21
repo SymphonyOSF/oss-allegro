@@ -26,6 +26,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
@@ -254,6 +255,33 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The feed object.
    */
   IFeed upsertFeed(UpsertFeedRequest request);
+  
+  /**
+   * Delete (insert or update as necessary) a feed with the given details. A feed is identified by a hash,
+   * feeds can only be created with the userId of the creator.
+   * <p>
+   * This operation creates the feed if necessary and can also subscribe the feed to one or more partitions if it is not
+   * already subscribed. This method is idempotent.
+   * <p>
+   * e.g.
+   * <p>
+   * <pre>{@code
+      IFeed feed = allegroApi_.upsertFeed(
+        new UpsertFeedRequest.Builder()
+          .withName("MyFeedName")
+          .withPartitionHashes(allegroApi_.getPartitionHash(
+              new FetchPartitionRequest.Builder()
+                .withName("MyPartitionName")
+                .withOwner(ownerUserId)
+                .build()
+              ))
+          .build()
+          );
+   * }</pre>
+   * <p>
+   * @param request The details of the feed to be created or returned.
+   */
+  void deleteFeed(FeedId feed, PodAndUserId owner);
   
   /**
    * Fetch objects from the given feed.
