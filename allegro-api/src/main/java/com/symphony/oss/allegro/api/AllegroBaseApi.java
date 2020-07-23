@@ -791,6 +791,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withFeedId(request.getAndValidateId(getUserId()))
         .withPartitionSelections(request.getPartitionSelections(getUserId()))
         .withUserPermissions(userPermissions)
+        .withExpiryTime(request.getExpiryTime())
         .build())
       .build()
       .execute(apiHttpClient_)
