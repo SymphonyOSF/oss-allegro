@@ -129,7 +129,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
   {
     protected Set<PartitionSelectionRequest>      partitionSelections_ = new HashSet<>();
     protected ResourcePermissions                 permissions_;
-    protected long                                expiryTime_;
+    protected long                                expiryTime_ = TTL_UPPER_BOUND;
     
     AbstractBuilder(Class<T> type)
     {
