@@ -7,6 +7,30 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-07-21 Added the possibility to configure proxy authentication parameters
+A proxy can be configured, for which, a hostname and port have to be provided
+Optionally, if needed, proxy username and password can be set.
+
+For example:
+
+```java
+    allegroApi_ = new AllegroApi.Builder()
+            .withConfiguration(new AllegroConfiguration.Builder()
+                    .withPodUrl(podUrl_)
+                    .withApiUrl(objectStoreUrl_)
+                    .withUserName(serviceAccount_)
+                    .withRsaPemCredentialFile(credentialFile_)
+                    .withApiConnectionSettings(new ConnectionSettings.Builder()
+                        .withSslTrustStrategy(SslTrustStrategy.TRUST_ALL_CERTS)
+                        .withProxyUrl(SERVER_ADDRESS:PORT)                 
+                        .withProxyUsername(USERNAME)
+                        .withProxyPassword(PASSWORD)
+                        .build())
+                    .build())
+            .withFactories(CalendarModel.FACTORIES)
+            .build();
+```
+
 ## 2020-07-21 Added Feed cancellation Endpoint
 Allegro can now delete a feed and its feeds related entries from the ObjectStore. To do you you need to pass
 + The IFeedId object
