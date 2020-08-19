@@ -126,6 +126,17 @@
        <artifactId>fugue-pubsub</artifactId>
        <version>${oss.fugue.version}</version>
      </dependency>
+     <dependency>
+	   <groupId>com.symphony.s2.fugue</groupId>
+       <artifactId>symphony-fugue-aws-api</artifactId>
+     <version>${symphony.fugue.version}</version>
+	 </dependency>
+	 <dependency>
+	   <groupId>com.symphony.s2.fugue</groupId>
+	   <artifactId>symphony-fugue-core</artifactId>
+       <version>${symphony.fugue.version}</version>
+	 </dependency>
+     
     
     <dependency>
 	    <groupId>com.symphony</groupId>
