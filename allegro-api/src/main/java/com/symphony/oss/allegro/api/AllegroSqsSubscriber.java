@@ -82,13 +82,13 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
 
 
   AllegroSqsSubscriber(AllegroSqsSubscriberManager manager,
-      AmazonSQS sqsClient, String queue,
+      AmazonSQS sqsClient, String queueUrl,
       ITraceContextTransactionFactory traceFactory,
       IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer, 
       ICounter counter, IBusyCounter busyCounter,
       AWSCredentialsProvider credentials)
   {
-    super(manager, queue, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
+    super(manager, queueUrl, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
     
     if(Fugue.isDebugSingleThread())
     {
@@ -97,17 +97,17 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
     
     sqsClient_         = sqsClient;
     manager_           = manager;
-    queueUrl_          =  queue;
+    queueUrl_          =  queueUrl;
     traceFactory_      = traceFactory;
     consumer_          = consumer;
     nonIdleSubscriber_ = new NonIdleSubscriber();
     credentials_       = credentials;
     
-    blockingPullRequest_ = new ReceiveMessageRequest(queue)
+    blockingPullRequest_ = new ReceiveMessageRequest(queueUrl)
         .withMaxNumberOfMessages(messageBatchSize_ )
         .withWaitTimeSeconds(20);
     
-    nonBlockingPullRequest_ = new ReceiveMessageRequest(queue)
+    nonBlockingPullRequest_ = new ReceiveMessageRequest(queueUrl)
         .withMaxNumberOfMessages(messageBatchSize_ );
     
     modelRegistry_.withFactories(ObjectModel.FACTORIES)

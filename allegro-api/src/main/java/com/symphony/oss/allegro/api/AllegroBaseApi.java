@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -108,7 +109,6 @@ import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.object.canon.DeletionType;
-import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
@@ -172,7 +172,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   public static final URL ALL_SERVICES_LOCAL_URL;
   
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
-  private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);
+  private static final long                     FAILED_CONSUMER_RETRY_TIME = TimeUnit.SECONDS.toSeconds(30);
+  
+  private static Map<String, AllegroSqsCredentialsProvider> credentialsMap_  = new ConcurrentHashMap<>();
   
   static
   {
@@ -650,10 +652,10 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   
   private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
   {  
-    List<FeedId> ids   = new ArrayList<>();
+    List<FeedId> feedIds   = new ArrayList<>();
     
     for(FeedQuery q : request.getQueryList())
-      ids.add(new FeedId.Builder()
+      feedIds.add(new FeedId.Builder()
           .withHash(q.getHash(getUserId()))
           .build());
 
@@ -672,7 +674,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
     };
     
-    AllegroSqsCredentialsProvider creds = new AllegroSqsCredentialsProvider(ids);
+    AllegroSqsCredentialsProvider creds  = loadCredentials(feedIds);
 
     AllegroSqsSubscriberManager subscriberManager = new AllegroSqsSubscriberManager.Builder()
         .withRegion(creds.getRegion())
@@ -681,7 +683,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
         .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
         .withUnprocessableMessageConsumer(unprocessableConsumer)
-        .withSubscription(new AllegroSqsSubscription(request, creds.getQueueNames(), this))
+        .withSubscription(new AllegroSqsSubscription(request, creds.getQueueUrls(), this))
       .build();
 
     return subscriberManager;
@@ -694,7 +696,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     {
       ITraceContext parentTrace = parentTraceTransaction.open();
 
-      List<FeedId> ids        = new ArrayList<>();
+      List<FeedId> feedIds        = new ArrayList<>();
       Set<Hash>    queryHash  = new LinkedHashSet<>(); 
       List<FeedQuery> queries = new ArrayList<>();
       
@@ -704,18 +706,18 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         
         if(!queryHash.contains(hash))
         {
-          ids.add(new FeedId.Builder()
+          feedIds.add(new FeedId.Builder()
               .withHash(hash)
               .build());
           queries.add(q);
         }        
       }
+
+      AllegroSqsCredentialsProvider provider = loadCredentials(feedIds);
       
-      AllegroSqsCredentialsProvider provider = new AllegroSqsCredentialsProvider(ids);
+      List<String> queueUrls = provider.getQueueUrls();
       
-      List<String> queues = provider.getQueueNames();
-      
-      SqsQueueManager.Builder builder = new SqsQueueManager.Builder()
+      SqsQueueManager.Builder builder = new SqsQueueManager.Builder(true)
           .withRegion(provider.getRegion())
           .withAccountId(new StsManager(provider.getRegion()).getAccountId())
           .withCredentials(provider);
@@ -724,9 +726,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       
       int i = 0;
       
-      for (String queue : queues)
+      for (String queueUrl : queueUrls)
       {      
-        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchQueue", queue))
+        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchQueue", queueUrl))
         {
           ITraceContext trace = traceTransaction.open();
           
@@ -740,7 +742,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
           provider.refresh();
             
-          Collection<IQueueMessage> list = queueManager.getReceiver(queue).receiveMessages(N, 20, new HashSet<>(), new HashSet<>());
+          Collection<IQueueMessage> list = queueManager.getReceiver(queueUrl).receiveMessages(N, 20, new HashSet<>(), new HashSet<>());
             
           for(IQueueMessage message : list)
           {
@@ -809,17 +811,33 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
              {
                provider.refresh();
                 
-               queueManager.getReceiver(queue).receiveMessages(acks.size() + exts.size(), 0, acks, exts);       
+               queueManager.getReceiver(queueUrl).receiveMessages(acks.size() + exts.size(), 0, acks, exts);       
              }
         }
         catch (QueueNotFoundException e)
         {
-          throw new NotFoundException("Queue not found: " +   queue);
+          throw new NotFoundException("Queue not found: " +   queueUrl);
         }
       }
     }
     
     consumerManager.closeConsumers();
+  }
+  
+  private AllegroSqsCredentialsProvider loadCredentials(List<FeedId> feedIds) 
+  {     
+    StringBuilder sb = new StringBuilder();
+    
+    for(FeedId feed : feedIds) 
+      sb.append(feed.getHash(getUserId()));
+    
+    String key = sb.toString();
+
+    AllegroSqsCredentialsProvider provider = credentialsMap_.get(key);
+    if(provider == null)  
+       credentialsMap_.put(key, provider = new AllegroSqsCredentialsProvider(feedIds));
+    
+    return provider;
   }
   
   
@@ -1011,7 +1029,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     private long              expiryDate_ = 0L;
     private List<FeedId>      feedIds_;
     private String            region_;
-    private List<String>      queueNames_;
+    private List<String>      queueUrls_;
 
     private static final long      threshold = 40000;
     
@@ -1033,9 +1051,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       return region_;
     }
 
-    public List<String> getQueueNames()
+    public List<String> getQueueUrls()
     {
-      return queueNames_;
+      return queueUrls_;
     }
 
     @Override
@@ -1047,7 +1065,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         {
           ITemporaryCredentials   tc    = fetchTemporaryCredentials(feedIds_);
           region_                       = tc.getRegion();
-          queueNames_                   = tc.getQueueNames();
+          queueUrls_                   = tc.getQueueUrls();
           credentials_                  = new BasicSessionCredentials(tc.getAccesskeyId(), tc.getSecretAccessKey(), tc.getSessionToken());
           expiryDate_                   = tc.getExpirationDate().toEpochMilli();  
         }

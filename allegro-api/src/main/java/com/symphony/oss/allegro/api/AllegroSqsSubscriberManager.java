@@ -36,6 +36,7 @@ import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.canon.runtime.exception.NotImplementedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
+import com.symphony.oss.fugue.aws.sqs.GatewayAmazonSQSClientBuilder;
 import com.symphony.oss.fugue.config.Configuration;
 import com.symphony.oss.fugue.naming.Name;
 import com.symphony.oss.fugue.pubsub.AbstractPullSubscriberManager;
@@ -71,7 +72,7 @@ implements IAllegroQueryManager
   /**
    * Concrete builder.
    * 
-   * @author Bruce Skingle
+   * @author Geremia Longobardo
    *
    */
   public static class Builder extends AbstractPullSubscriberManager.Builder<Builder, IAbstractStoredApplicationObject, AllegroSqsSubscriberManager>
@@ -80,8 +81,8 @@ implements IAllegroQueryManager
     
     private int                   subscriberThreadPoolSize_ = 1; // TODO: default to number of subscriptions
     private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
-    private AWSCredentialsProvider credentials_;
-    private AmazonSQSClientBuilder sqsBuilder_;
+    private AWSCredentialsProvider        credentials_;
+    private GatewayAmazonSQSClientBuilder sqsBuilder_;
 
     /**
      * Constructor.
@@ -90,9 +91,9 @@ implements IAllegroQueryManager
     {
       super(Builder.class);
       
-      sqsBuilder_ = AmazonSQSClientBuilder
-          .standard()
-          .withClientConfiguration(new ClientConfiguration()
+      sqsBuilder_ = GatewayAmazonSQSClientBuilder
+          .standard();
+      sqsBuilder_.withClientConfiguration(new ClientConfiguration()
               .withMaxConnections(200)
               );
     }

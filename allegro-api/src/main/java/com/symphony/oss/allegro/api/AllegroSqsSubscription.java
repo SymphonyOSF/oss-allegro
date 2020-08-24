@@ -44,15 +44,15 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final ImmutableSet<Name>                 subscriptionNames_;
 
-  public AllegroSqsSubscription(FetchFeedObjectsRequest request, List<String> queues, AllegroBaseApi allegroApi)
+  public AllegroSqsSubscription(FetchFeedObjectsRequest request, List<String> queueUrls, AllegroBaseApi allegroApi)
   {
-    Set<Name> names = new HashSet<>();
+    Set<Name> queueurls = new HashSet<>();
     
 //    
-    for(String q : queues)
-      names.add(new Name(q));
+    for(String q : queueUrls)
+      queueurls.add(new Name(q));
     
-    subscriptionNames_ = ImmutableSet.copyOf(names);
+    subscriptionNames_ = ImmutableSet.copyOf(queueurls);
     
     consumer_ = new IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject>()
     {
