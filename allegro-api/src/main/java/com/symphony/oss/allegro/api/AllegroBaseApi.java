@@ -109,6 +109,7 @@ import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.object.canon.DeletionType;
+import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
@@ -658,23 +659,25 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       feedIds.add(new FeedId.Builder()
           .withHash(q.getHash(getUserId()))
           .build());
-
-    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-    {
-      @Override
-      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
-      {
-        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
-      }
-
-      @Override
-      public void close()
-      {
-        request.getConsumerManager().getUnprocessableMessageConsumer().close();
-      }
-    };
     
     AllegroSqsCredentialsProvider creds  = loadCredentials(feedIds);
+    
+    if(creds.directFetch_) {
+      
+      IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+      {
+        @Override
+        public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+        {
+          request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+        }
+
+        @Override
+        public void close()
+        {
+          request.getConsumerManager().getUnprocessableMessageConsumer().close();
+        }
+      };
 
     AllegroSqsSubscriberManager subscriberManager = new AllegroSqsSubscriberManager.Builder()
         .withRegion(creds.getRegion())
@@ -685,8 +688,12 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, creds.getQueueUrls(), this))
       .build();
+    
+      return subscriberManager;
+    }
+    else  
+      return fetchFeedObjectsFromServerAsync(request, consumerManager);
 
-    return subscriberManager;
   }
   
   private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
@@ -715,110 +722,115 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
       AllegroSqsCredentialsProvider provider = loadCredentials(feedIds);
       
-      List<String> queueUrls = provider.getQueueUrls();
-      
-      SqsQueueManager.Builder builder = new SqsQueueManager.Builder(true)
-          .withRegion(provider.getRegion())
-          .withAccountId(new StsManager(provider.getRegion()).getAccountId())
-          .withCredentials(provider);
-          
-      SqsQueueManager queueManager = builder.build();
-      
-      int i = 0;
-      
-      for (String queueUrl : queueUrls)
-      {      
-        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchQueue", queueUrl))
-        {
-          ITraceContext trace = traceTransaction.open();
-          
-          Integer N = queries.get(i++).getMaxItems();
-         
-          N = N == null? 10 : N;
-          
-          List<IFeedObject> messages = new ArrayList<>();
-          
-          trace.trace("PULL_SQS");
-
-          provider.refresh();
+      if(provider.directFetch_) 
+      {   
+        List<String> queueUrls = provider.getQueueUrls();
+        
+        SqsQueueManager.Builder builder = new SqsQueueManager.Builder(true)
+            .withRegion(provider.getRegion())
+            .withAccountId(new StsManager(provider.getRegion()).getAccountId())
+            .withCredentials(provider);
             
-          Collection<IQueueMessage> list = queueManager.getReceiver(queueUrl).receiveMessages(N, 20, new HashSet<>(), new HashSet<>());
-            
-          for(IQueueMessage message : list)
+        SqsQueueManager queueManager = builder.build();
+        
+        int i = 0;
+        
+        for (String queueUrl : queueUrls)
+        {      
+          try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchQueue", queueUrl))
           {
-            IEntity entity = modelRegistry_.parseOne(new StringReader(message.getPayload()));
-              
-            if(entity instanceof IAbstractStoredApplicationObject)
-            {
-              IAbstractStoredApplicationObject object = (IAbstractStoredApplicationObject) entity;
-                
-              trace.trace("RECV_SQS", object);
-                
-              messages.add(new FeedObject.Builder()
-                    .withMessageId(message.getMessageId())
-                    .withReceiptHandle(message.getReceiptHandle())
-                    .withPayload(object)
-                  .build());
-              }
-              else
-              {
-                log_.error("Retrieved unexpected feed entity of type " + entity.getCanonType());
-              }
-            }
-   
-            trace.trace("DONE_SQS");
-  
-            Set<IFeedObjectDelete> acks = new HashSet<>();
-            Set<IFeedObjectExtend> exts = new HashSet<>();
+            ITraceContext trace = traceTransaction.open();
             
-            for(IFeedObject message : messages)
+            Integer N = queries.get(i++).getMaxItems();
+           
+            N = N == null? 10 : N;
+            
+            List<IFeedObject> messages = new ArrayList<>();
+            
+            trace.trace("PULL_SQS");
+  
+            provider.refresh();
+              
+            Collection<IQueueMessage> list = queueManager.getReceiver(queueUrl).receiveMessages(N, 20, new HashSet<>(), new HashSet<>());
+              
+            for(IQueueMessage message : list)
             {
-              try
-              {
-                consume(consumerManager, message.getPayload(), trace);
+              IEntity entity = modelRegistry_.parseOne(new StringReader(message.getPayload()));
                 
-                acks.add(new FeedObjectDelete.Builder()
-                    .withReceiptHandle(message.getReceiptHandle())
-                    .build()
-                    );
-              }
-              catch(RetryableConsumerException e)
+              if(entity instanceof IAbstractStoredApplicationObject)
               {
-                log_.warn("Transient processing failure, will retry (forever)", e);
-                exts.add(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+                IAbstractStoredApplicationObject object = (IAbstractStoredApplicationObject) entity;
+                  
+                trace.trace("RECV_SQS", object);
+                  
+                messages.add(new FeedObject.Builder()
+                      .withMessageId(message.getMessageId())
+                      .withReceiptHandle(message.getReceiptHandle())
+                      .withPayload(object)
+                    .build());
+                }
+                else
+                {
+                  log_.error("Retrieved unexpected feed entity of type " + entity.getCanonType());
+                }
               }
-              catch (RuntimeException  e)
+     
+              trace.trace("DONE_SQS");
+    
+              Set<IFeedObjectDelete> acks = new HashSet<>();
+              Set<IFeedObjectExtend> exts = new HashSet<>();
+              
+              for(IFeedObject message : messages)
               {
-                log_.warn("Unexpected processing failure, will retry (forever)", e);
-                exts.add(createExtend(message.getReceiptHandle(), null, null));
-              }
-              catch (FatalConsumerException e)
-              {
-                log_.error("Unprocessable message, aborted", e);
-      
-                trace.trace("MESSAGE_IS_UNPROCESSABLE");
-                
-                acks.add(new FeedObjectDelete.Builder()
-                    .withReceiptHandle(message.getReceiptHandle())
-                    .build()
-                    );
-                
-                consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
-              }
-             }
-
-             if (acks.size() > 0 || exts.size() > 0)
-             {
-               provider.refresh();
-                
-               queueManager.getReceiver(queueUrl).receiveMessages(acks.size() + exts.size(), 0, acks, exts);       
-             }
-        }
-        catch (QueueNotFoundException e)
-        {
-          throw new NotFoundException("Queue not found: " +   queueUrl);
-        }
+                try
+                {
+                  consume(consumerManager, message.getPayload(), trace);
+                  
+                  acks.add(new FeedObjectDelete.Builder()
+                      .withReceiptHandle(message.getReceiptHandle())
+                      .build()
+                      );
+                }
+                catch(RetryableConsumerException e)
+                {
+                  log_.warn("Transient processing failure, will retry (forever)", e);
+                  exts.add(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+                }
+                catch (RuntimeException  e)
+                {
+                  log_.warn("Unexpected processing failure, will retry (forever)", e);
+                  exts.add(createExtend(message.getReceiptHandle(), null, null));
+                }
+                catch (FatalConsumerException e)
+                {
+                  log_.error("Unprocessable message, aborted", e);
+        
+                  trace.trace("MESSAGE_IS_UNPROCESSABLE");
+                  
+                  acks.add(new FeedObjectDelete.Builder()
+                      .withReceiptHandle(message.getReceiptHandle())
+                      .build()
+                      );
+                  
+                  consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
+                }
+               }
+  
+               if (acks.size() > 0 || exts.size() > 0)
+               {
+                 provider.refresh();
+                  
+                 queueManager.getReceiver(queueUrl).receiveMessages(acks.size() + exts.size(), 0, acks, exts);       
+               }
+          }
+          catch (QueueNotFoundException e)
+          {
+            throw new NotFoundException("Queue not found: " +   queueUrl);
+          }
       }
+    }
+    else
+      fetchFeedObjectsFromServerSync(request, consumerManager);
     }
     
     consumerManager.closeConsumers();
@@ -841,138 +853,138 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
   
   
-//@Override
-//public IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request)
-//{
-//  if(request.getConsumerManager() instanceof ConsumerManager)
-//  {
-//    fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
-//    
-//    return null;
-//  }
-//  else if(request.getConsumerManager() instanceof AsyncConsumerManager)
-//  {
-//    return fetchFeedObjects(request, (AsyncConsumerManager)request.getConsumerManager());
-//  }
-//  else
-//  {
-//    throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
-//  }
-//}
 
-//private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
-//{
-//  IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-//  {
-//    @Override
-//    public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
-//    {
-//      request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
-//    }
-//
-//    @Override
-//    public void close()
-//    {
-//      request.getConsumerManager().getUnprocessableMessageConsumer().close();
-//    }
-//  };
-//  
-//  AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
-//      .withHttpClient(apiHttpClient_)
-//      .withObjectApiClient(objectApiClient_)
-//      .withTraceContextTransactionFactory(traceFactory_)
-//      .withUnprocessableMessageConsumer(unprocessableConsumer)
-//      .withSubscription(new AllegroSubscription(request, this))
-//      .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
-//      .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
-//    .build();
-//  
-//  return subscriberManager;
-//}
+private IAllegroQueryManager fetchFeedObjectsFromServer(FetchFeedObjectsRequest request)
+{
+  if(request.getConsumerManager() instanceof ConsumerManager)
+  {
+    fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
+    
+    return null;
+  }
+  else if(request.getConsumerManager() instanceof AsyncConsumerManager)
+  {
+    return fetchFeedObjects(request, (AsyncConsumerManager)request.getConsumerManager());
+  }
+  else
+  {
+    throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
+  }
+}
 
-//  private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
-//  {
-//    try (ITraceContextTransaction parentTraceTransaction = traceFactory_
-//        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
-//    {
-//      ITraceContext parentTrace = parentTraceTransaction.open();
-//
-//      for (FeedQuery query : request.getQueryList())
-//      {
-//        Hash feedHash = query.getHash(getUserId());
-//        
-//        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchFeed", feedHash.toString()))
-//        {
-//          ITraceContext trace = traceTransaction.open();
-//          
-//          List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
-//              .withFeedHash(feedHash)
-//              .withCanonPayload(new FeedRequest.Builder()
-//                  .withMaxItems(query.getMaxItems() != null ? query.getMaxItems() : 1)
-//                  .build())
-//              .build()
-//              .execute(apiHttpClient_);
-//          
-//          FeedRequest.Builder builder = new FeedRequest.Builder()
-//              .withMaxItems(0)
-//              .withWaitTimeSeconds(0);
-//          int ackCnt = 0;
-//          
-//          for(IFeedObject message : messages)
-//          {
-//            try
-//            {
-//              consume(consumerManager, message.getPayload(), trace);
-//                
-//              builder.withDelete(new FeedObjectDelete.Builder()
-//                  .withReceiptHandle(message.getReceiptHandle())
-//                  .build()
-//                  );
-//              ackCnt++;
-//            }
-//            catch(RetryableConsumerException e)
-//            {
-//              log_.warn("Transient processing failure, will retry (forever)", e);
-//              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
-//              ackCnt++;
-//            }
-//            catch (RuntimeException  e)
-//            {
-//              log_.warn("Unexpected processing failure, will retry (forever)", e);
-//              builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
-//              ackCnt++;
-//            }
-//            catch (FatalConsumerException e)
-//            {
-//              log_.error("Unprocessable message, aborted", e);
-//    
-//              trace.trace("MESSAGE_IS_UNPROCESSABLE");
-//              
-//              builder.withDelete(new FeedObjectDelete.Builder()
-//                  .withReceiptHandle(message.getReceiptHandle())
-//                  .build()
-//                  );
-//              ackCnt++;
-//              
-//              consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
-//            }
-//          }
-//          
-//          if(ackCnt>0)
-//          {
-//            // Delete (ACK) the consumed messages
-//            messages = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
-//                .withFeedHash(feedHash)
-//                .withCanonPayload(builder.build())
-//                .build()
-//                .execute(apiHttpClient_);
-//          }
-//        }
-//      }
-//    }
-//    
-//    consumerManager.closeConsumers();
-//  }
+ private IAllegroQueryManager fetchFeedObjectsFromServerAsync(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
+ {
+  IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+  {
+    @Override
+    public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+    {
+      request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+    }
+
+    @Override
+    public void close()
+    {
+      request.getConsumerManager().getUnprocessableMessageConsumer().close();
+    }
+  };
+  
+  AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
+      .withHttpClient(apiHttpClient_)
+      .withObjectApiClient(objectApiClient_)
+      .withTraceContextTransactionFactory(traceFactory_)
+      .withUnprocessableMessageConsumer(unprocessableConsumer)
+      .withSubscription(new AllegroSubscription(request, this))
+      .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
+      .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
+    .build();
+  
+  return subscriberManager;
+}
+
+  private void fetchFeedObjectsFromServerSync(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
+  {
+    try (ITraceContextTransaction parentTraceTransaction = traceFactory_
+        .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
+    {
+      ITraceContext parentTrace = parentTraceTransaction.open();
+
+      for (FeedQuery query : request.getQueryList())
+      {
+        Hash feedHash = query.getHash(getUserId());
+        
+        try(ITraceContextTransaction traceTransaction = parentTrace.createSubContext("FetchFeed", feedHash.toString()))
+        {
+          ITraceContext trace = traceTransaction.open();
+          
+          List<IFeedObject> messages  = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+              .withFeedHash(feedHash)
+              .withCanonPayload(new FeedRequest.Builder()
+                  .withMaxItems(query.getMaxItems() != null ? query.getMaxItems() : 1)
+                  .build())
+              .build()
+              .execute(apiHttpClient_);
+          
+          FeedRequest.Builder builder = new FeedRequest.Builder()
+              .withMaxItems(0)
+              .withWaitTimeSeconds(0);
+          int ackCnt = 0;
+          
+          for(IFeedObject message : messages)
+          {
+            try
+            {
+              consume(consumerManager, message.getPayload(), trace);
+                
+              builder.withDelete(new FeedObjectDelete.Builder()
+                  .withReceiptHandle(message.getReceiptHandle())
+                  .build()
+                  );
+              ackCnt++;
+            }
+            catch(RetryableConsumerException e)
+            {
+              log_.warn("Transient processing failure, will retry (forever)", e);
+              builder.withExtend(createExtend(message.getReceiptHandle(), e.getRetryTime(), e.getRetryTimeUnit()));
+              ackCnt++;
+            }
+            catch (RuntimeException  e)
+            {
+              log_.warn("Unexpected processing failure, will retry (forever)", e);
+              builder.withExtend(createExtend(message.getReceiptHandle(), null, null));
+              ackCnt++;
+            }
+            catch (FatalConsumerException e)
+            {
+              log_.error("Unprocessable message, aborted", e);
+    
+              trace.trace("MESSAGE_IS_UNPROCESSABLE");
+              
+              builder.withDelete(new FeedObjectDelete.Builder()
+                  .withReceiptHandle(message.getReceiptHandle())
+                  .build()
+                  );
+              ackCnt++;
+              
+              consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
+            }
+          }
+          
+          if(ackCnt>0)
+          {
+            // Delete (ACK) the consumed messages
+            messages = objectApiClient_.newFeedsFeedHashObjectsPostHttpRequestBuilder()
+                .withFeedHash(feedHash)
+                .withCanonPayload(builder.build())
+                .build()
+                .execute(apiHttpClient_);
+          }
+        }
+      }
+    }
+    
+    consumerManager.closeConsumers();
+  }
 
   void consume(AbstractConsumerManager consumerManager, Object payload, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
   {
@@ -1030,6 +1042,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     private List<FeedId>      feedIds_;
     private String            region_;
     private List<String>      queueUrls_;
+    public  boolean           directFetch_;    
 
     private static final long      threshold = 40000;
     
@@ -1065,9 +1078,10 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         {
           ITemporaryCredentials   tc    = fetchTemporaryCredentials(feedIds_);
           region_                       = tc.getRegion();
-          queueUrls_                   = tc.getQueueUrls();
+          queueUrls_                    = tc.getQueueUrls();
           credentials_                  = new BasicSessionCredentials(tc.getAccesskeyId(), tc.getSecretAccessKey(), tc.getSessionToken());
           expiryDate_                   = tc.getExpirationDate().toEpochMilli();  
+          directFetch_                  = tc.getDirectFetch();
         }
       }
     }
