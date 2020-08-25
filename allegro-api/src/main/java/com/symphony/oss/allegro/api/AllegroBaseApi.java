@@ -851,26 +851,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     
     return provider;
   }
-  
-  
-
-private IAllegroQueryManager fetchFeedObjectsFromServer(FetchFeedObjectsRequest request)
-{
-  if(request.getConsumerManager() instanceof ConsumerManager)
-  {
-    fetchFeedObjects(request, (ConsumerManager)request.getConsumerManager());
-    
-    return null;
-  }
-  else if(request.getConsumerManager() instanceof AsyncConsumerManager)
-  {
-    return fetchFeedObjects(request, (AsyncConsumerManager)request.getConsumerManager());
-  }
-  else
-  {
-    throw new BadRequestException("Unrecognised consumer manager type " + request.getConsumerManager().getClass());
-  }
-}
 
  private IAllegroQueryManager fetchFeedObjectsFromServerAsync(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
  {
