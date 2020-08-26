@@ -131,16 +131,6 @@
        <artifactId>fugue-aws</artifactId>
        <version>${oss.fugue.version}</version>
      </dependency>
-     <dependency>
-	   <groupId>com.symphony.s2.fugue</groupId>
-       <artifactId>symphony-fugue-aws-api</artifactId>
-     <version>${symphony.fugue.version}</version>
-	 </dependency>
-	 <dependency>
-	   <groupId>com.symphony.s2.fugue</groupId>
-	   <artifactId>symphony-fugue-core</artifactId>
-       <version>${symphony.fugue.version}</version>
-	 </dependency>
      
     
     <dependency>
@@ -158,15 +148,6 @@
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
-    </dependency>
-    
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
     </dependency>
      
     <dependency>

@@ -73,7 +73,6 @@
     <symphony.security.version>1.57.2</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
     <oss.models.version>0.7.11</oss.models.version>
-    <symphony.fugue.version>0.3.12</symphony.fugue.version>
 
   </properties>
   
