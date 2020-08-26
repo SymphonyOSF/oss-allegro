@@ -687,6 +687,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, creds.getQueueUrls(), this))
+        .withEndpoint(creds.getEndpoint())
       .build();
     
       return subscriberManager;
@@ -720,16 +721,17 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         }        
       }
 
-      AllegroSqsCredentialsProvider provider = loadCredentials(feedIds);
+      AllegroSqsCredentialsProvider creds = loadCredentials(feedIds);
       
-      if(provider.directFetch_) 
+      if(creds.directFetch_) 
       {   
-        List<String> queueUrls = provider.getQueueUrls();
+        List<String> queueUrls = creds.getQueueUrls();
         
-        SqsQueueManager.Builder builder = new SqsQueueManager.Builder(true)
-            .withRegion(provider.getRegion())
-            .withAccountId(new StsManager(provider.getRegion()).getAccountId())
-            .withCredentials(provider);
+        SqsQueueManager.Builder builder = new SqsQueueManager.Builder()
+            .withRegion(creds.getRegion())
+            .withAccountId(new StsManager(creds.getRegion()).getAccountId())
+            .withCredentials(creds)
+            .withEndpoint(creds.getEndpoint());
             
         SqsQueueManager queueManager = builder.build();
         
@@ -749,7 +751,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             
             trace.trace("PULL_SQS");
   
-            provider.refresh();
+            creds.refresh();
               
             Collection<IQueueMessage> list = queueManager.getReceiver(queueUrl).receiveMessages(N, 20, new HashSet<>(), new HashSet<>());
               
@@ -818,7 +820,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   
                if (acks.size() > 0 || exts.size() > 0)
                {
-                 provider.refresh();
+                 creds.refresh();
                   
                  queueManager.getReceiver(queueUrl).receiveMessages(acks.size() + exts.size(), 0, acks, exts);       
                }
@@ -1022,6 +1024,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     private List<FeedId>      feedIds_;
     private String            region_;
     private List<String>      queueUrls_;
+    private String            endpoint_;
     public  boolean           directFetch_;    
 
     private static final long      threshold = 40000;
@@ -1030,6 +1033,11 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     {
       feedIds_ = feedIds;
       refresh();
+    }
+
+    public String getEndpoint()
+    {
+      return endpoint_;
     }
 
     @Override
@@ -1062,6 +1070,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           credentials_                  = new BasicSessionCredentials(tc.getAccesskeyId(), tc.getSecretAccessKey(), tc.getSessionToken());
           expiryDate_                   = tc.getExpirationDate().toEpochMilli();  
           directFetch_                  = tc.getDirectFetch();
+          endpoint_                     = tc.getEndPoint();
         }
       }
     }

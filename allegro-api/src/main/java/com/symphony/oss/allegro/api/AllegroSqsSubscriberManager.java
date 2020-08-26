@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.canon.runtime.exception.NotImplementedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
@@ -83,6 +82,8 @@ implements IAllegroQueryManager
     private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
     private AWSCredentialsProvider        credentials_;
     private GatewayAmazonSQSClientBuilder sqsBuilder_;
+
+    private String endPoint_;
 
     /**
      * Constructor.
@@ -141,6 +142,22 @@ implements IAllegroQueryManager
     public Builder withHandlerThreadPoolSize(int handlerThreadPoolSize)
     {
       handlerThreadPoolSize_ = handlerThreadPoolSize;
+      
+      return self();
+    }
+    
+    /**
+     * Set the API endpoint.
+     * 
+     * @param endpoint The AWS gateway endpoint for SQS.
+     * 
+     * @return this (fluent method)
+     */
+    public Builder withEndpoint(String endpoint)
+    {
+      endPoint_ = endpoint;
+      
+      sqsBuilder_.withEndpoint(endPoint_);
       
       return self();
     }
