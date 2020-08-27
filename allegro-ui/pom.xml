@@ -42,6 +42,22 @@
       <artifactId>core-model</artifactId>
       <version>${oss.models.version}</version>
     </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <artifactId>crypto-model</artifactId>
+      <version>${oss.models.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.symphony.oss.models</groupId>
+      <artifactId>pod-model</artifactId>
+      <version>${oss.models.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <type>jar</type>
+      <version>2.9.7</version>
+    </dependency>
 
     <dependency>
       <groupId>com.symphony.oss.canon</groupId>
@@ -85,16 +101,16 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
+        
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+    </dependency>
     
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
     
-    <dependency>
-      <groupId>com.symphony.oss.fugue</groupId>
-      <artifactId>fugue-launch</artifactId>
-      <version>${oss.fugue.version}</version>
-    </dependency>
   </dependencies>
 </project>
