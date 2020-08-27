@@ -131,7 +131,11 @@
        <artifactId>fugue-aws</artifactId>
        <version>${oss.fugue.version}</version>
      </dependency>
-     
+      <dependency>
+       <groupId>com.symphony.oss.fugue</groupId>
+       <artifactId>fugue-http</artifactId>
+       <version>${oss.fugue.version}</version>
+     </dependency>
     
     <dependency>
 	    <groupId>com.symphony</groupId>

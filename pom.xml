@@ -69,7 +69,7 @@
     
     <oss.commons.version>0.2.0</oss.commons.version>
     <oss.canon.version>0.2.3</oss.canon.version>
-    <oss.fugue.version>0.2.8</oss.fugue.version>
+    <oss.fugue.version>0.2.9</oss.fugue.version>
     <symphony.security.version>1.57.2</symphony.security.version>
     <messageml.version>0.9.39</messageml.version>
     <oss.models.version>0.7.11</oss.models.version>

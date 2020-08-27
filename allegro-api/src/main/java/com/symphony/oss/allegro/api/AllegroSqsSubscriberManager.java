@@ -23,6 +23,7 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQS;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.canon.runtime.exception.NotImplementedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.fugue.aws.sqs.GatewayAmazonSQSClientBuilder;
@@ -175,7 +175,14 @@ implements IAllegroQueryManager
     {
       protected LocalConfiguration()
       {
-        super(new ObjectMapper().createObjectNode().put("subscriberThreadPoolSize", subscriberThreadPoolSize_).put("handlerThreadPoolSize", handlerThreadPoolSize_));
+        super(new HashMap<String, Object>() 
+          {
+            {
+                put("subscriberThreadPoolSize", new Integer(subscriberThreadPoolSize_));
+                put("handlerThreadPoolSize",    new Integer(handlerThreadPoolSize_));
+            }
+          }
+         );
       }
     }
 
