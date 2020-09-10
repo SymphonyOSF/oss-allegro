@@ -50,9 +50,7 @@ import com.symphony.oss.fugue.pubsub.IPullSubscriberMessage;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
-import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.ObjectModel;
 
 /**
  * An SWS SNS subscriber.
@@ -68,7 +66,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
   private static final Logger                                                  log_                       = LoggerFactory
       .getLogger(AllegroSqsSubscriber.class);
 
-  protected final ModelRegistry                                                modelRegistry_          = new ModelRegistry();
+  protected ModelRegistry                                                modelRegistry_;         
   private final AllegroSqsSubscriberManager                                    manager_;
   private final AmazonSQS                                                      sqsClient_;
   private final String                                                         queueUrl_;
@@ -86,7 +84,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
       ITraceContextTransactionFactory traceFactory,
       IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer, 
       ICounter counter, IBusyCounter busyCounter,
-      AWSCredentialsProvider credentials)
+      AWSCredentialsProvider credentials, ModelRegistry modelRegistry )
   {
     super(manager, queueUrl, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
     
@@ -110,8 +108,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
     nonBlockingPullRequest_ = new ReceiveMessageRequest(queueUrl)
         .withMaxNumberOfMessages(messageBatchSize_ );
     
-    modelRegistry_.withFactories(ObjectModel.FACTORIES)
-                  .withFactories(CoreModel.FACTORIES);
+    modelRegistry_  = modelRegistry;
   }
   
   class NonIdleSubscriber implements Runnable
