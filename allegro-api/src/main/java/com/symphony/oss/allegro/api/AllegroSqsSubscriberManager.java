@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotImplementedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.fugue.aws.sqs.GatewayAmazonSQSClientBuilder;
@@ -57,12 +58,14 @@ implements IAllegroQueryManager
 
   private AmazonSQS                  sqsClient_;
   private AWSCredentialsProvider     credentials_;
+  private ModelRegistry              modelRegistry_;
 
   private AllegroSqsSubscriberManager(Builder builder)
   {
     super(builder);
     
     credentials_ = builder.credentials_;
+    modelRegistry_ = builder.modelRegistry_;
 
     sqsClient_ = builder.sqsBuilder_.build();
     
@@ -82,6 +85,7 @@ implements IAllegroQueryManager
     private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
     private AWSCredentialsProvider        credentials_;
     private GatewayAmazonSQSClientBuilder sqsBuilder_;
+    private ModelRegistry              modelRegistry_;
 
     private String endPoint_;
 
@@ -117,6 +121,20 @@ implements IAllegroQueryManager
       region_ = region;
       
       sqsBuilder_.withRegion(region_);
+      
+      return self();
+    }
+    
+    /**
+     * Set the Model Registry
+     * 
+     * @param modelRegistry The ModelRegistry set in Allegro
+     * 
+     * @return this (fluent method)
+     */
+    public Builder withModelRegistry(ModelRegistry modelRegistry)
+    {
+      modelRegistry_ = modelRegistry;
       
       return self();
     }
@@ -169,6 +187,7 @@ implements IAllegroQueryManager
       
       faultAccumulator.checkNotNull(region_,      "region");
       faultAccumulator.checkNotNull(credentials_, "credentials");
+      faultAccumulator.checkNotNull(modelRegistry_, "modelRegistry");
     }
     
     class LocalConfiguration extends Configuration
@@ -202,7 +221,7 @@ implements IAllegroQueryManager
       log_.info("Subscribing to " + subscriptionName + "..."); 
       
       AllegroSqsSubscriber subscriber = new AllegroSqsSubscriber(this, sqsClient_ ,subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
-          getCounter(), createBusyCounter(subscriptionName), credentials_);
+          getCounter(), createBusyCounter(subscriptionName), credentials_, modelRegistry_);
 
       subscribers_.add(subscriber); 
     }

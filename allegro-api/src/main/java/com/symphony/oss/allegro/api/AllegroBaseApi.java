@@ -688,6 +688,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, creds.getQueueUrls(), this))
         .withEndpoint(creds.getEndpoint())
+        .withModelRegistry(getModelRegistry())
       .build();
     
       return subscriberManager;
