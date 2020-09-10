@@ -66,7 +66,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
   private static final Logger                                                  log_                       = LoggerFactory
       .getLogger(AllegroSqsSubscriber.class);
 
-  protected final ModelRegistry                                                modelRegistry_;         
+  private final ModelRegistry                                                  modelRegistry_;         
   private final AllegroSqsSubscriberManager                                    manager_;
   private final AmazonSQS                                                      sqsClient_;
   private final String                                                         queueUrl_;
