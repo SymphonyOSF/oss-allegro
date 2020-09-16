@@ -445,7 +445,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return A CloseableHttpClient.
    */
   CloseableHttpClient getApiHttpClient();
-  
+
   /**
    * Return an ModelClient to format request to Authentication Service
    * <p>
