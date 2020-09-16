@@ -39,7 +39,6 @@ import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
-import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
@@ -52,7 +51,7 @@ import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
-import com.symphony.s2.authc.model.IAuthcContext;
+import com.symphony.s2.authc.canon.AuthcHttpModelClient;
 import com.symphony.s2.authc.model.IMultiTenantServiceRegistry;
 import com.symphony.s2.authz.canon.EntitlementAction;
 import com.symphony.s2.authz.canon.facade.IEntitlement;
@@ -446,15 +445,13 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return A CloseableHttpClient.
    */
   CloseableHttpClient getApiHttpClient();
-
+  
   /**
-   * Return an authenticator which can be used to authenticate requests from regular or multi-tenant service accounts.
+   * Return an ModelClient to format request to Authentication Service
    * <p>
-   * This is the server side equivalent of the generator returned by the {@code getJwtGenerator()} method.
-   * <p>
-   * @return an IRequestAuthenticator.
+   * @return A AuthcHttpModelClient.
    */
-  IRequestAuthenticator<IAuthcContext> getAuthenticator();
+  AuthcHttpModelClient getAuthcHttpModelClient();
 
   /**
    * Return a JWT generator which can authenticate a request made to the object store or some other multi-tenant service.
