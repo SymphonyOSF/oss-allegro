@@ -72,7 +72,6 @@ import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.ServerErrorException;
-import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.canon.runtime.jjwt.JwtBase;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
@@ -142,10 +141,8 @@ import com.symphony.s2.authc.canon.AuthcHttpModelClient;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.IServiceInfo;
 import com.symphony.s2.authc.canon.ServiceId;
-import com.symphony.s2.authc.model.IAuthcContext;
 import com.symphony.s2.authc.model.IMultiTenantService;
 import com.symphony.s2.authc.model.MultiTenantService;
-import com.symphony.s2.authc.model.RemoteJwtAuthenticator;
 import com.symphony.s2.authz.canon.AuthzHttpModelClient;
 import com.symphony.s2.authz.canon.AuthzModel;
 import com.symphony.s2.authz.canon.EntitlementAction;
@@ -211,7 +208,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   final CloseableHttpClient                  apiHttpClient_;
 
   private final Map<ServiceId, IServiceInfo> serviceMap_   = new HashMap<>();
-  private RemoteJwtAuthenticator             authenticator_;
 
   
   AllegroBaseApi(AbstractBuilder<? extends IAllegroBaseConfiguration, ?, ?, ?> builder)
@@ -1858,14 +1854,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
 
   @Override
-  public IRequestAuthenticator<IAuthcContext> getAuthenticator()
+  public AuthcHttpModelClient getAuthcHttpModelClient()
   {
-    if(authenticator_ == null)
-    {
-      authenticator_ = new RemoteJwtAuthenticator(authcApiClient_, apiHttpClient_);
-    }
-    
-    return authenticator_;
+    return authcApiClient_;
   }
 
   @Override
