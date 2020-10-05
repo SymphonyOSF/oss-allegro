@@ -7,6 +7,8 @@ For JavaDocs, see [https://javadoc.io/doc/com.symphony.oss.allegro/allegro-api/l
 
 # Change Log
 
+## 2020-10-05 The proxy configuration is now added to the connection configuration of the SQS client
+
 ## 2020-07-21 Added the possibility to configure proxy authentication parameters
 A proxy can be configured, for which, a hostname and port have to be provided
 Optionally, if needed, proxy username and password can be set.

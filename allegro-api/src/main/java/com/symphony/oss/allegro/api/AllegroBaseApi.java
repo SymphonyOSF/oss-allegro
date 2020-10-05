@@ -690,9 +690,12 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     
     IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
 
-    builder.withProxyUrl     (connSettings.getProxyUrl());
-    builder.withProxyUsername(connSettings.getProxyUsername()); 
-    builder.withProxyPassword(connSettings.getProxyPassword());
+    if (connSettings != null)
+    {
+      builder.withProxyUrl     (connSettings.getProxyUrl());
+      builder.withProxyUsername(connSettings.getProxyUsername()); 
+      builder.withProxyPassword(connSettings.getProxyPassword());
+    }
         
     return builder.build();  
     }
@@ -739,9 +742,12 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         
         IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
 
-        builder.withProxyUrl     (connSettings.getProxyUrl());
-        builder.withProxyUsername(connSettings.getProxyUsername());
-        builder.withProxyPassword(connSettings.getProxyPassword());
+        if (connSettings != null)
+        {
+          builder.withProxyUrl     (connSettings.getProxyUrl());
+          builder.withProxyUsername(connSettings.getProxyUsername());
+          builder.withProxyPassword(connSettings.getProxyPassword());
+        }
             
         SqsQueueManager queueManager = builder.build();
         
