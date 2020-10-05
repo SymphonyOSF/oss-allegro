@@ -54,6 +54,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.google.common.io.Files;
+import com.symphony.oss.allegro.api.AllegroSqsSubscriberManager.Builder;
 import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
@@ -95,6 +96,7 @@ import com.symphony.oss.models.allegro.canon.SslTrustStrategy;
 import com.symphony.oss.models.allegro.canon.facade.AllegroBaseConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IConnectionSettings;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.HashType;
@@ -675,7 +677,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         }
       };
 
-    AllegroSqsSubscriberManager subscriberManager = new AllegroSqsSubscriberManager.Builder()
+    Builder builder = new AllegroSqsSubscriberManager.Builder()
         .withRegion(creds.getRegion())
         .withCredentials(creds)
         .withTraceContextTransactionFactory(traceFactory_)
@@ -684,10 +686,15 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, creds.getQueueUrls(), this))
         .withEndpoint(creds.getEndpoint())
-        .withModelRegistry(getModelRegistry())
-      .build();
+        .withModelRegistry(getModelRegistry());
     
-      return subscriberManager;
+    IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
+
+    builder.withProxyUrl     (connSettings.getProxyUrl());
+    builder.withProxyUsername(connSettings.getProxyUsername()); 
+    builder.withProxyPassword(connSettings.getProxyPassword());
+        
+    return builder.build();  
     }
     else  
       return fetchFeedObjectsFromServerAsync(request, consumerManager);
@@ -729,6 +736,12 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             .withAccountId(new StsManager(creds.getRegion()).getAccountId())
             .withCredentials(creds)
             .withEndpoint(creds.getEndpoint());
+        
+        IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
+
+        builder.withProxyUrl     (connSettings.getProxyUrl());
+        builder.withProxyUsername(connSettings.getProxyUsername());
+        builder.withProxyPassword(connSettings.getProxyPassword());
             
         SqsQueueManager queueManager = builder.build();
         
