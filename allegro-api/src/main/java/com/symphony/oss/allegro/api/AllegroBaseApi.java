@@ -688,7 +688,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withEndpoint(creds.getEndpoint())
         .withModelRegistry(getModelRegistry());
     
-    IConnectionSettings connSettings = this.getConfiguration().getApiConnectionSettings();
+    IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
 
     builder.withProxyUrl     (connSettings.getProxyUrl());
     builder.withProxyUsername(connSettings.getProxyUsername()); 
@@ -737,7 +737,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             .withCredentials(creds)
             .withEndpoint(creds.getEndpoint());
         
-        IConnectionSettings connSettings = this.getConfiguration().getApiConnectionSettings();
+        IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
 
         builder.withProxyUrl     (connSettings.getProxyUrl());
         builder.withProxyUsername(connSettings.getProxyUsername());
