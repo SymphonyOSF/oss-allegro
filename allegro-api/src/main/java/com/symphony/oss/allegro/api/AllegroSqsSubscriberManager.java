@@ -23,6 +23,7 @@
 
 package com.symphony.oss.allegro.api;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -67,6 +68,23 @@ implements IAllegroQueryManager
     credentials_ = builder.credentials_;
     modelRegistry_ = builder.modelRegistry_;
 
+    ClientConfiguration configuration = new ClientConfiguration()
+    .withMaxConnections(200);
+
+    if(builder.proxyUrl_ !=null) 
+    {
+      configuration.setProxyHost(builder.proxyUrl_.getHost());
+      configuration.setProxyPort(builder.proxyUrl_.getPort());
+    }
+    
+    if(builder.proxyUsername_ != null) 
+      configuration.setProxyUsername(builder.proxyUsername_);
+    
+    if(builder.proxyPassword_ != null)
+      configuration.setProxyPassword(builder.proxyPassword_);
+    
+    builder.sqsBuilder_.withClientConfiguration(configuration);
+      
     sqsClient_ = builder.sqsBuilder_.build();
     
   }
@@ -89,18 +107,19 @@ implements IAllegroQueryManager
 
     private String endPoint_;
 
+    private URL proxyUrl_;
+    private String proxyUsername_;
+    private String proxyPassword_;
+
     /**
      * Constructor.
      */
     public Builder()
     {
-      super(Builder.class);
+      super(Builder.class);    
       
       sqsBuilder_ = GatewayAmazonSQSClientBuilder
           .standard();
-      sqsBuilder_.withClientConfiguration(new ClientConfiguration()
-              .withMaxConnections(200)
-              );
     }
     
     @Override
@@ -176,6 +195,47 @@ implements IAllegroQueryManager
       endPoint_ = endpoint;
       
       sqsBuilder_.withEndpoint(endPoint_);
+      
+      return self();
+    }
+    /**
+     * Set the API proxy URL.
+     * 
+     * @param proxyUrl The client proxy Url.
+     * 
+     * @return this (fluent method)
+     */
+    public Builder withProxyUrl(URL proxyUrl)
+    {
+      proxyUrl_ = proxyUrl; 
+      
+      return self();
+    }
+
+    /**
+     * Set the API proxy URL.
+     * 
+     * @param proxyUsername The client proxy Username.
+     * 
+     * @return this (fluent method)
+     */
+    public Builder withProxyUsername(String proxyUsername)
+    {
+      proxyUsername_ = proxyUsername;  
+      
+      return self();
+    }
+    
+    /**
+     * Set the API proxy password.
+     * 
+     * @param proxyPassword The client proxy Password.
+     * 
+     * @return this (fluent method)
+     */
+    public Builder withProxyPassword(String proxyPassword)
+    {
+      proxyPassword_ = proxyPassword;   
       
       return self();
     }
