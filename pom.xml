@@ -27,7 +27,7 @@
 
   <groupId>com.symphony.oss.allegro</groupId>
   <artifactId>oss-allegro</artifactId>
-  <version>0.5.14-SNAPSHOT</version>
+  <version>0.5.15-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <url>https://github.com/SymphonyOSF/oss-allegro</url>
@@ -69,8 +69,8 @@
     
     <oss.commons.version>0.2.3</oss.commons.version>
     <oss.canon.version>0.3.4</oss.canon.version>
-    <oss.fugue.version>0.2.18</oss.fugue.version>
-    <symphony.security.version>1.57.2</symphony.security.version>
+    <oss.fugue.version>0.2.19</oss.fugue.version>
+    <symphony.security.version>1.63.2</symphony.security.version>
     <messageml.version>0.9.57</messageml.version>
     <oss.models.version>0.7.18</oss.models.version>
 
