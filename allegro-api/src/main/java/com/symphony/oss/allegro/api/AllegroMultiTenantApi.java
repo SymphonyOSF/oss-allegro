@@ -24,6 +24,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
@@ -50,12 +53,16 @@ import com.symphony.s2.authc.canon.facade.PrincipalCredential;
  */
 public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
 {
+  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
+
   private final PodAndUserId      userId_;
   private final Rs512JwtGenerator jwtBuilder_;
   
   AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
   {
     super(builder);
+    
+    log_.info("AllegroMultiTenantApi constructor start with configuredUserId " + builder.configuredUserId_ + " and config " + builder.config_);
 
     userId_ = builder.configuredUserId_;
     
