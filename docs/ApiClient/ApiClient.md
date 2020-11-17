@@ -25,8 +25,6 @@ allegroApi_ = new AllegroApi.Builder()
     .build())
   .withFactories(CalendarModel.FACTORIES)
   .build();
-  
- System.out.println("Allegro configuration = " + allegroApi_.getConfiguration());
 ```
 
 With effect from release 0.3.2 support has been added for Client Certificate Authentication and outbound web proxies.
