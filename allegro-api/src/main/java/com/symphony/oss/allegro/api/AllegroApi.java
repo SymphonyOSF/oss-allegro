@@ -184,7 +184,15 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     super(builder);
     
-    log_.info("AllegroApi constructor start with config " + builder.config_);
+    AllegroConfiguration.Builder configCopyBuilder = new AllegroConfiguration.Builder(builder.config_);
+    
+    if(configCopyBuilder.getAuthCertFilePassword() != null)
+      configCopyBuilder.withAuthCertFilePassword("**REDACTED**");
+    
+    if(configCopyBuilder.getAuthCertPrivateKey() != null)
+      configCopyBuilder.withAuthCertPrivateKey((String)null);
+    
+    log_.info("AllegroApi constructor start with config " + configCopyBuilder.build());
     
     podHttpClient_        = builder.getPodHttpClient();
     keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
