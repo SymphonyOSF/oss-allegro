@@ -184,15 +184,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     super(builder);
     
-    AllegroConfiguration.Builder configCopyBuilder = new AllegroConfiguration.Builder(builder.config_);
-    
-    if(configCopyBuilder.getAuthCertFilePassword() != null)
-      configCopyBuilder.withAuthCertFilePassword("**REDACTED**");
-    
-    if(configCopyBuilder.getAuthCertPrivateKey() != null)
-      configCopyBuilder.withAuthCertPrivateKey((String)null);
-    
-    log_.info("AllegroApi constructor start with config " + configCopyBuilder.build());
+    log_.info("AllegroApi constructor start with config " + builder.config_.getRedacted());
     
     podHttpClient_        = builder.getPodHttpClient();
     keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
@@ -304,7 +296,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     log_.info("allegroApi constructor done.");
   }
-  
+
   private class AuthResponseHandler implements IResponseHandler
   {
     @Override
