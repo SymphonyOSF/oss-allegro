@@ -27,7 +27,7 @@
 
   <groupId>com.symphony.oss.allegro</groupId>
   <artifactId>oss-allegro</artifactId>
-  <version>0.5.17-SNAPSHOT</version>
+  <version>0.5.17</version>
   <packaging>pom</packaging>
 
   <url>https://github.com/SymphonyOSF/oss-allegro</url>
