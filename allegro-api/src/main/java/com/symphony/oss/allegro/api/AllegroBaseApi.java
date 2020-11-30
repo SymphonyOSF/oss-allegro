@@ -1229,9 +1229,14 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             partitionHash.toString()))
         {
           ITraceContext trace = traceTransaction.open();
-
+          trace.trace("Request started");
+          int itemsSize = 0;
+          
           do
           {
+
+            long start  = System.currentTimeMillis();
+          // System.out.println("Fetching items...");
             PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
                 .newPartitionsPartitionHashPageGetHttpRequestBuilder()
                   .withPartitionHash(partitionHash)
@@ -1241,13 +1246,19 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
             if (limit != null)
               pageRequest.withLimit(remainingItems);
-
+            trace.trace("Excuting request");
             IPageOfStoredApplicationObject page = pageRequest
                 .build()
                 .execute(apiHttpClient_);
-
+            
+            itemsSize+=page.getData().size();
+           trace.trace("Fetched "+itemsSize+" after "+(System.currentTimeMillis()- start));
+          //  System.out.println("Consuming items...");
+            start  = System.currentTimeMillis();
+            int k=0;
             for (IAbstractStoredApplicationObject item : page.getData())
             {
+              k++;
               try
               {
                 consumerManager.consume(item, trace, this);
@@ -1259,6 +1270,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               }
               remainingItems--;
             }
+            
+            trace.trace("Consumed all items "+k);
+           // System.out.println("Consumed "+itemsSize+" after "+(System.currentTimeMillis()- start));
 
             after = null;
             IPagination pagination = page.getPagination();
@@ -1271,9 +1285,14 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                 after = cursors.getAfter();
             }
           } while (after != null && (limit == null || remainingItems > 0));
+          trace.trace("Request terminated");
         }
+        
       }
+      
+
     }
+    
   }
   
 
