@@ -1282,7 +1282,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           trace.trace("Request terminated");
         }     
       }
-    }   
+    }
   }
   
 
