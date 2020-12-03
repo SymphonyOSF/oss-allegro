@@ -1235,9 +1235,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           
           do
           {
-
-            long start  = System.currentTimeMillis();
-          // System.out.println("Fetching items...");
             PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
                 .newPartitionsPartitionHashPageGetHttpRequestBuilder()
                   .withPartitionHash(partitionHash)
@@ -1245,22 +1242,18 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                   .withSortKeyPrefix(query.getSortKeyPrefix())
                   .withScanForwards(query.getScanForwards());
 
-            if (limit != null)
-              pageRequest.withLimit(Math.min(remainingItems, pageLimit));
+            pageRequest.withLimit(limit==null? pageLimit : Math.min(remainingItems, pageLimit));
             trace.trace("Excuting request");
             IPageOfStoredApplicationObject page = pageRequest
                 .build()
                 .execute(apiHttpClient_);
             
-            itemsSize+=page!= null && page.getData() != null ? page.getData().size() : 0;
-           trace.trace("Fetched "+itemsSize+" after "+(System.currentTimeMillis()- start));
-          //  System.out.println("Consuming items...");
-            start  = System.currentTimeMillis();
-            int k=0;
-            if(page!=null)
+           itemsSize += page.getData() != null ? page.getData().size() : 0;
+           
+           trace.trace("Fetched items: "+itemsSize);
+
             for (IAbstractStoredApplicationObject item : page.getData())
             {
-              k++;
               try
               {
                 consumerManager.consume(item, trace, this);
@@ -1273,11 +1266,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               remainingItems--;
             }
             
-            trace.trace("Consumed all items "+k);
-           // System.out.println("Consumed "+itemsSize+" after "+(System.currentTimeMillis()- start));
+            trace.trace("Consumed all items "+page.getData().size());
 
             after = null;
-            if(page!=null) {
             IPagination pagination = page.getPagination();
 
             if (pagination != null)
@@ -1286,7 +1277,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
               if (cursors != null)
                 after = cursors.getAfter();
-            }
             }
           } while (after != null && (limit == null || remainingItems > 0));
           trace.trace("Request terminated");
