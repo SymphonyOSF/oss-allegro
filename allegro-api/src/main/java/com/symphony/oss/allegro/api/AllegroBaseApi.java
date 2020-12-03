@@ -1280,13 +1280,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             }
           } while (after != null && (limit == null || remainingItems > 0));
           trace.trace("Request terminated");
-        }
-        
+        }     
       }
-      
-
-    }
-    
+    }   
   }
   
 
