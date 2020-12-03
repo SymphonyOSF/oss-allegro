@@ -30,6 +30,7 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   private final String          after_;
   private final String          sortKeyPrefix_;
   private final Integer         maxItems_;
+  private final Integer         pageLimit_;
   
   /**
    * Constructor.
@@ -42,6 +43,7 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     after_            = builder.after_;
     sortKeyPrefix_    = builder.sortKeyPrefix_;
     maxItems_         = builder.maxItems_;
+    pageLimit_         = builder.pageLimit_;
   }
 
   /**
@@ -78,6 +80,15 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   public Integer getMaxItems()
   {
     return maxItems_;
+  }
+  
+  /**
+   * 
+   * @return The maximum number of objects to return from each server call.
+   */
+  public Integer getPageLimit()
+  {
+    return pageLimit_;
   }
 
   /**
@@ -117,6 +128,7 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     protected String          after_;
     protected String          sortKeyPrefix_;
     protected Integer         maxItems_;
+    protected Integer         pageLimit_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -175,6 +187,20 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     public T withMaxItems(Integer maxItems)
     {
       maxItems_ = maxItems;
+      
+      return self();
+    }
+    
+    /**
+     * Set the maximum number of objects to returned by each server call.
+     * 
+     * @param pageLimit The maximum number of objects to return from each server call.
+     * 
+     * @return This (fluent method)
+     */
+    public T withPageLimit(Integer pageLimit)
+    {
+      pageLimit_ = pageLimit;
       
       return self();
     }

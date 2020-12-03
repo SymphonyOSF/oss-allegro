@@ -1218,6 +1218,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         Integer limit           = query.getMaxItems();
         int     remainingItems  = limit == null ? 0 : limit;
+        int     pageLimit       = query.getPageLimit() == null ? 2000 : query.getPageLimit();
         
         if (limit != null && remainingItems <= 0)
           break;
@@ -1245,17 +1246,18 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                   .withScanForwards(query.getScanForwards());
 
             if (limit != null)
-              pageRequest.withLimit(remainingItems);
+              pageRequest.withLimit(Math.min(remainingItems, pageLimit));
             trace.trace("Excuting request");
             IPageOfStoredApplicationObject page = pageRequest
                 .build()
                 .execute(apiHttpClient_);
             
-            itemsSize+=page.getData().size();
+            itemsSize+=page!= null && page.getData() != null ? page.getData().size() : 0;
            trace.trace("Fetched "+itemsSize+" after "+(System.currentTimeMillis()- start));
           //  System.out.println("Consuming items...");
             start  = System.currentTimeMillis();
             int k=0;
+            if(page!=null)
             for (IAbstractStoredApplicationObject item : page.getData())
             {
               k++;
@@ -1275,6 +1277,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
            // System.out.println("Consumed "+itemsSize+" after "+(System.currentTimeMillis()- start));
 
             after = null;
+            if(page!=null) {
             IPagination pagination = page.getPagination();
 
             if (pagination != null)
@@ -1283,6 +1286,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
               if (cursors != null)
                 after = cursors.getAfter();
+            }
             }
           } while (after != null && (limit == null || remainingItems > 0));
           trace.trace("Request terminated");
