@@ -1218,7 +1218,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         Integer limit           = query.getMaxItems();
         int     remainingItems  = limit == null ? 0 : limit;
-        int     pageLimit       = query.getPageLimit() == null ? 2000 : query.getPageLimit();
+        int     pageLimit       = query.getPageLimit() == null || query.getPageLimit()<=0 ? 2000 : query.getPageLimit();
         
         if (limit != null && remainingItems <= 0)
           break;
