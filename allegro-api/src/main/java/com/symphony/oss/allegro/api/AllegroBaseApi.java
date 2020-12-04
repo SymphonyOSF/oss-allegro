@@ -1218,6 +1218,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         Integer limit           = query.getMaxItems();
         int     remainingItems  = limit == null ? 0 : limit;
+        int     pageLimit       = query.getPageLimit() == null || query.getPageLimit()<=0 ? 2000 : query.getPageLimit();
         
         if (limit != null && remainingItems <= 0)
           break;
@@ -1229,7 +1230,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             partitionHash.toString()))
         {
           ITraceContext trace = traceTransaction.open();
-
+          trace.trace("Request started");
+          int itemsSize = 0;
+          
           do
           {
             PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
@@ -1239,12 +1242,15 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                   .withSortKeyPrefix(query.getSortKeyPrefix())
                   .withScanForwards(query.getScanForwards());
 
-            if (limit != null)
-              pageRequest.withLimit(remainingItems);
-
+            pageRequest.withLimit(limit==null? pageLimit : Math.min(remainingItems, pageLimit));
+            trace.trace("Excuting request");
             IPageOfStoredApplicationObject page = pageRequest
                 .build()
                 .execute(apiHttpClient_);
+            
+           itemsSize += page.getData() != null ? page.getData().size() : 0;
+           
+           trace.trace("Fetched items: "+itemsSize);
 
             for (IAbstractStoredApplicationObject item : page.getData())
             {
@@ -1259,6 +1265,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               }
               remainingItems--;
             }
+            
+            trace.trace("Consumed all items "+page.getData().size());
 
             after = null;
             IPagination pagination = page.getPagination();
@@ -1271,7 +1279,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                 after = cursors.getAfter();
             }
           } while (after != null && (limit == null || remainingItems > 0));
-        }
+          trace.trace("Request terminated");
+        }     
       }
     }
   }
