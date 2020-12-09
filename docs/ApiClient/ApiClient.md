@@ -25,8 +25,6 @@ allegroApi_ = new AllegroApi.Builder()
     .build())
   .withFactories(CalendarModel.FACTORIES)
   .build();
-  
- System.out.println("Allegro configuration = " + allegroApi_.getConfiguration());
 ```
 
 With effect from release 0.3.2 support has been added for Client Certificate Authentication and outbound web proxies.
@@ -73,6 +71,64 @@ to provide the current working configuration. This can be used as in the example
 a working configuration and can be used with existing code which calls now deprecated methods on the AllegroApi.Builder.
 
 API callers are encouraged to migrate to the new format asap.
+
+## Proxy Configuration
+If the same proxy server should be used for all communications (to the pod, key manager, object store, and if certificate
+authentication is in use the pod cert auth endpoint and key manager cert auth endpoint) then this can be configured in
+a single call to **withDefaultConnectionSettings()**, like this:
+
+```
+    allegroApi_ = new AllegroApi.Builder()
+      .withConfiguration(new AllegroConfiguration.Builder()
+          .withDefaultConnectionSettings(new ConnectionSettings.Builder()
+              .withProxyUrl(proxyUrl_)
+              .build())
+          .withPodUrl(podUrl_)
+          .withApiUrl(objectStoreUrl_)
+          .withUserName(serviceAccount_)
+          .withRsaPemCredentialFile(credentialFile_)
+          .withAuthCertFile(certFile_)
+          .withAuthCertFilePassword(certPassword_)
+          .withSessionAuthUrl(sessionAuthUrl_)
+          .withKeyAuthUrl(keyAuthUrl_)
+          .build())
+      .build();
+```
+
+On the other hand if different proxy configurations are needed for the key manager (which is usually "on-prem")
+and the pod/object store, then this can be configured *for each access URL* like this:
+
+```
+    allegroApi_ = new AllegroApi.Builder()
+        .withConfiguration(new AllegroConfiguration.Builder()
+            .withPodUrl(podUrl_)
+            .withPodConnectionSettings(new ConnectionSettings.Builder()
+                .withProxyUrl(podProxyUrl_)
+                .build())
+            .withKeyManagerConnectionSettings(new ConnectionSettings.Builder()
+                .withProxyUrl(keyManagerProxyUrl_)
+                .build())
+            .withSessionAuthUrl(sessionAuthUrl_)
+            .withCertSessionAuthConnectionSettings(new ConnectionSettings.Builder()
+                .withProxyUrl(podProxyUrl_)
+                .build())
+            .withKeyAuthUrl(keyAuthUrl_)
+            .withCertKeyAuthConnectionSettings(new ConnectionSettings.Builder()
+                .withProxyUrl(podProxyUrl_)
+                .build())
+            .withApiUrl(objectStoreUrl_)
+            .withApiConnectionSettings(new ConnectionSettings.Builder()
+                .withProxyUrl(objectStoreProxyUrl_)
+                .build())
+            .withUserName(serviceAccount_)
+            .withRsaPemCredentialFile(credentialFile_)
+            .withAuthCertFile(certFile_)
+            .withAuthCertFilePassword(certPassword_)
+            .build())
+        .build();
+```
+
+**Note that for each URL provided, plus the key manager (whose URL is obtained from the pod) there is a separate connection properties.**
 
 ## Security Considerations
 The configuration allows for the provision of RSA or client certificate credentials in a separate file, or in-line in
