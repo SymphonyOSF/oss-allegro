@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
 import com.symphony.oss.allegro.api.ResourcePermissions;
@@ -39,6 +40,11 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
 {
   private final ImmutableSet<PartitionSelectionRequest> partitionSelections_;
   private final ResourcePermissions                     permissions_;
+  protected final long                                  expiryTime_;
+ 
+  private static final int  DYNAMODB_CLEANUP_DAYS = 2;
+  private static final long TTL_LOWER_BOUND       = 1000 * 60;
+  private static final long TTL_UPPER_BOUND       = 1000 * 60 * 60 * 24 * (7 - DYNAMODB_CLEANUP_DAYS);
   
   UpsertFeedRequest(AbstractBuilder<?,?> builder)
   {
@@ -46,6 +52,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
     
     partitionSelections_  = ImmutableSet.copyOf(builder.partitionSelections_);
     permissions_          = builder.permissions_;
+    expiryTime_           = builder.expiryTime_;   
   }
   
   /**
@@ -76,6 +83,15 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
   public ResourcePermissions getPermissions()
   {
     return permissions_;
+  }
+  
+  /**
+   * 
+   * @return The ExpiryTime for the feed.
+   */
+  public long getExpiryTime()
+  {
+    return expiryTime_;
   }
 
   /**
@@ -113,6 +129,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
   {
     protected Set<PartitionSelectionRequest>      partitionSelections_ = new HashSet<>();
     protected ResourcePermissions                 permissions_;
+    protected long                                expiryTime_ = TTL_UPPER_BOUND;
     
     AbstractBuilder(Class<T> type)
     {
@@ -219,6 +236,27 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
       
       return self();
     }
+    
+    /**
+     * Set the TTL for the feed.
+     * 
+     * @param count integer.
+     * @param unit TimeUnit.
+     * 
+     * @return This (fluent method) 
+     */
+    public T withExpiryTime(int count, TimeUnit unit)
+    {
+      expiryTime_ = TimeUnit.MILLISECONDS.convert(count, unit);
+
+      if (expiryTime_ < TTL_LOWER_BOUND)
+         throw new IllegalArgumentException("Expiry Time must be at least 60 seconds");
+      else if (expiryTime_ > TTL_UPPER_BOUND)
+         throw new IllegalArgumentException("Expiry Time must be less than "+(7 - DYNAMODB_CLEANUP_DAYS)+" days");  
+
+      return self();
+    }
+
     
     @Override
     protected void validate(FaultAccumulator faultAccumulator)

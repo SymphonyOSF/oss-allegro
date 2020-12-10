@@ -26,6 +26,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
@@ -38,7 +39,6 @@ import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
-import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
@@ -47,10 +47,11 @@ import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
-import com.symphony.s2.authc.model.IAuthcContext;
+import com.symphony.s2.authc.canon.AuthcHttpModelClient;
 import com.symphony.s2.authc.model.IMultiTenantServiceRegistry;
 import com.symphony.s2.authz.canon.EntitlementAction;
 import com.symphony.s2.authz.canon.facade.IEntitlement;
@@ -255,6 +256,23 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   IFeed upsertFeed(UpsertFeedRequest request);
   
   /**
+   * Delete a feed with the given details. A feed is identified by a hash,
+   * feeds can only be deleted by the creator.
+   * e.g.
+   * <p>
+   * <pre>{@code
+              allegroApi_.deleteFeed(new FeedId.Builder()
+              .withId(feed.getId())
+              .build()
+              );
+          
+   * }</pre>
+   * <p>
+   * @param request The details of the feed to be created or returned.
+   */
+  void deleteFeed(FeedId feed);
+  
+  /**
    * Fetch objects from the given feed.
    * <p>
    * This method makes a synchronous or asynchronous request depending on whether the consumer provided by the request object
@@ -429,13 +447,11 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   CloseableHttpClient getApiHttpClient();
 
   /**
-   * Return an authenticator which can be used to authenticate requests from regular or multi-tenant service accounts.
+   * Return an ModelClient to format request to Authentication Service
    * <p>
-   * This is the server side equivalent of the generator returned by the {@code getJwtGenerator()} method.
-   * <p>
-   * @return an IRequestAuthenticator.
+   * @return A AuthcHttpModelClient.
    */
-  IRequestAuthenticator<IAuthcContext> getAuthenticator();
+  AuthcHttpModelClient getAuthcHttpModelClient();
 
   /**
    * Return a JWT generator which can authenticate a request made to the object store or some other multi-tenant service.
@@ -454,7 +470,18 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The Partition object which describes the partition.
    */
   IPartition fetchPartition(PartitionQuery query);
-
+  
+  
+  /**
+   * Fetch a Partition Users.
+   * 
+   * @param query The query parameters for the Partition required.
+   * 
+   * @return The User Permissions assigned.
+   */
+  IPageOfUserPermissions fetchPartitionUsers(PartitionQuery query);
+  
+  
   /**
    * Return the ModelRegistry used by Allegro.
    * 
@@ -496,4 +523,5 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @return The current configuration.
    */
   IAllegroBaseConfiguration getConfiguration();
+
 }

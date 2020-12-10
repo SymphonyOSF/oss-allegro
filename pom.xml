@@ -22,12 +22,12 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.4.0</version><!-- oss-parent-pom -->
+		<version>0.4.5</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
   <artifactId>oss-allegro</artifactId>
-  <version>0.5.1-SNAPSHOT</version>
+  <version>0.5.20-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <url>https://github.com/SymphonyOSF/oss-allegro</url>
@@ -67,12 +67,13 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>  
     
-    <oss.commons.version>0.2.0</oss.commons.version>
-    <oss.canon.version>0.2.0</oss.canon.version>
-    <oss.fugue.version>0.2.0</oss.fugue.version>
-    <symphony.security.version>1.57.2</symphony.security.version>
-    <messageml.version>0.9.39</messageml.version>
-    <oss.models.version>0.7.0</oss.models.version>
+    <oss.commons.version>0.2.3</oss.commons.version>
+    <oss.canon.version>0.3.5</oss.canon.version>
+    <oss.fugue.version>0.2.28</oss.fugue.version>
+    <symphony.security.version>1.63.2</symphony.security.version>
+    <messageml.version>0.9.57</messageml.version>
+    <oss.models.version>0.7.21</oss.models.version>
+
   </properties>
   
   <modules>

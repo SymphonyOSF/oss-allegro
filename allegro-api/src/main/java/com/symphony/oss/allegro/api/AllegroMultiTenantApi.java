@@ -23,6 +23,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
@@ -47,12 +50,16 @@ import com.symphony.s2.authc.canon.facade.PrincipalCredential;
  */
 public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
 {
+  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
+
   private final PodAndUserId      userId_;
   private final Rs512JwtGenerator jwtBuilder_;
   
   AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
   {
     super(builder);
+    
+    log_.info("AllegroMultiTenantApi constructor start with configuredUserId " + builder.configuredUserId_ + " and config " + builder.config_.getRedacted());
 
     userId_ = builder.configuredUserId_;
     
@@ -188,7 +195,16 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     {
       super.validate(faultAccumulator);
       
-      if(config_.getPrincipalCredentialFile() != null)
+      if(config_.getPrincipalCredential() != null) {
+        
+        IPrincipalCredential principalCredential = config_.getPrincipalCredential();
+        
+        rsaCredential_    = cipherSuite_.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
+        keyId_            = principalCredential.getKeyId().toString();
+        configuredUserId_ = principalCredential.getUserId();
+        
+      }
+      else if(config_.getPrincipalCredentialFile() != null)
       {
         File file = new File(config_.getPrincipalCredentialFile());
         
