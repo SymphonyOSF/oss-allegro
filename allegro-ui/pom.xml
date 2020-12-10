@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.5.19-SNAPSHOT</version>
+    <version>0.5.19</version>
   </parent>
   <artifactId>allegro-ui</artifactId>
   
@@ -29,7 +29,7 @@
     <dependency>
       <groupId>com.symphony.oss.allegro</groupId>
       <artifactId>allegro-api</artifactId>
-      <version>0.5.19-SNAPSHOT</version>
+      <version>0.5.19</version>
     </dependency>
     
     <dependency>
