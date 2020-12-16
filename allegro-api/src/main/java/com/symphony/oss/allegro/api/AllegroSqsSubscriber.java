@@ -29,18 +29,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.QueueDoesNotExistException;
 import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
-import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.fugue.Fugue;
+import com.symphony.oss.fugue.aws.sqs.SqsAction;
+import com.symphony.oss.fugue.aws.sqs.SqsResponseMessage;
 import com.symphony.oss.fugue.counter.IBusyCounter;
 import com.symphony.oss.fugue.counter.ICounter;
 import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
@@ -51,6 +50,7 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 /**
  * An SWS SNS subscriber.
@@ -68,49 +68,51 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
 
   private final ModelRegistry                                                  modelRegistry_;         
   private final AllegroSqsSubscriberManager                                    manager_;
-  private final AmazonSQS                                                      sqsClient_;
-  private final String                                                         queueUrl_;
+  private final String                                                         feedHash_;
   private final ITraceContextTransactionFactory                                traceFactory_;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final NonIdleSubscriber                                              nonIdleSubscriber_;
   private int                                                                  messageBatchSize_          = 10;
   private ReceiveMessageRequest                                                blockingPullRequest_;
   private ReceiveMessageRequest                                                nonBlockingPullRequest_;
-  private AWSCredentialsProvider                                               credentials_;
-
+  private AllegroSqsFeedsContainer                                             feeds_;
+  private ObjectHttpModelClient                                                objectApiClient_;
+  private CloseableHttpClient                                                  apiHttpClient_;
+  private IAllegroMultiTenantApi                                               allegro_;
 
   AllegroSqsSubscriber(AllegroSqsSubscriberManager manager,
-      AmazonSQS sqsClient, String queueUrl,
+      ObjectHttpModelClient objectApiClient,  CloseableHttpClient apiHttpClient, String feedHash,
       ITraceContextTransactionFactory traceFactory,
       IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer, 
       ICounter counter, IBusyCounter busyCounter,
-      AWSCredentialsProvider credentials, ModelRegistry modelRegistry )
+      AllegroSqsFeedsContainer feeds, ModelRegistry modelRegistry )
   {
-    super(manager, queueUrl, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
+    super(manager, feedHash, counter, busyCounter, EXTENSION_FREQUENCY_MILLIS, consumer);
     
     if(Fugue.isDebugSingleThread())
     {
       messageBatchSize_ = 1;
     }
-    
-    sqsClient_         = sqsClient;
+    objectApiClient_   = objectApiClient;
+    apiHttpClient_     = apiHttpClient;
     manager_           = manager;
-    queueUrl_          =  queueUrl;
+    feedHash_          =  feedHash;
     traceFactory_      = traceFactory;
     consumer_          = consumer;
     nonIdleSubscriber_ = new NonIdleSubscriber();
-    credentials_       = credentials;
+    feeds_             = feeds;
+    allegro_           = feeds.getAllegro();
     
-    blockingPullRequest_ = new ReceiveMessageRequest(queueUrl)
+    blockingPullRequest_ = new ReceiveMessageRequest(feedHash)
         .withMaxNumberOfMessages(messageBatchSize_ )
         .withWaitTimeSeconds(20);
     
-    nonBlockingPullRequest_ = new ReceiveMessageRequest(queueUrl)
+    nonBlockingPullRequest_ = new ReceiveMessageRequest(feedHash)
         .withMaxNumberOfMessages(messageBatchSize_ );
     
     modelRegistry_  = modelRegistry;
   }
-  
+
   class NonIdleSubscriber implements Runnable
   {
     @Override
@@ -121,7 +123,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
   }
   
   public String getQueue() {
-    return queueUrl_;
+    return feedHash_;
   }
 
   @Override
@@ -160,18 +162,25 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
         List<IPullSubscriberMessage> result = new LinkedList<>();
         try 
         { 
-          credentials_.refresh();
-          ReceiveMessageResult receiveResult = sqsClient_.receiveMessage(pullRequest);
+          feeds_.refresh();
           
+          List<SqsResponseMessage> messages = new AllegroSqsRequestBuilder(allegro_, feeds_.getEndpoint())
+              .withFeedHash(feedHash_)
+              .withAction(SqsAction.RECEIVE)
+              .withMaxNumberOfMessages(pullRequest.getMaxNumberOfMessages())
+              .withWaitTimeSeconds(pullRequest.getWaitTimeSeconds())          
+            .execute(apiHttpClient_);
+
           trace.trace("RECEIVED_SQS");
-          for(Message receivedMessage : receiveResult.getMessages())
+
+          for(SqsResponseMessage receivedMessage : messages)
           {
             result.add(new AllegroPullSubscriberMessage(receivedMessage, trace));
           }
         
         } catch(QueueDoesNotExistException e)
         {
-          trace.trace("Stopping Subscriber, Queue deleted: "+queueUrl_);
+          trace.trace("Stopping Subscriber, Feed deleted: "+feedHash_);
           running_ = false;
         }
         
@@ -190,13 +199,13 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
 
   private class AllegroPullSubscriberMessage implements IPullSubscriberMessage
   {
-    private final Message message_;
+    private final SqsResponseMessage message_;
     private boolean       running_ = true;
     private ITraceContext trace_;
    
-    private AllegroPullSubscriberMessage(Message message, ITraceContext trace)
+    private AllegroPullSubscriberMessage(SqsResponseMessage receivedMessage, ITraceContext trace)
     {
-      message_ = message;
+      message_ = receivedMessage;
       trace_ = trace;
     }
 
@@ -212,7 +221,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
       try(ITraceContextTransaction traceTransaction = trace_.createSubContext("PubSubHandle:SQS", message_.getMessageId(), ""))
       {
         ITraceContext trace = traceTransaction.open();
-        IEntity entity = modelRegistry_.parseOne(new StringReader(message_.getBody()));
+        IEntity entity = modelRegistry_.parseOne(new StringReader(message_.getPayload()));
         
         if(entity instanceof IAbstractStoredApplicationObject)
         {
@@ -220,7 +229,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
           IAbstractStoredApplicationObject object = (IAbstractStoredApplicationObject) entity;
           long retryTime = manager_.handleMessage(consumer_, object, trace, message_.getMessageId());
           
-          credentials_.refresh();
+          feeds_.refresh();
           
           synchronized(this)
           {
@@ -231,7 +240,13 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
             if(retryTime < 0)
             {
               trace.trace("ABOUT_TO_ACK");
-              sqsClient_.deleteMessage(queueUrl_, message_.getReceiptHandle());
+              
+              new AllegroSqsRequestBuilder(allegro_, feeds_.getEndpoint())
+                .withFeedHash(feedHash_)
+                .withAction(SqsAction.DELETE)
+                .withReceiptHandle(message_.getReceiptHandle())
+              .execute(apiHttpClient_);
+              
               traceTransaction.finished();
             }
             else
@@ -240,7 +255,13 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
               
               int visibilityTimout = (int) (retryTime / 1000);
               
-              sqsClient_.changeMessageVisibility(queueUrl_, message_.getReceiptHandle(), visibilityTimout);
+              new AllegroSqsRequestBuilder(allegro_, feeds_.getEndpoint())
+                .withFeedHash(feedHash_)
+                .withAction(SqsAction.EXTEND)
+                .withReceiptHandle(message_.getReceiptHandle())
+                .withVisibilityTimeout(visibilityTimout)
+              .execute(apiHttpClient_);
+                
               traceTransaction.aborted();
             }
           }
@@ -263,9 +284,15 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
       {
         try
         {
-          credentials_.refresh();
+          feeds_.refresh();
           
-          sqsClient_.changeMessageVisibility(queueUrl_, message_.getReceiptHandle(), EXTENSION_TIMEOUT_SECONDS);
+          new AllegroSqsRequestBuilder(allegro_, feeds_.getEndpoint())
+            .withFeedHash(feedHash_)
+            .withAction(SqsAction.EXTEND)
+            .withReceiptHandle(message_.getReceiptHandle())
+            .withVisibilityTimeout(EXTENSION_TIMEOUT_SECONDS)
+          .execute(apiHttpClient_);
+          
         }
         catch(RuntimeException e)
         {

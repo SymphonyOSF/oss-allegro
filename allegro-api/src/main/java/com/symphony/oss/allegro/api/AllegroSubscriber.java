@@ -153,10 +153,6 @@ class AllegroSubscriber extends AbstractPullSubscriber
             .build()
             .execute(httpClient_);
         
-//        FeedRequest.Builder builder = new FeedRequest.Builder()
-//            .withMaxItems(0)
-//            .withWaitTimeSeconds(0);
-        
         trace.trace("RECEIVED_MSG");
         log_.info("Received " + messages.size() + " messages.");
         for(IFeedObject message : messages)
@@ -164,27 +160,6 @@ class AllegroSubscriber extends AbstractPullSubscriber
           result.add(new AllegroPullSubscriberMessage(message, trace));
         }
       }
-      
-//      
-//      
-//      
-//      
-//      
-//      
-//      try
-//      {
-//        for(int receivedMessage :  objectApiClient_.newFeedsNameMessagesPostHttpRequestBuilder()
-//            .withName(feedName_)
-//            .withCanonPayload(request)
-//            .build()
-//            .execute(httpClient_))
-//        {
-//          result.add(new AllegroPullSubscriberMessage(receivedMessage));
-//        }
-//      }
-//      catch(NotFoundException e)
-//      {
-//      }
       
       return result;
     }
