@@ -823,7 +823,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               }
             }
           }
-        }
+      }
     }
     else
       fetchFeedObjectsFromServerSync(request, consumerManager);
