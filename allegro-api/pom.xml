@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.5.21-SNAPSHOT</version>
+    <version>0.5.22-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
     
