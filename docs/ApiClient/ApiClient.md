@@ -74,8 +74,6 @@ a working configuration and can be used with existing code which calls now depre
 
 API callers are encouraged to migrate to the new format asap.
 
-**Note that for each URL provided, plus the key manager (whose URL is obtained from the pod) there is a separate connection properties.**
-
 ## Security Considerations
 The configuration allows for the provision of RSA or client certificate credentials in a separate file, or in-line in
 the configuration object itself. Obviously, these credentials are sensitive and must be stored in files with the
