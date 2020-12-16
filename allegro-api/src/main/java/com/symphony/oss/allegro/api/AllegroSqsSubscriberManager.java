@@ -28,21 +28,20 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.ClientConfiguration;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotImplementedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
-import com.symphony.oss.fugue.aws.sqs.GatewayAmazonSQSClientBuilder;
 import com.symphony.oss.fugue.config.Configuration;
 import com.symphony.oss.fugue.naming.Name;
 import com.symphony.oss.fugue.pubsub.AbstractPullSubscriberManager;
 import com.symphony.oss.fugue.pubsub.ISubscription;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 /**
  * Allegro implementation of SubscriberManager.
@@ -57,16 +56,20 @@ implements IAllegroQueryManager
 
   private List<AllegroSqsSubscriber> subscribers_ = new LinkedList<>();
 
-  private AmazonSQS                  sqsClient_;
-  private AWSCredentialsProvider     credentials_;
+  private AllegroSqsFeedsContainer     feeds_;
   private ModelRegistry              modelRegistry_;
+
+  private ObjectHttpModelClient  objectApiClient_;
+  private CloseableHttpClient    apiHttpClient_;
 
   private AllegroSqsSubscriberManager(Builder builder)
   {
     super(builder);
     
-    credentials_ = builder.credentials_;
+    feeds_         = builder.feeds_;
     modelRegistry_ = builder.modelRegistry_;
+    objectApiClient_ = builder.objectApiClient_;
+    apiHttpClient_ = builder.apiHttpClient_;
 
     ClientConfiguration configuration = new ClientConfiguration()
     .withMaxConnections(200);
@@ -83,10 +86,6 @@ implements IAllegroQueryManager
     if(builder.proxyPassword_ != null)
       configuration.setProxyPassword(builder.proxyPassword_);
     
-    builder.sqsBuilder_.withClientConfiguration(configuration);
-      
-    sqsClient_ = builder.sqsBuilder_.build();
-    
   }
   
   /**
@@ -97,19 +96,18 @@ implements IAllegroQueryManager
    */
   public static class Builder extends AbstractPullSubscriberManager.Builder<Builder, IAbstractStoredApplicationObject, AllegroSqsSubscriberManager>
   {
-    private String                 region_;
     
     private int                   subscriberThreadPoolSize_ = 1; // TODO: default to number of subscriptions
     private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
-    private AWSCredentialsProvider        credentials_;
-    private GatewayAmazonSQSClientBuilder sqsBuilder_;
+    private AllegroSqsFeedsContainer        feeds_;
     private ModelRegistry              modelRegistry_;
-
-    private String endPoint_;
 
     private URL proxyUrl_;
     private String proxyUsername_;
     private String proxyPassword_;
+    
+    private ObjectHttpModelClient  objectApiClient_;
+    private CloseableHttpClient    apiHttpClient_;
 
     /**
      * Constructor.
@@ -117,31 +115,12 @@ implements IAllegroQueryManager
     public Builder()
     {
       super(Builder.class);    
-      
-      sqsBuilder_ = GatewayAmazonSQSClientBuilder
-          .standard();
     }
     
     @Override
     protected String getConfigPath()
     {
       return "/";
-    }
-
-    /**
-     * Set the AWS region.
-     * 
-     * @param region The AWS region in which to operate.
-     * 
-     * @return this (fluent method)
-     */
-    public Builder withRegion(String region)
-    {
-      region_ = region;
-      
-      sqsBuilder_.withRegion(region_);
-      
-      return self();
     }
     
     /**
@@ -167,11 +146,9 @@ implements IAllegroQueryManager
       return self();
     }
     
-    public Builder withCredentials(AWSCredentialsProvider credentials)
+    public Builder withFeedsContainer(AllegroSqsFeedsContainer feeds)
     {
-      credentials_ = credentials;
-      
-      sqsBuilder_.withCredentials(credentials);
+      feeds_ = feeds;
       
       return self();
     }
@@ -183,21 +160,6 @@ implements IAllegroQueryManager
       return self();
     }
     
-    /**
-     * Set the API endpoint.
-     * 
-     * @param endpoint The AWS gateway endpoint for SQS.
-     * 
-     * @return this (fluent method)
-     */
-    public Builder withEndpoint(String endpoint)
-    {
-      endPoint_ = endpoint;
-      
-      sqsBuilder_.withEndpoint(endPoint_);
-      
-      return self();
-    }
     /**
      * Set the API proxy URL.
      * 
@@ -239,15 +201,30 @@ implements IAllegroQueryManager
       
       return self();
     }
+    
+    public Builder withApiClient(ObjectHttpModelClient objectApiClient)
+    {
+      objectApiClient_ = objectApiClient;
+      
+      return self();
+    }
+
+    public Builder withHttpClient(CloseableHttpClient apiHttpClient)
+    {
+      apiHttpClient_ = apiHttpClient;
+      
+      return self();
+    }
 
     @Override
     public void validate(FaultAccumulator faultAccumulator)
     {
 //      super.validate(faultAccumulator);
       
-      faultAccumulator.checkNotNull(region_,      "region");
-      faultAccumulator.checkNotNull(credentials_, "credentials");
+      faultAccumulator.checkNotNull(feeds_, "credentials");
       faultAccumulator.checkNotNull(modelRegistry_, "modelRegistry");
+      faultAccumulator.checkNotNull(objectApiClient_, "objectApiClient");
+      faultAccumulator.checkNotNull(apiHttpClient_, "apiHttpClient");
     }
     
     class LocalConfiguration extends Configuration
@@ -280,8 +257,8 @@ implements IAllegroQueryManager
     {
       log_.info("Subscribing to " + subscriptionName + "..."); 
       
-      AllegroSqsSubscriber subscriber = new AllegroSqsSubscriber(this, sqsClient_ ,subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
-          getCounter(), createBusyCounter(subscriptionName), credentials_, modelRegistry_);
+      AllegroSqsSubscriber subscriber = new AllegroSqsSubscriber(this, objectApiClient_, apiHttpClient_,subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
+          getCounter(), createBusyCounter(subscriptionName), feeds_, modelRegistry_);
 
       subscribers_.add(subscriber); 
     }
