@@ -36,8 +36,6 @@ import com.symphony.oss.fugue.aws.sqs.SqsResponseMessage;
 
 public class AllegroSqsRequestBuilder
 {
-//  private static String  url = "f9pfg2z116-vpce-0344f3fb21fb0ffa0.execute-api.us-east-1.amazonaws.com";
-//  private static String path = "internal/object/v1/feeds/fetch/aws/us-east-1";
   private RequestBuilder req;
   private URIBuilder uri = new URIBuilder();
   
@@ -48,8 +46,6 @@ public class AllegroSqsRequestBuilder
     .setPath(path);
 
     req = RequestBuilder.post().addHeader("Authorization", "Bearer " + allegro.getApiAuthorizationToken());
-      //  + "eyJhbGciOiJSUzUxMiJ9.eyJzdWIiOiJhbGxlZ3JvQm90IiwiaXNzIjoic3ltcGhvbnkiLCJraWQiOiIzblZ6KzR3UHhONUt6THl2c2RDcWdiSUxXcmc9IiwiaW50ZXJuYWxQb2RJZCI6IjUxMTkiLCJzZXNzaW9uSWQiOiJiYmRhZmUwMWQ1OTViMzZiZTcxZDJlMDkzYzI1NGE4MTNmOWIxOGE0ODZjZWVhYzE4MDhmNmNiYWFiNzc4MmY3ZmZhNDQyNjI5MWRlYzkyOWU4MGQ4NzlhMDkwYjE4NTMwMDAwMDE3NjQ2ZDVkNGVmMDAwMTNmZjAwMDAwMDFhNyIsInVzZXJJZCI6IjM1MTc3NTAwMTQxMjAwNyIsInBvZElkIjoiNTExOSJ9.MbLR6Qu2-I-NywRmNNXe_jOwGcThbpK9l74-cx8PhU9a8eJ73kjKdZ1zIKuHH7K-kCvhHcU5ZpY3PVwbokjuAqbvT6pW3zUqsx0KAS4o2fkaYVp1rM9WDUOVcQBVA6dD9dzEJKUF19ChjHqah03bq0i3MW8XWcbqrIwHNFE1_FtzaYtmVpd0MDQ-XmVpC5-RfUhqxaaul0SKwA8Q_-4ayljqUGIk9_p6hwW1wdgPULd-hL9YuARvQTkWLYdGCFsLnMTdrqXya8-WMIpx0myajh7fYKD5gZWdEJfMxztSp0kS_1doihHnuYULYuAZGESnUforiMrTyCSSzvapCcSvZQ");
-
   }
 
   public AllegroSqsRequestBuilder withFeedHash(String feedHash)
