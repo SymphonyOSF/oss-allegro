@@ -34,12 +34,21 @@ import com.symphony.oss.fugue.aws.sqs.SqsAction;
 import com.symphony.oss.fugue.aws.sqs.SqsMessageParser;
 import com.symphony.oss.fugue.aws.sqs.SqsResponseMessage;
 
+/**
+ * @author Geremia Longobardo
+ * 
+ * Class used to build http requests to fetch records directly from SQS endpoint
+ */
 public class AllegroSqsRequestBuilder
 {
   private RequestBuilder req;
   private URIBuilder uri = new URIBuilder();
   
-  public AllegroSqsRequestBuilder(IAllegroMultiTenantApi allegro ,String path)
+  /**
+   * @param allegro AllegroApi is needed for configuration.
+   * @param path  endpoint path configured in API Gateway.
+   */
+  public AllegroSqsRequestBuilder(IAllegroMultiTenantApi allegro , String path)
   {
     uri.setScheme("https")
     .setHost(allegro.getConfiguration().getApiUrl().toString().split("//")[1])
@@ -48,6 +57,10 @@ public class AllegroSqsRequestBuilder
     req = RequestBuilder.post().addHeader("Authorization", "Bearer " + allegro.getApiAuthorizationToken());
   }
 
+  /**
+   * @param feedHash Hash of the feed.
+   * @return self
+   */
   public AllegroSqsRequestBuilder withFeedHash(String feedHash)
   {
     uri.addParameter("feedHash", feedHash);
@@ -55,6 +68,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
 
+  /**
+   * @param MaxNumberOfMessages the Max number of messages to request (<=10)
+   * @return self
+   */
   public AllegroSqsRequestBuilder withMaxNumberOfMessages(Integer MaxNumberOfMessages)
   {
     uri.addParameter("MaxNumberOfMessages", MaxNumberOfMessages.toString());
@@ -62,6 +79,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
 
+  /**
+   * @param action The SQS Action to perform
+   * @return self
+   */
   public AllegroSqsRequestBuilder withAction(SqsAction action)
   {
     String s;
@@ -76,6 +97,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
 
+  /**
+   * @param WaitTimeSeconds The maximum number of seconds to wait
+   * @return self
+   */
   public AllegroSqsRequestBuilder withWaitTimeSeconds(Integer WaitTimeSeconds)
   {
     uri.addParameter("WaitTimeSeconds", WaitTimeSeconds == null? "0" : WaitTimeSeconds.toString());
@@ -83,6 +108,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
   
+  /**
+   * @param ReceiptHandle A String used as reference to the original message
+   * @return self
+   */
   public AllegroSqsRequestBuilder withReceiptHandle(String ReceiptHandle) 
   {
     uri.addParameter("ReceiptHandle", ReceiptHandle);
@@ -90,6 +119,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
   
+  /**
+   * @param VisibilityTimeout The number of seconds to extend visibility of a message.
+   * @return self
+   */
   public AllegroSqsRequestBuilder withVisibilityTimeout(Integer VisibilityTimeout)
   {
     uri.addParameter("VisibilityTimeout", VisibilityTimeout.toString());
@@ -97,6 +130,10 @@ public class AllegroSqsRequestBuilder
     return self();
   }
 
+  /**
+   * @param httpClient The client used to execute the request
+   * @return The SQS messages
+   */
   public List<SqsResponseMessage> execute(CloseableHttpClient httpClient)
   {
     HttpUriRequest request = null;

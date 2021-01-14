@@ -47,8 +47,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   public AllegroSqsSubscription(FetchFeedObjectsRequest request, List<String> queueUrls, AllegroBaseApi allegroApi)
   {
     Set<Name> queueurls = new HashSet<>();
-    
-//    
+      
     for(String q : queueUrls)
       queueurls.add(new Name(q));
     

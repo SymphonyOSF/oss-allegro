@@ -268,6 +268,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
           
    * }</pre>
    * <p>
+   * @param feed The id of the feed.
    * @param request The details of the feed to be created or returned.
    */
   void deleteFeed(FeedId feed);

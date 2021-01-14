@@ -31,6 +31,13 @@ import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 
+/**
+ * 
+ * Class used to fetch asyncronously IPageOfStoredApplicationObject
+ *  
+ * @author Bruce Skingle
+ *
+ */
 public class AsyncPartitionQueryManager extends AbstractAsyncQueryManager
 {
   private final PartitionQuery                  query_;

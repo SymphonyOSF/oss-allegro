@@ -137,6 +137,13 @@ implements IAllegroQueryManager
       return self();
     }
 
+    /**
+     * Set the N of threads for subscribers
+     * 
+     * @param subscriberThreadPoolSize the N of threads
+     *  
+     * @return this (fluent method)
+     */
     public Builder withSubscriberThreadPoolSize(int subscriberThreadPoolSize)
     {
       subscriberThreadPoolSize_ = subscriberThreadPoolSize;
@@ -146,13 +153,28 @@ implements IAllegroQueryManager
       return self();
     }
     
+    
+    /**
+     * Sets the feeds to be fetched
+     * 
+     * @param feeds The feed container
+     * 
+     * @return this (fluent method)
+     */
     public Builder withFeedsContainer(AllegroSqsFeedsContainer feeds)
     {
       feeds_ = feeds;
       
       return self();
     }
-
+    
+    /**
+     * Set the N of threads for handlers
+     * 
+     * @param handlerThreadPoolSize the N of threads
+     *  
+     * @return this (fluent method)
+     */
     public Builder withHandlerThreadPoolSize(int handlerThreadPoolSize)
     {
       handlerThreadPoolSize_ = handlerThreadPoolSize;
@@ -202,6 +224,13 @@ implements IAllegroQueryManager
       return self();
     }
     
+    /**
+     * Set the API client
+     * 
+     * @param objectApiClient The client needed to connect to API.
+     * 
+     * @return this (fluent method)
+     */
     public Builder withApiClient(ObjectHttpModelClient objectApiClient)
     {
       objectApiClient_ = objectApiClient;
@@ -209,6 +238,13 @@ implements IAllegroQueryManager
       return self();
     }
 
+    /**
+     * Set the Http client
+     * 
+     * @param apiHttpClient The client needed to make http requests
+     * 
+     * @return this (fluent method)
+     */
     public Builder withHttpClient(CloseableHttpClient apiHttpClient)
     {
       apiHttpClient_ = apiHttpClient;
