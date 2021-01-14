@@ -37,6 +37,7 @@ import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfigurat
 import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
@@ -199,7 +200,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
         
         IPrincipalCredential principalCredential = config_.getPrincipalCredential();
         
-        rsaCredential_    = cipherSuite_.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
+        rsaCredential_    = CipherSuiteUtils.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
         keyId_            = principalCredential.getKeyId().toString();
         configuredUserId_ = principalCredential.getUserId();
         
@@ -215,7 +216,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
         {
           IPrincipalCredential principalCredential = allegroModelRegistry_.parseOne(reader, PrincipalCredential.TYPE_ID, IPrincipalCredential.class);
           
-          rsaCredential_    = cipherSuite_.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
+          rsaCredential_    = CipherSuiteUtils.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
           keyId_            = principalCredential.getKeyId().toString();
           configuredUserId_ = principalCredential.getUserId();
         }
