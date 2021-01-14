@@ -39,6 +39,12 @@ public class AsyncPartitionQueryListManager extends AbstractAsyncQueryListManage
     super(builder);
   }
   
+  /** 
+   * The abstract builder
+   * 
+   * @author Bruce Skingle
+   *
+   */
   public static class Builder extends AbstractBuilder<Builder, AsyncPartitionQueryListManager>
   {
     /**

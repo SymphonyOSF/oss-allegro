@@ -35,6 +35,7 @@ public interface IObjectPage extends IAbstractObjectPage<IStoredApplicationObjec
    * 
    * @return The next page of objects, or <code>null</code> if there is none.
    */
+  @Override
   @Nullable IObjectPage fetchNextPage();
 
   /**
@@ -42,5 +43,6 @@ public interface IObjectPage extends IAbstractObjectPage<IStoredApplicationObjec
    * 
    * @return The previous page of objects, or <code>null</code> if there is none.
    */
+  @Override
   @Nullable IObjectPage fetchPrevPage();
 }

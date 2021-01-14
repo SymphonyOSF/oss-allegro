@@ -36,6 +36,10 @@ import com.symphony.oss.fugue.FugueLifecycleState;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
+/**
+ * @author Bruce Skingle
+ *
+ */
 public abstract class AbstractAsyncQueryListManager<T extends AbstractAsyncQueryListManager<T,Q>, Q extends AbstractAsyncQueryManager>
   extends FugueLifecycleComponent
   implements IAllegroQueryManager

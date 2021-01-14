@@ -22,19 +22,45 @@ import java.io.Closeable;
 
 import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
 
+/**
+ * @author Bruce Skingle
+ *
+ */
 public interface IAuthHandler extends Closeable
 {
 
+  /**
+   * Forces authentication
+   * 
+   * @param authSession true if one wants to refresh sessionToken 
+   * @param authKeyManager true if one wants to refresh key manager token
+   */
   void authenticate(boolean authSession, boolean authKeyManager);
   
+  /**
+   * @param usedSessionToken used to check which action perform
+   * @return the action
+   */
   ResponseHandlerAction reauthenticate(String usedSessionToken);
 
+  /**
+   * @return the key manager token
+   */
   String getKeyManagerToken();
 
+  /**
+   * @return the session token
+   */
   String getSessionToken();
 
+  /**
+   * @param keyManagerUrl the key manager url
+   */
   void setKeyManagerUrl(String keyManagerUrl);
 
+  /**
+   * @return the time at which the authenticaton occurred
+   */
   long getSessionAuthTime();
 
 }

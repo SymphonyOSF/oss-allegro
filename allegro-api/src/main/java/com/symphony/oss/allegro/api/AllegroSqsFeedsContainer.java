@@ -26,10 +26,15 @@ import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.IFeedsEndpoint;
 
+/**
+ * @author Geremia Longobardo
+ * 
+ * Class used to refresh Feed Read Records and check if direct fetch is enabled
+ */
 public class AllegroSqsFeedsContainer
 {
     private String            endpoint_;
-    public boolean            directFetch_;
+    private boolean           directFetch_;
     private List<FeedId>      feedIds_;
     private List<String>      stringIds_;
     private Instant           expiryDate_ = Instant.now().minusMillis(1000 * 60 * 30);
@@ -37,6 +42,11 @@ public class AllegroSqsFeedsContainer
 
     private static final long      threshold = 40000;
     
+    /**
+     * @param feedIds The ids of the feeds
+     * @param owner   The feeds owner
+     * @param allegro The Allegro API object
+     */
     public AllegroSqsFeedsContainer(List<FeedId> feedIds, PodAndUserId owner, AllegroBaseApi allegro) 
     {
       feedIds_ = feedIds;
@@ -51,11 +61,17 @@ public class AllegroSqsFeedsContainer
       refresh();
     }
 
+    /**
+     * @return the ids of the feeds.
+     */
     public List<String> getFeedIds()
     {
       return stringIds_;
     }
     
+    /**
+     *  Refreshes the Feed Read Records each 15 minutes
+     */
     public void refresh()
     {
       synchronized(this) 
@@ -70,18 +86,35 @@ public class AllegroSqsFeedsContainer
       }
     }
     
+    /**
+     * @return true if the Feed Read Records need to be refreshed
+     */
     public boolean isExpired()
     {
       return expiryDate_.toEpochMilli() - Instant.now().toEpochMilli() < threshold;
     }
 
+    /**
+     * @return The endpoint Path
+     */
     public String getEndpoint()
     {
       return endpoint_;
     }
 
+    /**
+     * @return the AllegroAPI
+     */
     public IAllegroMultiTenantApi getAllegro()
     {
       return allegro_;
+    }
+    
+    /**
+     * @return true if direct fetch is enabled
+     */
+    public boolean isDirect() 
+    {
+      return directFetch_;
     }
 }
