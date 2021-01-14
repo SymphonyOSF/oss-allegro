@@ -102,7 +102,7 @@ import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.crypto.cipher.ICipherSuite;
+import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -279,7 +279,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withFactories(AllegroModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES);
     protected C                               config_;
-    protected ICipherSuite                    cipherSuite_;
     protected PrivateKey                      rsaCredential_;
     private C                                 setConfig_;
     private CloseableHttpClient               defaultHttpClient_;
@@ -301,11 +300,11 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         if(config_.getDefaultConnectionSettings() == null)
         {
-          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cipherSuite_, cookieStore_);
+          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_);
         }
         else
         {
-          defaultHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          defaultHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -322,7 +321,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         }
         else
         {
-          apiHttpClient_ = config_.getApiConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          apiHttpClient_ = config_.getApiConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -539,8 +538,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         config_ = setConfig_;
       }
       
-      cipherSuite_ = config_.getCipherSuiteId() == null ? CipherSuite.getDefault() : CipherSuite.get(config_.getCipherSuiteId());
-      
       if(config_.getRsaPemCredential() == null)
       {
         if(config_.getRsaPemCredentialFile() == null)
@@ -557,7 +554,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           try
           {
             PemPrivateKey pemPrivateKey = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
-            rsaCredential_ = cipherSuite_.privateKeyFromPem(pemPrivateKey);
+            rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(pemPrivateKey);
           }
           catch (IOException e)
           {
@@ -567,7 +564,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
       else
       {
-        rsaCredential_ = cipherSuite_.privateKeyFromPem(config_.getRsaPemCredential());
+        rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(config_.getRsaPemCredential());
       }
     }
   }
@@ -702,7 +699,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
     try (ITraceContextTransaction parentTraceTransaction = traceFactory_ .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
     {
-      ITraceContext parentTrace = parentTraceTransaction.open();
+      parentTraceTransaction.open();
 
       List<FeedId> feedIds        = new ArrayList<>();
       List<FeedQuery> queries = new ArrayList<>();

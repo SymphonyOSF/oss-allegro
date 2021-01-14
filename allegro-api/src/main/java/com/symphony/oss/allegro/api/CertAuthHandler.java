@@ -42,6 +42,7 @@ import com.symphony.oss.models.auth.canon.AuthModel;
 import com.symphony.oss.models.auth.canon.AuthenticatePostHttpRequest;
 import com.symphony.oss.models.auth.canon.AuthenticatePostHttpRequestBuilder;
 import com.symphony.oss.models.auth.canon.INamedToken;
+import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 
 /**
  * Handler for the bot Certificate authentication mechanism.
@@ -105,12 +106,12 @@ class CertAuthHandler implements IAuthHandler
         keyStorePassword = DEFAULT_PASSWORD;
         X509Certificate[] certs = new X509Certificate[1];
         
-        certs[0] = builder.cipherSuite_.certificateFromPem(builder.config_.getAuthCert());
+        certs[0] = CipherSuiteUtils.certificateFromPem(builder.config_.getAuthCert());
         
         
         keyStore.load(null, keyStorePassword.toCharArray());
         
-        keyStore.setKeyEntry("client", builder.cipherSuite_.privateKeyFromPem(builder.config_.getAuthCertPrivateKey()),
+        keyStore.setKeyEntry("client", CipherSuiteUtils.privateKeyFromPem(builder.config_.getAuthCertPrivateKey()),
             keyStorePassword.toCharArray(), certs);
       }
       SSLContextBuilder sslContextBuilder = SSLContexts.custom()
