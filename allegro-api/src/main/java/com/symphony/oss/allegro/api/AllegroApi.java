@@ -98,6 +98,7 @@ import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
+import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
 import com.symphony.oss.models.internal.km.canon.KmInternalModel;
@@ -1655,9 +1656,10 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
   AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
   {
-    private Supplier<String> sessionTokenSupplier_;
-    private Supplier<String> keyManagerTokenSupplier_;
-    
+    private ICipherSuite        cipherSuite_;
+    private Supplier<String>    sessionTokenSupplier_;
+    private Supplier<String>    keyManagerTokenSupplier_;
+
     private CloseableHttpClient podHttpClient_;
     private CloseableHttpClient keyManagerHttpClient_;
     private CloseableHttpClient certSessionAuthHttpClient_;
@@ -1685,7 +1687,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          podHttpClient_ = config_.getPodConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          podHttpClient_ = config_.getPodConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -1702,7 +1704,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          keyManagerHttpClient_ = config_.getKeyManagerConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          keyManagerHttpClient_ = config_.getKeyManagerConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -1715,11 +1717,11 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       {
         if(config_.getDefaultConnectionSettings() == null)
         {
-          defaultCertAuthHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+          defaultCertAuthHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_, sslContextBuilder);
         }
         else
         {
-          defaultCertAuthHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+          defaultCertAuthHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
         }
       }
       
@@ -1736,7 +1738,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          certSessionAuthHttpClient_ = config_.getCertSessionAuthConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+          certSessionAuthHttpClient_ = config_.getCertSessionAuthConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
         }
       }
       
@@ -1753,7 +1755,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          certKeyAuthHttpClient_ = config_.getCertKeyAuthConnectionSettings().createHttpClient(cipherSuite_, cookieStore_, sslContextBuilder);
+          certKeyAuthHttpClient_ = config_.getCertKeyAuthConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
         }
       }
       
@@ -1847,6 +1849,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     {
       super.validate(faultAccumulator);
       
+      cipherSuite_ = config_.getCipherSuiteId() == null ? CipherSuite.getDefault() : CipherSuite.get(config_.getCipherSuiteId());
+            
       if(sessionTokenSupplier_ != null || keyManagerTokenSupplier_!= null )
       {
         if(sessionTokenSupplier_ == null || keyManagerTokenSupplier_== null )
