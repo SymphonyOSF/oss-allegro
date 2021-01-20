@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.codec.binary.Base64;
 import org.junit.Test;
 
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
@@ -34,17 +33,8 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.NoOpTraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.chat.canon.IMaestroMessage;
-import com.symphony.oss.models.chat.canon.ISignalNotification;
-import com.symphony.oss.models.chat.canon.LiveCurrentMessageType;
-import com.symphony.oss.models.chat.canon.MaestroEventType;
-import com.symphony.oss.models.chat.canon.MaestroMessage;
-import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
-import com.symphony.oss.models.chat.canon.facade.MessageId;
-import com.symphony.oss.models.chat.canon.facade.SocialMessage;
-import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 @SuppressWarnings("javadoc")
 public class TestConsumerManager
@@ -52,24 +42,24 @@ public class TestConsumerManager
   private static final Class<?>[] NUMERIC_TYPES = {Number.class, Integer.class, Double.class};
   
 //  private static final Class<?>[] APPLICATION_TYPES = {IPrincipal.class, Pod.class, IEnvironment.class, IFeed.class};
-  private static final Class<?>[] LIVECURRENT_TYPES = {ISocialMessage.class, ISignalNotification.class, ILiveCurrentMessage.class};
-  
-  private static final PodId      POD_ID = PodId.newBuilder().build(1);
+//  private static final Class<?>[] LIVECURRENT_TYPES = {ISocialMessage.class, ISignalNotification.class, ILiveCurrentMessage.class};
+//  
+//  private static final PodId      POD_ID = PodId.newBuilder().build(1);
 //  private static final IPod       POD = new Pod.Builder()
 //      .withPodId(POD_ID)
 //      .build();
-  private static final ISocialMessage       SOCIAL_MESSAGE = new SocialMessage.Builder()
-      .withVersion(LiveCurrentMessageType.SOCIALMESSAGE)
-      .withMessageId(MessageId.newBuilder().build(Base64.decodeBase64("AAAA")))
-      .withIngestionDate(System.currentTimeMillis())
-      .withIsChime(false)
-      .build();
-  private static final IMaestroMessage       MAESTRO_MESSAGE = new MaestroMessage.Builder()
-      .withVersion(LiveCurrentMessageType.MAESTRO)
-      .withMessageId(MessageId.newBuilder().build(Base64.decodeBase64("BBBB")))
-      .withIngestionDate(System.currentTimeMillis())
-      .withEvent(MaestroEventType.CREATE_ROOM)
-      .build();
+//  private static final ISocialMessage       SOCIAL_MESSAGE = new SocialMessage.Builder()
+//      .withVersion(LiveCurrentMessageType.SOCIALMESSAGE)
+//      .withMessageId(MessageId.newBuilder().build(Base64.decodeBase64("AAAA")))
+//      .withIngestionDate(System.currentTimeMillis())
+//      .withIsChime(false)
+//      .build();
+//  private static final IMaestroMessage       MAESTRO_MESSAGE = new MaestroMessage.Builder()
+//      .withVersion(LiveCurrentMessageType.MAESTRO)
+//      .withMessageId(MessageId.newBuilder().build(Base64.decodeBase64("BBBB")))
+//      .withIngestionDate(System.currentTimeMillis())
+//      .withEvent(MaestroEventType.CREATE_ROOM)
+//      .build();
 //  private static final IFundamentalObject FUNDAMENTAL_OBJECT = new FundamentalObject.EntityObjectBuilder()
 //      .withPayload(SOCIAL_MESSAGE)
 //      .withPodId(POD_ID)
@@ -108,7 +98,7 @@ public class TestConsumerManager
     }
 
     @Override
-    public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
+    public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
     {
       throw new RuntimeException("Not implemented");
     }

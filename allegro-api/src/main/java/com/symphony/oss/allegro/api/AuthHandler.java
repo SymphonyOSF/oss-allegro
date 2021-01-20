@@ -27,7 +27,6 @@ import org.apache.http.impl.cookie.BasicClientCookie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IJwtAuthenticationProvider;
@@ -71,7 +70,7 @@ public class AuthHandler implements IAuthHandler
   private long                             sessionAuthTime_;
   private long                             reauthTime_;
   
-  public AuthHandler(AbstractBuilder<?, ?> builder, String serviceAccountName)
+  public AuthHandler(AllegroPodApi.AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
     // builder.cookieStore_, builder.config_.getPodUrl(), builder.rsaCredential_
     

@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
 
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
  * Base class for AllegroApi implementations.
@@ -35,7 +35,7 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  * @author Bruce Skingle
  *
  */
-class AllegroDecryptor
+class AllegroDecryptor implements IAllegroDecryptor
 {
   /**
    * Create an IChatMessage from the given ILiveCurrentMessage, if the message
@@ -45,6 +45,7 @@ class AllegroDecryptor
    * 
    * @return An IChatMessage representing the given message.
    */
+  @Override
   public @Nullable IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
     return null;
@@ -57,7 +58,8 @@ class AllegroDecryptor
    * 
    * @return The decrypted object.
    */
-  public @Nullable IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
+  @Override
+  public @Nullable IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
   {
     return null;
   }

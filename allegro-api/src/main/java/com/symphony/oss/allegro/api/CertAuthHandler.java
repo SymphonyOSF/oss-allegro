@@ -33,7 +33,6 @@ import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.allegro.api.AllegroApi.AbstractBuilder;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
@@ -73,7 +72,7 @@ class CertAuthHandler implements IAuthHandler
   private long                             sessionAuthTime_;
   private long                             reauthTime_;
   
-  CertAuthHandler(AbstractBuilder<?, ?> builder)
+  CertAuthHandler(AllegroPodApi.AbstractBuilder<?, ?> builder)
   {
     cookieStore_    = builder.cookieStore_;
     modelRegistry_  = new ModelRegistry().withFactories(AuthModel.FACTORIES);

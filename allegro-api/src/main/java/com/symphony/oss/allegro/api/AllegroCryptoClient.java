@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.allegro.api.AllegroApi.EncryptablePayloadbuilder;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.commons.fault.CodingFault;
@@ -43,6 +42,7 @@ import com.symphony.oss.models.internal.pod.canon.IPodInfo;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
 import com.symphony.oss.models.object.ObjectModelRegistry;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
@@ -195,13 +195,15 @@ class AllegroCryptoClient
       .withCipherSuiteId(cipherSuite_.getId());
   }
   
-  IApplicationObjectPayload decrypt(IStoredApplicationObject storedApplicationObject)
+  IApplicationObjectPayload decrypt(IEncryptedApplicationPayload encryptedApplicationPayload)
   {
-    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), internalUserId_);
+    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(encryptedApplicationPayload.getThreadId(), encryptedApplicationPayload.getRotationId(), internalUserId_);
 
-    ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), storedApplicationObject.getEncryptedPayload());
+    ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), encryptedApplicationPayload.getEncryptedPayload());
     
-    ObjectModelRegistry objectModelRegistry = new ObjectModelRegistry(modelRegistry_, storedApplicationObject);
+    ModelRegistry objectModelRegistry = encryptedApplicationPayload instanceof IStoredApplicationObject 
+        ? new ObjectModelRegistry(modelRegistry_, (IStoredApplicationObject)encryptedApplicationPayload) 
+            : modelRegistry_;
     
     IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
     ApplicationObjectPayload payload;
@@ -215,13 +217,6 @@ class AllegroCryptoClient
     {
       payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
     }
-    
-    //payload.setStoredApplicationObject(storedApplicationObject);
-    
-//    AbstractApplicationObjectPayload header = ((AbstractApplicationObjectPayload)storedApplicationObject.getHeader());
-    
-//    if(header != null)
-//      header.setStoredApplicationObject(storedApplicationObject);
     
     return payload;
   }

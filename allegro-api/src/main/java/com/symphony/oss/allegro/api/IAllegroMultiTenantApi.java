@@ -79,6 +79,8 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
   void close();
   
   /**
+   * Return the user ID of the user we have authenticated as.
+   * 
    * @return The user ID of the user we have authenticated as.
    */
   PodAndUserId getUserId();
@@ -268,7 +270,7 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
           
    * }</pre>
    * <p>
-   * @param request The details of the feed to be created or returned.
+   * @param feed The details of the feed to be created or returned.
    */
   void deleteFeed(FeedId feed);
   
