@@ -930,6 +930,14 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
   {
     return new ChatMessage.Builder().withRegistry(modelRegistry_, dataProvider_);
   }
+  
+  @Override
+  public StoredRecordConsumerManager.Builder newConsumerManagerBuilder()
+  {
+    return new StoredRecordConsumerManager.Builder()
+        .withModelRegistry(getModelRegistry())
+        .withDecryptor(this);
+  }
 
   @Override
   public void sendMessage(IChatMessage chatMessage)

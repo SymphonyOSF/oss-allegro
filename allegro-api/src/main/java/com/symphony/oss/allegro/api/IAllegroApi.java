@@ -35,7 +35,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroDelegatedPodApi
+public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -126,4 +126,11 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroDelegatedPo
    */
   @Deprecated
   IV2UserList getUsersByName(String... userNames);
+
+  /**
+   * Return this API as an IAllegroPodApi.
+   * 
+   * @return this API as an IAllegroPodApi.
+   */
+  IAllegroPodApi getAllegroPodApi();
 }

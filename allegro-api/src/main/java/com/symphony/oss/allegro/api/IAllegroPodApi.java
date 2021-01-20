@@ -24,6 +24,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
@@ -251,4 +252,11 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
    * @return the ModelRegistry used by Allegro.
    */
   ModelRegistry getModelRegistry();
+
+  /**
+   * Return a new StoredRecordConsumerManager builder.
+   * 
+   * @return a new StoredRecordConsumerManager builder.
+   */
+  Builder newConsumerManagerBuilder();
 }

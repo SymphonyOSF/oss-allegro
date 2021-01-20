@@ -19,11 +19,16 @@ package com.symphony.oss.allegro.api;
 import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
+import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.fault.FaultAccumulator;
@@ -33,12 +38,18 @@ import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.HashType;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
+import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
+import com.symphony.oss.models.internal.pod.canon.AckId;
+import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
@@ -48,6 +59,7 @@ import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
+import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
 
@@ -72,6 +84,154 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     
     allegroPodApi_ = new AllegroPodApi(builder.podApiBuilder_);
     
+  }
+
+  /**
+   * The builder implementation.
+   * 
+   * This is implemented as an abstract class to allow for sub-classing in future.
+   * 
+   * Any sub-class of AllegroApi would need to implement its own Abstract sub-class of this class
+   * and then a concrete Builder class which is itself a sub-class of that.
+   * 
+   * @author Bruce Skingle
+   *
+   * @param <T> The type of the concrete Builder
+   * @param <B> The type of the built class, some subclass of AllegroApi
+   */
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
+  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
+  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
+  {
+    AllegroPodApi.Builder podApiBuilder_ = new AllegroPodApi.Builder();
+    
+    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
+    {
+      super(type, builder);
+    }
+    
+    @Override
+    public T withConfiguration(Reader reader)
+    {
+      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
+    }
+    
+    @Deprecated
+    public T withUserName(String serviceAccountName)
+    {
+      configBuilder_.withUserName(serviceAccountName);
+      builderSet_ = true;
+      
+      return self();
+    }
+    
+    /**
+     * Set a fixed session token.
+     * 
+     * @param sessionToken An externally provided session token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withSessionTokenSupplier instead.
+     */
+    @Deprecated
+    public T withSessionToken(String sessionToken)
+    {
+      podApiBuilder_.sessionTokenSupplier_ = () -> sessionToken;
+      
+      return self();
+    }
+    
+    /**
+     * Set a fixed key manager token.
+     * 
+     * @param keymanagerToken An externally provided key manager token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withKeymanagerTokenSupplier instead.
+     */
+    @Deprecated
+    public T withKeymanagerToken(String keymanagerToken)
+    {
+      podApiBuilder_.keyManagerTokenSupplier_ = () -> keymanagerToken;
+      
+      return self();
+    }
+
+    @Deprecated
+    public T withPodUrl(URL podUrl)
+    {
+      configBuilder_.withPodUrl(podUrl);
+      builderSet_ = true;
+      
+      return self();
+    }
+
+    @Deprecated
+    public T withPodUrl(String podUrl)
+    {
+      try
+      {
+        configBuilder_.withPodUrl(new URL(podUrl));
+        builderSet_ = true;
+      }
+      catch (MalformedURLException e)
+      {
+        throw new IllegalArgumentException("Invalid podUrl", e);
+      }
+      
+      return self();
+    }
+
+    @Override
+    protected void validate(FaultAccumulator faultAccumulator)
+    {
+      super.validate(faultAccumulator);
+      
+      podApiBuilder_.config_ = config_;
+      podApiBuilder_.rsaCredential_ = rsaCredential_;
+      podApiBuilder_.rsaCredentialIsSet_ = true;
+    }
+
+    public T withSessionTokenSupplier(
+        Supplier<String> sessionTokenSupplier)
+    {
+      podApiBuilder_.withSessionTokenSupplier(sessionTokenSupplier);
+      
+      return self();
+    }
+
+    public T withKeymanagerTokenSupplier(
+        Supplier<String> keymanagerTokenSupplier)
+    {
+      podApiBuilder_.withKeymanagerTokenSupplier(keymanagerTokenSupplier);
+      
+      return self();
+    }
+  }
+  
+  /**
+   * Builder for AllegroApi.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
+  {
+    /**
+     * Constructor.
+     */
+    public Builder()
+    {
+      super(Builder.class, new AllegroConfiguration.Builder());
+    }
+
+    @Override
+    protected IAllegroApi construct()
+    {
+      return new AllegroApi(this);
+    }
   }
 
   @Override
@@ -548,156 +708,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     consumerManager.consume(payload, trace, this);
   }
 
-  /**
-   * The builder implementation.
-   * 
-   * This is implemented as an abstract class to allow for sub-classing in future.
-   * 
-   * Any sub-class of AllegroApi would need to implement its own Abstract sub-class of this class
-   * and then a concrete Builder class which is itself a sub-class of that.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> The type of the concrete Builder
-   * @param <B> The type of the built class, some subclass of AllegroApi
-   */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
-  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
-  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
-  {
-    AllegroPodApi.Builder podApiBuilder_ = new AllegroPodApi.Builder();
-    
-    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
-    {
-      super(type, builder);
-    }
-    
-    @Override
-    public T withConfiguration(Reader reader)
-    {
-      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
-    }
-    
-    @Deprecated
-    public T withUserName(String serviceAccountName)
-    {
-      configBuilder_.withUserName(serviceAccountName);
-      builderSet_ = true;
-      
-      return self();
-    }
-    
-    /**
-     * Set a fixed session token.
-     * 
-     * @param sessionToken An externally provided session token.
-     * 
-     * @return This (fluent method).
-     * 
-     * @deprecated Use withSessionTokenSupplier instead.
-     */
-    @Deprecated
-    public T withSessionToken(String sessionToken)
-    {
-      podApiBuilder_.sessionTokenSupplier_ = () -> sessionToken;
-      
-      return self();
-    }
-    
-    /**
-     * Set a fixed key manager token.
-     * 
-     * @param keymanagerToken An externally provided key manager token.
-     * 
-     * @return This (fluent method).
-     * 
-     * @deprecated Use withKeymanagerTokenSupplier instead.
-     */
-    @Deprecated
-    public T withKeymanagerToken(String keymanagerToken)
-    {
-      podApiBuilder_.keyManagerTokenSupplier_ = () -> keymanagerToken;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withPodUrl(URL podUrl)
-    {
-      configBuilder_.withPodUrl(podUrl);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withPodUrl(String podUrl)
-    {
-      try
-      {
-        configBuilder_.withPodUrl(new URL(podUrl));
-        builderSet_ = true;
-      }
-      catch (MalformedURLException e)
-      {
-        throw new IllegalArgumentException("Invalid podUrl", e);
-      }
-      
-      return self();
-    }
-
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-      
-      podApiBuilder_.config_ = config_;
-      podApiBuilder_.rsaCredential_ = rsaCredential_;
-      podApiBuilder_.rsaCredentialIsSet_ = true;
-    }
-
-    public T withSessionTokenSupplier(
-        Supplier<String> sessionTokenSupplier)
-    {
-      podApiBuilder_.withSessionTokenSupplier(sessionTokenSupplier);
-      
-      return self();
-    }
-
-    public T withKeymanagerTokenSupplier(
-        Supplier<String> keymanagerTokenSupplier)
-    {
-      podApiBuilder_.withKeymanagerTokenSupplier(keymanagerTokenSupplier);
-      
-      return self();
-    }
-  }
-  
-  /**
-   * Builder for AllegroApi.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
-  {
-    /**
-     * Constructor.
-     */
-    public Builder()
-    {
-      super(Builder.class, new AllegroConfiguration.Builder());
-    }
-
-    @Override
-    protected IAllegroApi construct()
-    {
-      return new AllegroApi(this);
-    }
-  }
-  
-
-
   @Override
   public PodAndUserId getUserId()
   {
@@ -708,5 +718,156 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public String getApiAuthorizationToken()
   {
     return allegroPodApi_.getApiAuthorizationToken();
+  }
+
+  @Override
+  public ModelRegistry getModelRegistry()
+  {
+    return allegroPodApi_.getModelRegistry();
+  }
+
+  @Override
+  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+  {
+    return allegroPodApi_.decryptObject(storedApplicationObject);
+  }
+
+  @Override
+  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
+      Class<T> type)
+  {
+    return allegroPodApi_.decryptObject(storedApplicationObject, type);
+  }
+
+  @Override
+  public String getKeyManagerToken()
+  {
+    return allegroPodApi_.getKeyManagerToken();
+  }
+
+  @Override
+  public String getSessionToken()
+  {
+    return allegroPodApi_.getSessionToken();
+  }
+
+  @Override
+  public PodId getPodId()
+  {
+    return allegroPodApi_.getPodId();
+  }
+
+  @Override
+  public X509Certificate getPodCert()
+  {
+    return allegroPodApi_.getPodCert();
+  }
+
+  @Override
+  public void authenticate()
+  {
+    allegroPodApi_.authenticate();
+  }
+
+  @Override
+  public IUserV2 fetchUserByName(String userName) throws NotFoundException
+  {
+    return allegroPodApi_.fetchUserByName(userName);
+  }
+
+  @Override
+  public IV2UserList fetchUsersByName(String... userNames)
+  {
+    return allegroPodApi_.fetchUsersByName(userNames);
+  }
+
+  @Override
+  public IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException
+  {
+    return allegroPodApi_.fetchUserById(userId);
+  }
+
+  @Override
+  public IUserV2 getUserInfo()
+  {
+    return allegroPodApi_.getUserInfo();
+  }
+
+  @Override
+  public IUserV2 getSessioninfo()
+  {
+    return allegroPodApi_.getSessioninfo();
+  }
+
+  @Override
+  public String getMessage(String messageId)
+  {
+    return allegroPodApi_.getMessage(messageId);
+  }
+
+  @Override
+  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
+  {
+    allegroPodApi_.fetchRecentMessagesFromPod(request);
+  }
+
+  @Override
+  public List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest)
+  {
+    return allegroPodApi_.fetchStreams(fetchStreamsRequest);
+  }
+
+  @Override
+  public FeedId createMessageFeed()
+  {
+    return allegroPodApi_.createMessageFeed();
+  }
+
+  @Override
+  public List<FeedId> listMessageFeeds()
+  {
+    return allegroPodApi_.listMessageFeeds();
+  }
+
+  @Override
+  public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
+  {
+    return allegroPodApi_.fetchFeedMessages(request);
+  }
+
+  @Override
+  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
+  {
+    return allegroPodApi_.newEncryptedApplicationPayloadBuilder();
+  }
+
+  @Override
+  public ApplicationRecordBuilder newApplicationRecordBuilder()
+  {
+    return allegroPodApi_.newApplicationRecordBuilder();
+  }
+
+  @Override
+  public com.symphony.oss.models.allegro.canon.ChatMessageEntity.Builder newChatMessageBuilder()
+  {
+    return allegroPodApi_.newChatMessageBuilder();
+  }
+
+  @Override
+  public com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder newConsumerManagerBuilder()
+  {
+    return allegroPodApi_.newConsumerManagerBuilder();
+  }
+
+  @Override
+  public void sendMessage(IChatMessage chatMessage)
+  {
+    allegroPodApi_.sendMessage(chatMessage);
+  }
+
+  @Override
+  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  {
+    return allegroPodApi_.decryptChatMessage(message);
   }
 }
