@@ -32,6 +32,10 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 
+/**
+ * @author Bruce Skingle
+ *
+ */
 public abstract class AbstractAsyncQueryManager implements Runnable
 {
   private final AllegroDecryptor allegroApi_;

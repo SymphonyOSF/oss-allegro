@@ -649,7 +649,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     
     AllegroSqsFeedsContainer feeds  = refreshFeeds(feedIds);
     
-    if(feeds.directFetch_) {
+    if(feeds.isDirect()) {
       
       IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
       {
@@ -716,7 +716,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
       AllegroSqsFeedsContainer feeds = refreshFeeds(feedIds);
       
-      if(feeds.directFetch_) 
+      if(feeds.isDirect()) 
       {
         try (ITraceContextTransaction subparentTraceTransaction = traceFactory_
             .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))

@@ -31,6 +31,12 @@ import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObje
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 
+/**
+ * Class used to fetch asyncronously objects by base hash
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
 {
   private final VersionQuery                    query_;
