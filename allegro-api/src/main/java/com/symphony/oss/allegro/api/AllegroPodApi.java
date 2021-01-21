@@ -365,6 +365,17 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
       }
     }
     
+    public T withFactories(IEntityFactory<?, ?, ?>... factories)
+    {
+      if(factories != null)
+      {
+        for(IEntityFactory<?, ?, ?> factory : factories)
+          factories_.add(factory);
+      }
+      
+      return self();
+    }
+    
     public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
     {
       traceFactory_ = traceFactory;
