@@ -22,9 +22,9 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.joda.time.Instant;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;

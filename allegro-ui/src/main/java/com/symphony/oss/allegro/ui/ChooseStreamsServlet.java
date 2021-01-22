@@ -26,8 +26,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;

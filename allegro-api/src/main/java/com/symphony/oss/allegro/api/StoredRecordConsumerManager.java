@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
@@ -218,7 +219,7 @@ public class StoredRecordConsumerManager
   {
     try
     {
-      if(storedObject.getEncryptedPayload() != null)
+      if(decryptor_ != null && storedObject.getEncryptedPayload() != null)
       {
         try
         {

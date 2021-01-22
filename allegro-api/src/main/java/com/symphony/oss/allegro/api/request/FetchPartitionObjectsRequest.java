@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.objectstore.AbstractConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 

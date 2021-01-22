@@ -36,12 +36,16 @@ import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
  *
  * @param <T> The concrete type for fluent methods.
  */
-abstract
-public class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
+public abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
 {
   protected IApplicationObjectPayload payload_;
   
-  EncryptablePayloadbuilder(Class<T> type)
+  /**
+   * Constructor.
+   * 
+   * @param type The concrete type for fluent methods.
+   */
+  public EncryptablePayloadbuilder(Class<T> type)
   {
     super(type);
   }
@@ -57,9 +61,9 @@ public class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>,
 
   public abstract ThreadId getThreadId();
 
-  abstract T withEncryptedPayload(EncryptedData value);
+  protected abstract T withEncryptedPayload(EncryptedData value);
 
-  abstract T withCipherSuiteId(CipherSuiteId value);
+  protected abstract T withCipherSuiteId(CipherSuiteId value);
 
-  abstract T withRotationId(RotationId value);
+  protected abstract T withRotationId(RotationId value);
 }

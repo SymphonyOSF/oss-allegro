@@ -58,6 +58,7 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
+import com.symphony.oss.allegro.objectstore.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
@@ -132,7 +133,7 @@ import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authz.canon.AuthzModel;
 
-public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
+public class AllegroPodApi implements IAllegroPodApi
 {
 
   private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
@@ -599,6 +600,12 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
   }
 
   @Override
+  public void encrypt(EncryptablePayloadbuilder<?, ?> builder)
+  {
+    cryptoClient_.encrypt(builder);
+  }
+  
+  @Override
   public ModelRegistry getModelRegistry()
   {
     return modelRegistry_;
@@ -922,12 +929,6 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
       
       return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager(), this, trace);
     }
-  }
-  
-  @Override
-  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
-  {
-    return new EncryptedApplicationPayloadBuilder(cryptoClient_);
   }
   
   @Override

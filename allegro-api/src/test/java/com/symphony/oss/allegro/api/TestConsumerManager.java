@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.symphony.oss.allegro.objectstore.AllegroDecryptor;
+import com.symphony.oss.allegro.objectstore.ConsumerManager;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.IConsumer;
 import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;

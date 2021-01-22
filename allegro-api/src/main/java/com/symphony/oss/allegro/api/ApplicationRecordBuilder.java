@@ -63,7 +63,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withEncryptedPayload(
+  protected ApplicationRecordBuilder withEncryptedPayload(
       EncryptedData value)
   {
     builder_.withEncryptedPayload(value);
@@ -72,7 +72,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withCipherSuiteId(
+  protected ApplicationRecordBuilder withCipherSuiteId(
       CipherSuiteId value)
   {
     builder_.withCipherSuiteId(value);
@@ -81,7 +81,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withRotationId(RotationId value)
+  protected ApplicationRecordBuilder withRotationId(RotationId value)
   {
     builder_.withRotationId(value);
     

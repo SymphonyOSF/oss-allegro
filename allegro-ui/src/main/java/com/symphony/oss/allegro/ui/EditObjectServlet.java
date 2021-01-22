@@ -24,10 +24,10 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.commons.dom.json.JsonString;

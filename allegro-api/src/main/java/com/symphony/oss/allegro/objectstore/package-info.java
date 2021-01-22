@@ -1,0 +1,1 @@
+package com.symphony.oss.allegro.objectstore;

@@ -28,6 +28,7 @@ import com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
+import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -52,6 +53,9 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  */
 public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
 {
+  @Override
+  public void close();
+  
   /**
    * Return the user ID of the user we have authenticated as.
    * 
@@ -173,16 +177,6 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
   @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
   
   /**
-   * Create a new EncryptedApplicationPayloadBuilder.
-   * 
-   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
-   * or elsewhere
-   * 
-   * @return A new EncryptedApplicationPayloadBuilder.
-   */
-  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
-  
-  /**
    * Create a new ApplicationRecordBuilder.
    * 
    * This can be used to build an encrypted payload which can be stored in a database.
@@ -259,4 +253,11 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
    * @return a new StoredRecordConsumerManager builder.
    */
   Builder newConsumerManagerBuilder();
+
+  /**
+   * Encrypt the given payload.
+   * 
+   * @param builder
+   */
+  void encrypt(EncryptablePayloadbuilder<?, ?> builder);
 }

@@ -20,9 +20,9 @@ package com.symphony.oss.allegro.ui;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.models.object.canon.INamedUserIdObject;

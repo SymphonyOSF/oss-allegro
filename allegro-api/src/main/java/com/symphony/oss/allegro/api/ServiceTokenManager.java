@@ -26,6 +26,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.symphony.oss.allegro.objectstore.AllegroBaseApi;
 import com.symphony.oss.canon.runtime.exception.ServerErrorException;
 import com.symphony.oss.models.internal.pod.canon.ITokenHolder;
 import com.symphony.oss.models.internal.pod.canon.ITokenResponse;

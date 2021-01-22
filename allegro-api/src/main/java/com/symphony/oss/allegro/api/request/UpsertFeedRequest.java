@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.allegro.api.ResourcePermissions;
+import com.symphony.oss.allegro.objectstore.ResourcePermissions;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;

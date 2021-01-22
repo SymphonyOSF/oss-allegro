@@ -18,10 +18,10 @@
 
 package com.symphony.oss.allegro.ui;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
-import com.symphony.oss.allegro.api.IObjectPage;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IObjectPage;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;

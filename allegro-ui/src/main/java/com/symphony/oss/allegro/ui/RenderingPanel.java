@@ -24,8 +24,8 @@ import java.io.InputStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 

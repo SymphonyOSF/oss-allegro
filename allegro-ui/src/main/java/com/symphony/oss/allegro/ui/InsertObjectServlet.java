@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.core.canon.facade.ThreadId;

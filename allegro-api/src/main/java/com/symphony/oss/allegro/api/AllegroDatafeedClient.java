@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 
+import com.symphony.oss.allegro.objectstore.AbstractConsumerManager;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
@@ -109,7 +110,7 @@ class AllegroDatafeedClient
     return feed.getFeedId();
   }
   
-  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, AllegroDecryptor opener, ITraceContext trace)
+  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, IAllegroPodApi opener, ITraceContext trace)
   {
     refreshTokenIfNecessary();
     

@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import com.symphony.oss.allegro.api.ResourcePermissions;
+import com.symphony.oss.allegro.objectstore.ResourcePermissions;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**

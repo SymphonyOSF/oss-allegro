@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
 import com.symphony.oss.commons.hash.Hash;
