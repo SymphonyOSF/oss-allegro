@@ -21,6 +21,9 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+
+import com.symphony.oss.allegro.api.AllegroPodApi;
 import com.symphony.oss.allegro.api.ApplicationRecordBuilder;
 import com.symphony.oss.allegro.api.EncryptablePayloadbuilder;
 import com.symphony.oss.allegro.api.IAllegroPodApi;
@@ -28,16 +31,18 @@ import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
-import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
-import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.AllegroObjectStoreConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroObjectStoreConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IBaseObjectStoreConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
@@ -69,21 +74,42 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public class AllegroApi extends AllegroBaseApi implements IAllegroApi
+public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObjectStoreApi
 {
-  private final IAllegroPodApi allegroApi_;
+  private final IAllegroObjectStoreConfiguration config_;
+  private final IAllegroPodApi                   allegroApi_;
 
   /**
    * Constructor.
    * 
    * @param builder The builder containing all initialisation values.
    */
-  AllegroApi(AbstractBuilder<?,?> builder)
+  AllegroObjectStoreApi(AbstractBuilder<?,?> builder)
   {
-    super(builder);
+    super(builder, getDefaultUrl(builder));
     
-    allegroApi_ = builder.allegroApi_;
+    ModelRegistry modelRegistry = getModelRegistry();
     
+    for(IEntityFactory<?, ?, ?> factory : builder.factories_)
+    {
+      modelRegistry.withFactories(factory);
+    }
+    
+    config_     = builder.config_;
+    allegroApi_ = new AllegroPodApi.Builder()
+        .withConfiguration(builder.config_.getAllegroConfiguration())
+        .withModelRegistry(modelRegistry)
+        .build();
+  }
+  
+  private static String getDefaultUrl(AbstractBuilder<?, ?> builder)
+  {
+    String baseUrl = builder.config_.getAllegroConfiguration().getPodUrl().toString();
+    
+    if(baseUrl.endsWith("/"))
+      baseUrl = baseUrl.substring(0, baseUrl.length()-1);
+    
+    return baseUrl + "/sms";
   }
 
   /**
@@ -99,35 +125,51 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
-  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
-  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroObjectStoreApi>
+  extends AllegroBaseApi.AbstractBuilder<T, B>
   {
-    IAllegroPodApi allegroApi_;
+    protected IAllegroObjectStoreConfiguration config_;
     
-    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
+    public AbstractBuilder(Class<T> type)
     {
-      super(type, builder);
+      super(type);
+    }
+
+    public T withConfiguration(IAllegroObjectStoreConfiguration configuration)
+    {
+      config_ = configuration;
+      
+      return self();
     }
     
     @Override
     public T withConfiguration(Reader reader)
     {
-      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
+      return withConfiguration(configModelRegistry_.parseOne(reader, AllegroObjectStoreConfiguration.TYPE_ID, IAllegroObjectStoreConfiguration.class));
     }
-    public T withAllegroApi(IAllegroPodApi allegroApi)
+    
+    @Override
+    protected synchronized CloseableHttpClient getDefaultHttpClient()
     {
-      allegroApi_ = allegroApi;
+      if(defaultHttpClient_ == null)
+      {
+        if(config_.getAllegroConfiguration().getDefaultConnectionSettings() == null)
+        {
+          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_);
+        }
+        else
+        {
+          defaultHttpClient_ = config_.getAllegroConfiguration().getDefaultConnectionSettings().createHttpClient(cookieStore_);
+        }
+      }
       
-      return self();
+      return defaultHttpClient_;
     }
 
     @Override
-    protected void validate(FaultAccumulator faultAccumulator)
+    protected IBaseObjectStoreConfiguration getConfiguration()
     {
-      super.validate(faultAccumulator);
-      
-      faultAccumulator.checkNotNull(allegroApi_, "AllegroApi");
+      return config_;
     }
   }
   
@@ -137,21 +179,33 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
+  public static class Builder extends AbstractBuilder<Builder, IAllegroObjectStoreApi>
   {
     /**
      * Constructor.
      */
     public Builder()
     {
-      super(Builder.class, new AllegroConfiguration.Builder());
+      super(Builder.class);
     }
 
     @Override
-    protected IAllegroApi construct()
+    protected IAllegroObjectStoreApi construct()
     {
-      return new AllegroApi(this);
+      return new AllegroObjectStoreApi(this);
     }
+  }
+
+  @Override
+  protected IAllegroDecryptor getDecryptor()
+  {
+    return allegroApi_;
+  }
+
+  @Override
+  public IAllegroObjectStoreConfiguration getConfiguration()
+  {
+    return config_;
   }
 
   @Override
@@ -179,6 +233,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     super.close();
     allegroApi_.close();
+  }
+  
+  @Override
+  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
+  {
+    return new EncryptedApplicationPayloadBuilder(allegroApi_);
   }
   
   @Override
@@ -638,12 +698,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public String getApiAuthorizationToken()
   {
     return allegroApi_.getApiAuthorizationToken();
-  }
-
-  @Override
-  public ModelRegistry getModelRegistry()
-  {
-    return allegroApi_.getModelRegistry();
   }
 
   @Override

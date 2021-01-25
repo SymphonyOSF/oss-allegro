@@ -22,19 +22,17 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.security.PrivateKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
-import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
-import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
-import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.FaultAccumulator;
-import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfiguration;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IObjectStoreConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.ObjectStoreConfiguration;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
@@ -42,6 +40,7 @@ import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
+import com.symphony.s2.authz.canon.AuthzModel;
 
 /**
  * Implementation of IAllegroMultiTenantApi, the main Allegro Multi Tenant API class.
@@ -49,16 +48,31 @@ import com.symphony.s2.authc.canon.facade.PrincipalCredential;
  * @author Bruce Skingle
  *
  */
-public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
+public class ObjectStoreApi extends AllegroBaseApi implements IObjectStoreApi
 {
-  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
+  private static final Logger             log_ = LoggerFactory.getLogger(ObjectStoreApi.class);
 
-  private final PodAndUserId      userId_;
-  private final Rs512JwtGenerator jwtBuilder_;
+  private final IObjectStoreConfiguration config_;
+  private final ModelRegistry             modelRegistry_;
+  private final PodAndUserId              userId_;
+  private final Rs512JwtGenerator         jwtBuilder_;
+
   
-  AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
+  ObjectStoreApi(AbstractBuilder<?, ?> builder)
   {
-    super(builder);
+    super(builder, "https://api.symphony.com");
+    
+    config_ = builder.config_;
+    
+    modelRegistry_ = new ModelRegistry()
+        .withFactories(ObjectModel.FACTORIES)
+        .withFactories(AuthcModel.FACTORIES)
+        .withFactories(AuthzModel.FACTORIES)
+        .withFactories(CoreModel.FACTORIES)
+        ;
+    
+    for(IEntityFactory<?, ?, ?> factory : builder.factories_)
+      modelRegistry_.withFactories(factory);
     
     log_.info("AllegroMultiTenantApi constructor start with configuredUserId " + builder.configuredUserId_ + " and config " + builder.config_.getRedacted());
 
@@ -71,14 +85,14 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     if(builder.keyId_ != null)
       jwtBuilder_.withClaim("kid", builder.keyId_);
   }
-  
+
   /**
    * Builder.
    * 
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, IAllegroMultiTenantApi>
+  public static class Builder extends AbstractBuilder<Builder, IObjectStoreApi>
   {
     /**
      * Constructor.
@@ -89,9 +103,9 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
     }
 
     @Override
-    protected IAllegroMultiTenantApi construct()
+    protected IObjectStoreApi construct()
     {
-      return new AllegroMultiTenantApi(this);
+      return new ObjectStoreApi(this);
     }
   }
   
@@ -108,85 +122,30 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroMultiTenantApi>
-  extends AllegroBaseApi.AbstractBuilder<IAllegroMultiTenantConfiguration,
-    AllegroMultiTenantConfiguration.AbstractAllegroMultiTenantConfigurationBuilder<?, IAllegroMultiTenantConfiguration>, T, B>
+  protected static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IObjectStoreApi>
+  extends AllegroBaseApi.AbstractBuilder<T, B>
   {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    protected PodAndUserId            configuredUserId_;
-    protected String                  keyId_;
+    protected IObjectStoreConfiguration config_;
+    protected PrivateKey                rsaCredential_;
+    protected PodAndUserId              configuredUserId_;
+    protected String                    keyId_;
    
     public AbstractBuilder(Class<T> type)
     {
-      super(type, new AllegroMultiTenantConfiguration.Builder());
+      super(type);
+    }
+
+    public T withConfiguration(IObjectStoreConfiguration configuration)
+    {
+      config_ = configuration;
+      
+      return self();
     }
 
     @Override
     public T withConfiguration(Reader reader)
     {
-      withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroMultiTenantConfiguration.TYPE_ID, IAllegroMultiTenantConfiguration.class));
-      
-      return self();
-    }
-    
-    @Deprecated
-    public T withUserId(PodAndUserId userId)
-    {
-      configBuilder_.withUserId(userId);
-      builderSet_ = true;
-      
-      return self();
-    }
-    
-    @Deprecated
-    public T withUserId(long userId)
-    {
-      configBuilder_.withUserId(userId);
-      builderSet_ = true;
-      
-      return self();
-    }
-    
-    @Deprecated
-    public T withKeyId(String keyId)
-    {
-      configBuilder_.withKeyId(keyId);
-      builderSet_ = true;
-      
-      return self();
-    }
-    
-    @Deprecated
-    public T withPrincipalCredentialFile(String principalCredentialFile)
-    {
-      if(principalCredentialFile == null)
-        throw new IllegalArgumentException("Credential is required");
-      
-      File file = new File(principalCredentialFile);
-      
-      if(!file.canRead())
-        throw new IllegalArgumentException("Credential file \""  + file.getAbsolutePath() + "\" is unreadable");
-      
-      try
-      {
-        ModelRegistry modelRegistry = new ModelRegistry()
-        .withFactories(ObjectModel.FACTORIES)
-        .withFactories(CoreModel.FACTORIES)
-        .withFactories(AuthcModel.FACTORIES)
-        ;
-        
-        IImmutableJsonDomNode json = JacksonAdaptor.adapt(MAPPER.readTree(file)).immutify();
-        PrincipalCredential principalCredential = new PrincipalCredential((ImmutableJsonObject)json, modelRegistry);
-        
-        withRsaCredential(principalCredential.getPrivateKey());
-        withKeyId(principalCredential.getKeyId().toString());
-        withUserId(principalCredential.getUserId());
-      }
-      catch (IOException e)
-      {
-        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
-      }
+      withConfiguration(configModelRegistry_.parseOne(reader, ObjectStoreConfiguration.TYPE_ID, IObjectStoreConfiguration.class));
       
       return self();
     }
@@ -214,7 +173,7 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
         
         try(Reader reader = new FileReader(file))
         {
-          IPrincipalCredential principalCredential = allegroModelRegistry_.parseOne(reader, PrincipalCredential.TYPE_ID, IPrincipalCredential.class);
+          IPrincipalCredential principalCredential = configModelRegistry_.parseOne(reader, PrincipalCredential.TYPE_ID, IPrincipalCredential.class);
           
           rsaCredential_    = CipherSuiteUtils.privateKeyFromPem(principalCredential.getEncodedPrivateKey());
           keyId_            = principalCredential.getKeyId().toString();
@@ -238,6 +197,18 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
       
       faultAccumulator.checkNotNull(configuredUserId_, "User ID");
     }
+
+    @Override
+    public IObjectStoreConfiguration getConfiguration()
+    {
+      return config_;
+    }
+  }
+
+  @Override
+  public IObjectStoreConfiguration getConfiguration()
+  {
+    return config_;
   }
 
   @Override

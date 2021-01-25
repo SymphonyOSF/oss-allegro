@@ -95,7 +95,7 @@ abstract class AbstractObjectPage<T extends IAbstractStoredApplicationObject> im
     {
       try
       {
-        consumerManager.consume(item, trace, allegroApi_);
+        consumerManager.consume(item, trace, allegroApi_.getDecryptor());
       }
       catch (RetryableConsumerException | FatalConsumerException e)
       {

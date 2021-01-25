@@ -28,14 +28,14 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 
 class PartitionProvider implements Iterable<IPartition>
 {
-  private final IAllegroMultiTenantApi accessApi_;
+  private final IBaseObjectStoreApi accessApi_;
   
   private LoadingCache<Hash, CacheEntry<IPartition>> partitionCache_ = CacheBuilder.newBuilder()
       .maximumSize(1000)
@@ -61,7 +61,7 @@ class PartitionProvider implements Iterable<IPartition>
             }
           });
 
-  PartitionProvider(IAllegroMultiTenantApi accessApi)
+  PartitionProvider(IBaseObjectStoreApi accessApi)
   {
     accessApi_ = accessApi;
   }

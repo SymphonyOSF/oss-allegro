@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.commons.hash.Hash;
@@ -37,10 +37,10 @@ class DeleteObjectServlet extends AbstractObjectServlet
 {
   private static final long            serialVersionUID = 1L;
 
-  private final IAllegroMultiTenantApi accessApi_;
-  private final IAllegroApi            userApi_;
+  private final IBaseObjectStoreApi accessApi_;
+  private final IAllegroObjectStoreApi            userApi_;
 
-  DeleteObjectServlet(IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  DeleteObjectServlet(IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     accessApi_ = accessApi;
     userApi_ = userApi;

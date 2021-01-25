@@ -21,12 +21,11 @@ package com.symphony.oss.allegro.ui;
 import javax.servlet.http.HttpServletRequest;
 
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.models.object.canon.INamedUserIdObject;
-import com.symphony.oss.models.object.canon.IUserIdObject;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 
 class UpsertPartitionPanel extends AllegroUiPanel
@@ -36,7 +35,7 @@ class UpsertPartitionPanel extends AllegroUiPanel
   
   private final PartitionExplorerPanel partitionExplorer_;
   
-  UpsertPartitionPanel(PartitionExplorerPanel partitionExplorer, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  UpsertPartitionPanel(PartitionExplorerPanel partitionExplorer, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(PANEL_ID, PANEL_NAME, accessApi, userApi);
     

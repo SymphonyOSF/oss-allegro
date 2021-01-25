@@ -48,7 +48,7 @@ public class AllegroSqsRequestBuilder
    * @param allegro AllegroApi is needed for configuration.
    * @param path  endpoint path configured in API Gateway.
    */
-  public AllegroSqsRequestBuilder(IAllegroMultiTenantApi allegro , String path)
+  public AllegroSqsRequestBuilder(IBaseObjectStoreApi allegro , String path)
   {
     uri.setScheme("https")
     .setHost(allegro.getConfiguration().getApiUrl().toString().split("//")[1])

@@ -19,8 +19,8 @@
 package com.symphony.oss.allegro.ui;
 
 import com.symphony.oss.allegro.api.request.VersionQuery;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.allegro.objectstore.IObjectVersionPage;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -28,13 +28,13 @@ import com.symphony.oss.models.object.canon.facade.IDeletedApplicationObject;
 
 class ObjectVersionsView extends AbstractObjectView<IAbstractStoredApplicationObject>
 {
-  ObjectVersionsView(Hash baseHash, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  ObjectVersionsView(Hash baseHash, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(IAbstractStoredApplicationObject.class, baseHash, accessApi, userApi);
   }
 
   @Override
-  protected IObjectVersionPage fetchPage(IAllegroMultiTenantApi accessApi, Hash hash, String after,
+  protected IObjectVersionPage fetchPage(IBaseObjectStoreApi accessApi, Hash hash, String after,
       boolean scanForwards)
   {
     return accessApi.fetchObjectVersionsPage(new VersionQuery.Builder()

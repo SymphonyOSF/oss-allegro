@@ -24,8 +24,8 @@ import java.io.InputStreamReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 
@@ -47,7 +47,7 @@ abstract class RenderingPanel extends AllegroUiPanel
   private final boolean                absolute_;
 
   
-  RenderingPanel(String id, String name, IAllegroMultiTenantApi accessApi, IAllegroApi userApi, ProjectorManager projectorManager, boolean absolute)
+  RenderingPanel(String id, String name, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi, ProjectorManager projectorManager, boolean absolute)
   {
     super(id, name, accessApi, userApi);
     

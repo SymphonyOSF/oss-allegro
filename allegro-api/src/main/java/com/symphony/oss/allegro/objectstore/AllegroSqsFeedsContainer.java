@@ -105,7 +105,7 @@ public class AllegroSqsFeedsContainer
     /**
      * @return the AllegroAPI
      */
-    public IAllegroMultiTenantApi getAllegro()
+    public IBaseObjectStoreApi getAllegro()
     {
       return allegro_;
     }

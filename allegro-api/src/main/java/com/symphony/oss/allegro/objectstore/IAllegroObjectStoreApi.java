@@ -17,9 +17,9 @@
 package com.symphony.oss.allegro.objectstore;
 
 import com.symphony.oss.allegro.api.IAllegroPodApi;
-import com.symphony.oss.allegro.objectstore.AllegroApi.ApplicationObjectBuilder;
-import com.symphony.oss.allegro.objectstore.AllegroApi.ApplicationObjectUpdater;
-import com.symphony.oss.allegro.objectstore.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
+import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectBuilder;
+import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectUpdater;
+import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
@@ -31,12 +31,12 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * <p>
  * The full version of AllegroApi supports encryption and decryption capabilities and
  * requires authentication to a pod. For cases where a multi-tenant service wishes to use a subset of
- * the full API avoiding the need to authenticate to a pod see {@link IAllegroMultiTenantApi}.
+ * the full API avoiding the need to authenticate to a pod see {@link IObjectStoreApi}.
  * 
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
+public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroPodApi
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -45,6 +45,16 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
   /** Resource path for Symphony dev certificate */
   static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
 
+
+  /**
+   * Create a new EncryptedApplicationPayloadBuilder.
+   * 
+   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadBuilder.
+   */
+  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
   
   /**
    * Create a new EncryptedApplicationPayloadAndHeaderBuilder.

@@ -23,8 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.joda.time.Instant;
 
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
@@ -45,7 +45,7 @@ class PartitionBlotterPanel extends RenderingPanel
   private final PartitionObjectsViewProvider partitionObjectsViewProvider_;
   
   PartitionBlotterPanel(ProjectorManager rendererManager, String feedName, PartitionProvider partitionProvider, PartitionObjectsViewProvider partitionObjectsViewProvider,
-      IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+      IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(PANEL_ID, PANEL_NAME, accessApi, userApi, rendererManager, false);
     

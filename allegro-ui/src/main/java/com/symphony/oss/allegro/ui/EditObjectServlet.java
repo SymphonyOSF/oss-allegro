@@ -25,9 +25,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
 import com.symphony.oss.allegro.objectstore.AllegroBaseApi.EncryptedApplicationObjectUpdater;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.commons.dom.json.JsonString;
@@ -53,10 +53,10 @@ class EditObjectServlet extends AbstractObjectServlet
       .add("payloadType")
       .build();
 
-  private final IAllegroMultiTenantApi accessApi_;
-  private final IAllegroApi            userApi_;
+  private final IBaseObjectStoreApi accessApi_;
+  private final IAllegroObjectStoreApi            userApi_;
 
-  EditObjectServlet(IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  EditObjectServlet(IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     accessApi_ = accessApi;
     userApi_ = userApi;

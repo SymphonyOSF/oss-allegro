@@ -20,8 +20,8 @@ package com.symphony.oss.allegro.ui;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.DeletedException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
@@ -38,7 +38,7 @@ class ObjectVersionsPanel extends RenderingPanel
   
   private final ObjectVersionsViewProvider objectVersionsViewProvider_;
 
-  ObjectVersionsPanel(ProjectorManager projectorManager, ObjectVersionsViewProvider objectVersionsViewProvider, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  ObjectVersionsPanel(ProjectorManager projectorManager, ObjectVersionsViewProvider objectVersionsViewProvider, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager, true);
     

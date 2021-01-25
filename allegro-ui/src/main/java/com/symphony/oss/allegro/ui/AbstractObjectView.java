@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.symphony.oss.allegro.objectstore.IAbstractObjectPage;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.allegro.ui.PartitionBlotterPanel.FeedHandler;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -43,8 +43,8 @@ abstract class AbstractObjectView<T extends IAbstractStoredApplicationObject> im
 
   private final Class<T>                                     type_;
   private final Hash                                         hash_;
-  private final IAllegroMultiTenantApi                       accessApi_;
-  private final IAllegroApi                                  userApi_;
+  private final IBaseObjectStoreApi                       accessApi_;
+  private final IAllegroObjectStoreApi                                  userApi_;
   private Map<Hash, String>                                  hashIndex_ = new HashMap<>();
   private ConcurrentNavigableMap<String, PartitionObject<T>> objectMap_ = new ConcurrentSkipListMap<>();
   private CopyOnWriteArrayList<FeedHandler>                  listeners_ = new CopyOnWriteArrayList<>();
@@ -52,7 +52,7 @@ abstract class AbstractObjectView<T extends IAbstractStoredApplicationObject> im
   private String                                             before_;
   private String                                             after_;
 
-  AbstractObjectView(Class<T> type, Hash hash, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  AbstractObjectView(Class<T> type, Hash hash, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     type_ = type;
     hash_ = hash;
@@ -74,7 +74,7 @@ abstract class AbstractObjectView<T extends IAbstractStoredApplicationObject> im
       before_ = page.getBefore();
   }
 
-  abstract IAbstractObjectPage<T> fetchPage(IAllegroMultiTenantApi accessApi, Hash hash, String after, boolean scanForwards);
+  abstract IAbstractObjectPage<T> fetchPage(IBaseObjectStoreApi accessApi, Hash hash, String after, boolean scanForwards);
 
   boolean hasMoreAfter()
   {

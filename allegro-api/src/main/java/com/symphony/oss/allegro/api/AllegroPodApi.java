@@ -58,7 +58,6 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
-import com.symphony.oss.allegro.objectstore.EncryptedApplicationPayloadBuilder;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
@@ -83,10 +82,10 @@ import com.symphony.oss.fugue.trace.NoOpContextFactory;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.AllegroModel;
 import com.symphony.oss.models.allegro.canon.EntityJson;
-import com.symphony.oss.models.allegro.canon.facade.AllegroPodConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroPodConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
@@ -180,14 +179,18 @@ public class AllegroPodApi implements IAllegroPodApi
   {
     log_.info("AllegroPodApi constructor start with config " + builder.config_.getRedacted());
     
-    traceFactory_ = builder.traceFactory_;
-    
-    modelRegistry_ = new ModelRegistry()
+    modelRegistry_ = builder.modelRegistry_
         .withFactories(ObjectModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES)
         .withFactories(AuthzModel.FACTORIES)
         .withFactories(CoreModel.FACTORIES)
-        ;
+        .withFactories(CryptoModel.FACTORIES)
+        .withFactories(ChatModel.FACTORIES)
+        .withFactories(PodModel.FACTORIES)
+        .withFactories(PodInternalModel.FACTORIES)
+        .withFactories(KmInternalModel.FACTORIES);
+    
+    traceFactory_ = builder.traceFactory_;
     
     for(IEntityFactory<?, ?, ?> factory : builder.factories_)
       modelRegistry_.withFactories(factory);
@@ -196,14 +199,6 @@ public class AllegroPodApi implements IAllegroPodApi
     keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
     
     userName_ = builder.config_.getUserName();
-    
-    modelRegistry_
-        .withFactories(CryptoModel.FACTORIES)
-        .withFactories(ChatModel.FACTORIES)
-        .withFactories(PodModel.FACTORIES)
-        .withFactories(PodInternalModel.FACTORIES)
-        .withFactories(KmInternalModel.FACTORIES)
-        ;
     
     clientType_     = getClientVersion();
     cipherSuite_    = builder.cipherSuite_;
@@ -330,14 +325,16 @@ public class AllegroPodApi implements IAllegroPodApi
     CloseableHttpClient             certKeyAuthHttpClient_;
     CloseableHttpClient             defaultCertAuthHttpClient_;
 
-    IAllegroPodConfiguration        config_;
+    IAllegroConfiguration           config_;
     CloseableHttpClient             defaultHttpClient_;
     PrivateKey                      rsaCredential_;
     boolean                         rsaCredentialIsSet_;
-    CookieStore                     cookieStore_          = new BasicCookieStore();
-    List<IEntityFactory<?, ?, ?>>   factories_            = new LinkedList<>();
-    ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
-    ModelRegistry                   allegroModelRegistry_ = new ModelRegistry()
+
+    ITraceContextTransactionFactory traceFactory_   = new NoOpContextFactory();
+    CookieStore                     cookieStore_    = new BasicCookieStore();
+    List<IEntityFactory<?, ?, ?>>   factories_      = new LinkedList<>();
+    ModelRegistry                   modelRegistry_  = new ModelRegistry();
+    ModelRegistry                   configRegistry_ = new ModelRegistry()
         .withFactories(AllegroModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES);
     
@@ -346,7 +343,14 @@ public class AllegroPodApi implements IAllegroPodApi
       super(type);
     }
     
-    public T withConfiguration(IAllegroPodConfiguration configuration)
+    public T withModelRegistry(ModelRegistry modelRegistry)
+    {
+      modelRegistry_ = modelRegistry;
+      
+      return self();
+    }
+    
+    public T withConfiguration(IAllegroConfiguration configuration)
     {
       config_ = configuration;
       
@@ -355,7 +359,7 @@ public class AllegroPodApi implements IAllegroPodApi
     
     public T withConfiguration(Reader reader)
     {
-      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroPodConfiguration.TYPE_ID, IAllegroPodConfiguration.class));
+      return withConfiguration(configRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
     }
     
     public T withConfigurationFile(String fileName) throws FileNotFoundException, IOException
@@ -384,6 +388,14 @@ public class AllegroPodApi implements IAllegroPodApi
       return self();
     }
     
+    public T withRsaCredential(PrivateKey rsaCredential)
+    {
+      rsaCredential_ = rsaCredential;
+      rsaCredentialIsSet_ = true;
+      
+      return self();
+    }
+    
     public T withSessionTokenSupplier(Supplier<String> sessionTokenSupplier)
     {
       sessionTokenSupplier_ = sessionTokenSupplier;
@@ -405,7 +417,6 @@ public class AllegroPodApi implements IAllegroPodApi
       
       faultAccumulator.checkNotNull(config_, "Configuration");
       
-      // AllegroApi sets this when we are called from there
       if(!rsaCredentialIsSet_)
       {
         if(config_.getRsaPemCredential() == null)

@@ -19,8 +19,6 @@
 package com.symphony.oss.allegro.ui;
 
 import java.net.URL;
-import java.security.PrivateKey;
-import java.util.List;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -29,12 +27,12 @@ import org.slf4j.LoggerFactory;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
-import com.symphony.oss.allegro.objectstore.AllegroApi;
-import com.symphony.oss.allegro.objectstore.AllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi;
 import com.symphony.oss.allegro.objectstore.AsyncConsumerManager;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
 import com.symphony.oss.allegro.objectstore.IAllegroQueryManager;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.ObjectStoreApi;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
@@ -44,12 +42,14 @@ import com.symphony.oss.fugue.server.http.IResourceProvider;
 import com.symphony.oss.fugue.server.http.resources.FugueResourceProvider;
 import com.symphony.oss.fugue.server.http.ui.FugueHttpUiServer;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
+import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.AllegroObjectStoreConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IAllegroObjectStoreConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.ObjectStoreConfiguration;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IFeed;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.pod.canon.IStreamAttributes;
-import com.symphony.oss.models.pod.canon.IStreamType;
 
 /**
  * Main class for the Allegro UI.
@@ -72,8 +72,8 @@ public class AllegroUi
   private final String                       instanceId_;
 
   private final FugueHttpUiServer            httpServer_;
-  private final IAllegroApi                  userApi_;
-  private final IAllegroMultiTenantApi       accessApi_;
+  private final IAllegroObjectStoreApi                  userApi_;
+  private final IBaseObjectStoreApi       accessApi_;
   private final PartitionProvider            partitionProvider_;
   private final PartitionObjectsViewProvider partitionObjectsViewProvider_;
   private final ObjectVersionsViewProvider   objectVersionsViewProvider_;
@@ -84,7 +84,12 @@ public class AllegroUi
   {
     instanceId_ = builder.instanceId_;
   
-    userApi_ = builder.userApiBuilder_.build();
+    IAllegroObjectStoreConfiguration configuration = builder.userApiConfig_.
+        withAllegroConfiguration(builder.allegroApiConfig_.build())
+        .build();
+    userApi_ = builder.userApiBuilder_
+        .withConfiguration(configuration)
+        .build();
     
     debug();
   
@@ -94,7 +99,9 @@ public class AllegroUi
     }
     else
     {
-      accessApi_ = builder.accessApiBuilder_.build();
+      accessApi_ = builder.accessApiBuilder_
+          .withConfiguration(builder.accessApiConfig_.build())
+          .build();
     }
   
     partitionProvider_ = new PartitionProvider(accessApi_);
@@ -205,8 +212,14 @@ public class AllegroUi
   extends BaseAbstractBuilder<T, B>
   {
     protected FugueHttpUiServer.Builder     httpServerBuilder_  = new FugueHttpUiServer.Builder();
-    protected AllegroApi.Builder            userApiBuilder_     = new AllegroApi.Builder();
-    protected AllegroMultiTenantApi.Builder accessApiBuilder_   = new AllegroMultiTenantApi.Builder();
+//    protected AllegroPodApi.Builder         allegroApiBuilder_  = new AllegroPodApi.Builder();
+    protected AllegroConfiguration.Builder  allegroApiConfig_   = new AllegroConfiguration.Builder();
+    
+    protected AllegroObjectStoreApi.Builder userApiBuilder_     = new AllegroObjectStoreApi.Builder();
+    protected AllegroObjectStoreConfiguration.Builder userApiConfig_ = new AllegroObjectStoreConfiguration.Builder();
+
+    protected ObjectStoreApi.Builder accessApiBuilder_   = new ObjectStoreApi.Builder();
+    protected ObjectStoreConfiguration.Builder accessApiConfig_   = new ObjectStoreConfiguration.Builder();
     protected ProjectorManager.Builder      projectorBuilder_   = new ProjectorManager.Builder();
     protected IResourceProvider             resourceProvider_;
     protected String                        principalCredentialFile_;
@@ -242,20 +255,12 @@ public class AllegroUi
       
       return self();
     }
-  
-    public T withMaxHttpConnections(int maxHttpConnections)
-    {
-      userApiBuilder_.withMaxHttpConnections(maxHttpConnections);
-      accessApiBuilder_.withMaxHttpConnections(maxHttpConnections);
-      
-      return self();
-    }
     
     public T withPrincipalCredentialFile(String principalCredentialFile)
     {
       principalCredentialFile_ = principalCredentialFile;
       
-      accessApiBuilder_.withPrincipalCredentialFile(principalCredentialFile);
+      accessApiConfig_.withPrincipalCredentialFile(principalCredentialFile);
   
       return self();
     }
@@ -270,68 +275,37 @@ public class AllegroUi
   
     public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
     {
-      userApiBuilder_.withRsaPemCredential(rsaPemCredential);
+      allegroApiConfig_.withRsaPemCredential(rsaPemCredential);
   
       return self();
     }
   
     public T withRsaPemCredential(String rsaPemCredential)
     {
-      userApiBuilder_.withRsaPemCredential(rsaPemCredential);
-  
-      return self();
-    }
-  
-    public T withRsaCredential(PrivateKey rsaCredential)
-    {
-      userApiBuilder_.withRsaCredential(rsaCredential);
+      allegroApiConfig_.withRsaPemCredential(rsaPemCredential);
   
       return self();
     }
   
     public T withRsaPemCredentialFile(String rsaPemCredentialFile)
     {
-      userApiBuilder_.withRsaPemCredentialFile(rsaPemCredentialFile);
+      allegroApiConfig_.withRsaPemCredentialFile(rsaPemCredentialFile);
   
       return self();
     }
   
     public T withObjectStoreUrl(URL objectStoreUrl)
     {
-      userApiBuilder_.withObjectStoreUrl(objectStoreUrl);
-      accessApiBuilder_.withObjectStoreUrl(objectStoreUrl);
+      userApiConfig_.withApiUrl(objectStoreUrl);
+      accessApiConfig_.withApiUrl(objectStoreUrl);
   
       return self();
     }
   
     public T withObjectStoreUrl(String objectStoreUrl)
     {
-      userApiBuilder_.withObjectStoreUrl(objectStoreUrl);
-      accessApiBuilder_.withObjectStoreUrl(objectStoreUrl);
-  
-      return self();
-    }
-  
-    public T withTrustAllSslCerts()
-    {
-      userApiBuilder_.withTrustAllSslCerts();
-      accessApiBuilder_.withTrustAllSslCerts();
-  
-      return self();
-    }
-  
-    public T withTrustSelfSignedSslCerts()
-    {
-      userApiBuilder_.withTrustSelfSignedSslCerts();
-      accessApiBuilder_.withTrustSelfSignedSslCerts();
-  
-      return self();
-    }
-  
-    public T withTrustedSslCertResources(String... resourceNames)
-    {
-      userApiBuilder_.withTrustedSslCertResources(resourceNames);
-      accessApiBuilder_.withTrustedSslCertResources(resourceNames);
+      userApiConfig_.withApiUrl(objectStoreUrl);
+      accessApiConfig_.withApiUrl(objectStoreUrl);
   
       return self();
     }
@@ -345,35 +319,21 @@ public class AllegroUi
   
     public T withUserName(String serviceAccountName)
     {
-      userApiBuilder_.withUserName(serviceAccountName);
-  
-      return self();
-    }
-  
-    public T withSessionToken(String sessionToken)
-    {
-      userApiBuilder_.withSessionToken(sessionToken);
-  
-      return self();
-    }
-  
-    public T withKeymanagerToken(String keymanagerToken)
-    {
-      userApiBuilder_.withKeymanagerToken(keymanagerToken);
+      allegroApiConfig_.withUserName(serviceAccountName);
   
       return self();
     }
   
     public T withPodUrl(URL podUrl)
     {
-      userApiBuilder_.withPodUrl(podUrl);
+      allegroApiConfig_.withPodUrl(podUrl);
   
       return self();
     }
   
     public T withPodUrl(String podUrl)
     {
-      userApiBuilder_.withPodUrl(podUrl);
+      allegroApiConfig_.withPodUrl(podUrl);
   
       return self();
     }

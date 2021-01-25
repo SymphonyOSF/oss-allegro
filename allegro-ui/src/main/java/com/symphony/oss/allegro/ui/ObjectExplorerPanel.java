@@ -20,8 +20,8 @@ package com.symphony.oss.allegro.ui;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
@@ -35,7 +35,7 @@ class ObjectExplorerPanel extends RenderingPanel
   private static final String PANEL_NAME = "Object Explorer";
   public static final String PANEL_ID = "objectExplorer";
 
-  ObjectExplorerPanel(ProjectorManager projectorManager, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  ObjectExplorerPanel(ProjectorManager projectorManager, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(PANEL_ID, PANEL_NAME, accessApi, userApi, projectorManager, true);
   }

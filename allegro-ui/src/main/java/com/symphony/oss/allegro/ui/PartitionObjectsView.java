@@ -19,8 +19,8 @@
 package com.symphony.oss.allegro.ui;
 
 import com.symphony.oss.allegro.api.request.PartitionQuery;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.allegro.objectstore.IObjectPage;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -28,13 +28,13 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 class PartitionObjectsView extends AbstractObjectView<IStoredApplicationObject>
 {
-  PartitionObjectsView(Hash partitionHash, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  PartitionObjectsView(Hash partitionHash, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(IStoredApplicationObject.class, partitionHash, accessApi, userApi);
   }
 
   @Override
-  protected IObjectPage fetchPage(IAllegroMultiTenantApi accessApi, Hash hash, String after, boolean scanForwards)
+  protected IObjectPage fetchPage(IBaseObjectStoreApi accessApi, Hash hash, String after, boolean scanForwards)
   {
     return accessApi.fetchPartitionObjectPage(new PartitionQuery.Builder()
         .withHash(hash)

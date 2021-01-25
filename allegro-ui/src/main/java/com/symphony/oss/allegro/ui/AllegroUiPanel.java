@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
 import com.symphony.oss.commons.hash.Hash;
@@ -32,7 +32,6 @@ import com.symphony.oss.fugue.server.http.ui.servlet.IUIPanel;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIPanel;
 import com.symphony.oss.models.object.canon.INamedUserIdObject;
-import com.symphony.oss.models.object.canon.IUserIdObject;
 
 abstract class AllegroUiPanel extends UIPanel implements IUIPanel
 {
@@ -49,17 +48,17 @@ abstract class AllegroUiPanel extends UIPanel implements IUIPanel
   static final String BASE_HASH      = "baseHash";
   static final String LOAD_AFTER     = "loadAfter";
   
-  IAllegroApi userApi_;
-  IAllegroMultiTenantApi accessApi_;
+  IAllegroObjectStoreApi userApi_;
+  IBaseObjectStoreApi accessApi_;
   
-  public AllegroUiPanel(String id, String name, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  public AllegroUiPanel(String id, String name, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(id, name);
     accessApi_ = accessApi;
     userApi_ = userApi;
   }
 
-  public AllegroUiPanel(String name, IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  public AllegroUiPanel(String name, IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     super(name);
     accessApi_ = accessApi;

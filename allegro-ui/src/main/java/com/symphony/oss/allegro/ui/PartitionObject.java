@@ -18,7 +18,7 @@
 
 package com.symphony.oss.allegro.ui;
 
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
@@ -29,7 +29,7 @@ class PartitionObject<T extends IAbstractStoredApplicationObject>
   private IApplicationObjectPayload payload_;
   private RuntimeException          payloadException_;
 
-  PartitionObject(T abstracttoredObject, IAllegroApi userApi)
+  PartitionObject(T abstracttoredObject, IAllegroObjectStoreApi userApi)
   {
     storedObject_ = abstracttoredObject;
     

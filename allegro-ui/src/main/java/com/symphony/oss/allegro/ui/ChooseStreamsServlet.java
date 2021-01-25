@@ -27,7 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
 import com.symphony.oss.canon.runtime.exception.CanonException;
 import com.symphony.oss.fugue.server.http.ui.servlet.UIHtmlWriter;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
@@ -39,9 +39,9 @@ class ChooseStreamsServlet extends AbstractObjectServlet
 {
   private static final long            serialVersionUID = 1L;
   
-  private final IAllegroApi            userApi_;
+  private final IAllegroObjectStoreApi            userApi_;
 
-  ChooseStreamsServlet(IAllegroApi userApi)
+  ChooseStreamsServlet(IAllegroObjectStoreApi userApi)
   {
     userApi_ = userApi;
   }

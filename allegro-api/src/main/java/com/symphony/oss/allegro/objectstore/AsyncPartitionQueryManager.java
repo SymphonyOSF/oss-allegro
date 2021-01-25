@@ -49,7 +49,7 @@ public class AsyncPartitionQueryManager extends AbstractAsyncQueryManager
   public AsyncPartitionQueryManager(AllegroBaseApi allegroApi, PartitionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
-    super(allegroApi, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);
+    super(allegroApi.getDecryptor(), query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);
     
     query_ = query;
     traceFactory_ = traceFactory;

@@ -24,16 +24,16 @@ import java.util.function.Consumer;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.symphony.oss.allegro.objectstore.IAllegroApi;
-import com.symphony.oss.allegro.objectstore.IAllegroMultiTenantApi;
+import com.symphony.oss.allegro.objectstore.IAllegroObjectStoreApi;
+import com.symphony.oss.allegro.objectstore.IBaseObjectStoreApi;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 class ObjectVersionsViewProvider implements Consumer<IAbstractStoredApplicationObject>
 {
-  private final IAllegroMultiTenantApi accessApi_;
-  private final IAllegroApi userApi_;
+  private final IBaseObjectStoreApi accessApi_;
+  private final IAllegroObjectStoreApi userApi_;
   private final LoadingCache<Hash, CacheEntry<ObjectVersionsView>> partitionCache_ = CacheBuilder.newBuilder()
       .maximumSize(1000)
       //.expireAfterWrite(10, TimeUnit.MINUTES)
@@ -55,7 +55,7 @@ class ObjectVersionsViewProvider implements Consumer<IAbstractStoredApplicationO
           });
 
 
-  ObjectVersionsViewProvider(IAllegroMultiTenantApi accessApi, IAllegroApi userApi)
+  ObjectVersionsViewProvider(IBaseObjectStoreApi accessApi, IAllegroObjectStoreApi userApi)
   {
     accessApi_ = accessApi;
     userApi_ = userApi;

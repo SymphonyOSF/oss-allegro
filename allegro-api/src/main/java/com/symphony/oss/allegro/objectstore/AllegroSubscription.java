@@ -31,6 +31,7 @@ import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.pubsub.ISubscription;
 import com.symphony.oss.fugue.trace.ITraceContext;
+import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 /* package */ class AllegroSubscription implements ISubscription<IAbstractStoredApplicationObject>
@@ -38,12 +39,12 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
   private final ImmutableSet<FeedName>                                         subscriptionNames_;
 
-  public AllegroSubscription(FetchFeedObjectsRequest request, AllegroBaseApi allegroApi)
+  public AllegroSubscription(FetchFeedObjectsRequest request, PodAndUserId userId, IAllegroDecryptor allegroDecryptor)
   {
     Set<FeedName> names = new HashSet<>();
     
     for(FeedQuery query : request.getQueryList())
-      names.add(new FeedName(query.getHash(allegroApi.getUserId())));
+      names.add(new FeedName(query.getHash(userId)));
     
     subscriptionNames_ = ImmutableSet.copyOf(names);
     
@@ -53,7 +54,7 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
       public void consume(IAbstractStoredApplicationObject item, ITraceContext trace)
           throws RetryableConsumerException, FatalConsumerException
       {
-        request.getConsumerManager().consume(item, trace, allegroApi);
+        request.getConsumerManager().consume(item, trace, allegroDecryptor);
       }
 
       @Override

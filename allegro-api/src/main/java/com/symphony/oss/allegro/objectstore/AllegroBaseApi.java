@@ -18,15 +18,12 @@
 
 package com.symphony.oss.allegro.objectstore;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,7 +46,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
@@ -72,8 +68,6 @@ import com.symphony.oss.canon.runtime.exception.ServerErrorException;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.canon.runtime.jjwt.JwtBase;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
-import com.symphony.oss.commons.fault.CodingFault;
-import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.aws.sqs.SqsAction;
@@ -86,10 +80,9 @@ import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.fugue.trace.NoOpContextFactory;
 import com.symphony.oss.models.allegro.canon.AllegroModel;
-import com.symphony.oss.models.allegro.canon.SslTrustStrategy;
-import com.symphony.oss.models.allegro.canon.facade.AllegroBaseConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.BaseObjectStoreConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IBaseObjectStoreConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IConnectionSettings;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
@@ -99,10 +92,6 @@ import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
-import com.symphony.oss.models.crypto.canon.CipherSuiteId;
-import com.symphony.oss.models.crypto.canon.PemPrivateKey;
-import com.symphony.oss.models.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
@@ -115,7 +104,6 @@ import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
-import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
@@ -158,39 +146,14 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * @author Bruce Skingle
  *
  */
-public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
+public abstract class AllegroBaseApi implements IBaseObjectStoreApi
 {
-  /** Distinguished value for API url which causes Allegro to access all services individually on the local host. */
-  public static final URL ALL_SERVICES_LOCAL_URL;
   
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
   private static final long                     FAILED_CONSUMER_RETRY_TIME = TimeUnit.SECONDS.toSeconds(30);
   
   private static Map<String, AllegroSqsFeedsContainer> feedsMap_  = new ConcurrentHashMap<>();
   
-  static
-  {
-    try
-    {
-      ALL_SERVICES_LOCAL_URL = new URL("http://local");
-    }
-    catch (MalformedURLException e)
-    {
-      throw new CodingFault(e);
-    }
-  }
-  IAuthenticationProvider jwtGenerator_  = new IAuthenticationProvider()
-  {
-    @Override
-    public void authenticate(RequestBuilder builder)
-    {
-      builder.addHeader(JwtBase.AUTH_HEADER_KEY, JwtBase.AUTH_HEADER_VALUE_PREFIX + getApiAuthorizationToken());
-    }
-  };
-
-
-  final IAllegroBaseConfiguration            config_;
-  final ModelRegistry                        modelRegistry_;
   final CoreHttpModelClient                  coreApiClient_;
   final ObjectHttpModelClient                objectApiClient_;
   final AuthcHttpModelClient                 authcApiClient_;
@@ -202,49 +165,54 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   final CloseableHttpClient                  apiHttpClient_;
 
   private final Map<ServiceId, IServiceInfo> serviceMap_   = new HashMap<>();
+  private final ModelRegistry                modelRegistry_ = new ModelRegistry()
+      .withFactories(AllegroModel.FACTORIES)
+      .withFactories(AuthcModel.FACTORIES)
+      .withFactories(AuthzModel.FACTORIES)
+      .withFactories(CoreModel.FACTORIES);
 
-  
-  AllegroBaseApi(AbstractBuilder<? extends IAllegroBaseConfiguration, ?, ?, ?> builder)
+
+  IAuthenticationProvider jwtGenerator_  = new IAuthenticationProvider()
   {
-    config_       = builder.config_;
+    @Override
+    public void authenticate(RequestBuilder builder)
+    {
+      builder.addHeader(JwtBase.AUTH_HEADER_KEY, JwtBase.AUTH_HEADER_VALUE_PREFIX + getApiAuthorizationToken());
+    }
+  };
+  
+  AllegroBaseApi(AbstractBuilder<?, ?> builder, String defaultApiUrl)
+  {
     traceFactory_ = builder.traceFactory_;
-    
-    modelRegistry_ = new ModelRegistry()
-        .withFactories(ObjectModel.FACTORIES)
-        .withFactories(AuthcModel.FACTORIES)
-        .withFactories(AuthzModel.FACTORIES)
-        .withFactories(CoreModel.FACTORIES)
-        ;
-    
-    for(IEntityFactory<?, ?, ?> factory : builder.factories_)
-      modelRegistry_.withFactories(factory);
-
 
     apiHttpClient_     = builder.getApiHttpClient();
     
     coreApiClient_  = new CoreHttpModelClient(
-        modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
+        getModelRegistry(),
+        initUrl(defaultApiUrl, builder.getConfiguration().getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     objectApiClient_  = new ObjectHttpModelClient(
-        modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
+        getModelRegistry(),
+        initUrl(defaultApiUrl, builder.getConfiguration().getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     authcApiClient_  = new AuthcHttpModelClient(
-        modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHC), null, jwtGenerator_, null);
+        getModelRegistry(),
+        initUrl(defaultApiUrl, builder.getConfiguration().getApiUrl(), MultiTenantService.AUTHC), null, jwtGenerator_, null);
     
     authzApiClient_  = new AuthzHttpModelClient(
-        modelRegistry_,
-        initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHZ), null, jwtGenerator_, null);
+        getModelRegistry(),
+        initUrl(defaultApiUrl, builder.getConfiguration().getApiUrl(), MultiTenantService.AUTHZ), null, jwtGenerator_, null);
     
     entitlementValidator_ = new BaseEntitlementValidator(apiHttpClient_, authzApiClient_, this);
     entitlementSpecAdaptor_ = new EntitlementSpecAdaptor(this);
   }
 
-  private String initUrl(URL url, MultiTenantService service)
+  private String initUrl(String defaultApiUrl, URL url, MultiTenantService service)
   {
-    if(url.equals(ALL_SERVICES_LOCAL_URL))
+    if(url == null)
+      return defaultApiUrl;
+    
+    if(url.equals(BaseObjectStoreConfiguration.ALL_SERVICES_LOCAL_URL))
       return "http://127.0.0.1:" + service.getHttpPort();
     
     return url.toString();
@@ -264,48 +232,31 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
   protected static abstract class AbstractBuilder<
-    C extends IAllegroBaseConfiguration, CB extends AllegroBaseConfiguration.AbstractAllegroBaseConfigurationBuilder<?,C>,
-    T extends AbstractBuilder<C,CB,T,B>, B extends IAllegroMultiTenantApi>
+    T extends AbstractBuilder<T,B>, B extends IBaseObjectStoreApi>
   extends BaseAbstractBuilder<T, B>
   {
-    protected CB                              configBuilder_;
-    protected ConnectionSettings.Builder      connectionSettingsBuilder_ = new ConnectionSettings.Builder();
-    protected boolean                         builderSet_;
 
     protected CookieStore                     cookieStore_               = new BasicCookieStore();
     protected List<IEntityFactory<?, ?, ?>>   factories_                 = new LinkedList<>();
     protected ITraceContextTransactionFactory traceFactory_              = new NoOpContextFactory();
-    protected ModelRegistry                   allegroModelRegistry_      = new ModelRegistry()
+    protected ModelRegistry                   configModelRegistry_       = new ModelRegistry()
         .withFactories(AllegroModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES);
-    protected C                               config_;
-    protected PrivateKey                      rsaCredential_;
-    private C                                 setConfig_;
-    private CloseableHttpClient               defaultHttpClient_;
+    protected CloseableHttpClient               defaultHttpClient_;
     private CloseableHttpClient               apiHttpClient_;
     
-    public AbstractBuilder(Class<T> type, CB configBuilder)
+    public AbstractBuilder(Class<T> type)
     {
       super(type);
-      
-      configBuilder_ = configBuilder;
-      
-      if(configBuilder_.getApiUrl() == null)
-        configBuilder_.withApiUrl("https://api.symphony.com");
     }
+    
+    protected abstract IBaseObjectStoreConfiguration    getConfiguration();
     
     protected synchronized CloseableHttpClient getDefaultHttpClient()
     {
       if(defaultHttpClient_ == null)
       {
-        if(config_.getDefaultConnectionSettings() == null)
-        {
-          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_);
-        }
-        else
-        {
-          defaultHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cookieStore_);
-        }
+        defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_);
       }
       
       return defaultHttpClient_;
@@ -315,24 +266,17 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     {
       if(apiHttpClient_ == null)
       {
-        if(config_.getApiConnectionSettings() == null)
+        if(getConfiguration().getApiConnectionSettings() == null)
         {
           apiHttpClient_ = getDefaultHttpClient();
         }
         else
         {
-          apiHttpClient_ = config_.getApiConnectionSettings().createHttpClient(cookieStore_);
+          apiHttpClient_ = getConfiguration().getApiConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
       return apiHttpClient_;
-    }
-
-    public T withConfiguration(C configuration)
-    {
-      setConfig_ = configuration;
-      
-      return self();
     }
     
     public abstract T withConfiguration(Reader reader);
@@ -350,106 +294,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
     }
     
-    /**
-     * Set the maximum number of concurrent HTTP connections which the client can make.
-     * 
-     * The default value is 200.
-     * 
-     * @param maxHttpConnections The maximum number of concurrent HTTP connections which the client can make.
-     * 
-     * @return This (fluent method).
-     */
-    @Deprecated
-    public T withMaxHttpConnections(int maxHttpConnections)
-    {
-      connectionSettingsBuilder_.withMaxHttpConnections(maxHttpConnections);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withTrustAllSslCerts()
-    {
-      connectionSettingsBuilder_.withSslTrustStrategy(SslTrustStrategy.TRUST_ALL_CERTS);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withTrustSelfSignedSslCerts()
-    {
-      connectionSettingsBuilder_.withSslTrustStrategy(SslTrustStrategy.TRUST_SELF_SIGNED_CERTS);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withTrustedSslCertResources(String ...resourceNames)
-    {
-      for(String resourceName : resourceNames)
-      {
-        connectionSettingsBuilder_.withTrustedCertResources(resourceName);
-        builderSet_ = true;
-      }
-      return self();
-    }
-    
     public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
     {
       traceFactory_ = traceFactory;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withCipherSuite(String cipherSuiteId)
-    {
-      CipherSuiteId id = CipherSuiteId.valueOf(cipherSuiteId);
-      
-      if(id == null)
-        throw new IllegalArgumentException("Invalid cipher suite ID \"" + cipherSuiteId + "\"");
-      
-      configBuilder_.withCipherSuiteId(id);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withObjectStoreUrl(URL objectStoreUrl)
-    {
-      configBuilder_.withApiUrl(objectStoreUrl.toString());
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withObjectStoreUrl(String objectStoreUrl)
-    {
-      switch(objectStoreUrl)
-      {
-        case "local":
-          log_.info("Using local service URLS");
-          configBuilder_.withApiUrl(ALL_SERVICES_LOCAL_URL);
-          break;
-        
-        default:
-          try
-          {
-            new URL(objectStoreUrl);
-          }
-          catch (MalformedURLException e)
-          {
-            throw new IllegalArgumentException("Invalid objectStoreUrl", e);
-          }
-          configBuilder_.withApiUrl(objectStoreUrl);
-      }
-      
-      builderSet_ = true;
       
       return self();
     }
@@ -464,121 +311,17 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       
       return self();
     }
-
-    @Deprecated
-    public T withRsaPemCredential(PemPrivateKey rsaPemCredential)
-    {
-      configBuilder_.withRsaPemCredential(rsaPemCredential);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withRsaPemCredential(String rsaPemCredential)
-    {
-      if(rsaPemCredential == null)
-        configBuilder_.withRsaPemCredential((PemPrivateKey)null);
-      else
-        configBuilder_.withRsaPemCredential(PemPrivateKey.newBuilder().build(rsaPemCredential));
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withRsaCredential(PrivateKey rsaCredential)
-    {
-      configBuilder_.withRsaPemCredential(CipherSuite.getDefault().privateKeyToPem(rsaCredential));
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withRsaPemCredentialFile(String rsaPemCredentialFile)
-    {
-      if(rsaPemCredentialFile == null)
-        return self();
-      
-      File file = new File(rsaPemCredentialFile);
-      
-      if(!file.canRead())
-        throw new IllegalArgumentException("Credential file \"" + file.getAbsolutePath() + "\" is unreadable");
-      
-      try
-      {
-        configBuilder_.withRsaPemCredential(PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file))));
-        builderSet_ = true;
-      }
-      catch (IOException e)
-      {
-        throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
-      }
-      
-      return self();
-    }
-
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-
-      if(setConfig_ == null)
-      {
-        config_ = configBuilder_.withDefaultConnectionSettings(connectionSettingsBuilder_.build())
-          .build();
-      }
-      else if(builderSet_ )
-      {
-        faultAccumulator.error("Do not call deprecated setters as well as withConnectionSettings(ConnectionSettings)");
-      }
-      else
-      {
-        config_ = setConfig_;
-      }
-      
-      if(config_.getRsaPemCredential() == null)
-      {
-        if(config_.getRsaPemCredentialFile() == null)
-        {
-          rsaCredential_ = null;
-        }
-        else
-        {
-          File file = new File(config_.getRsaPemCredentialFile());
-          
-          if(!file.canRead())
-            throw new IllegalArgumentException("Credential file \"" + file.getAbsolutePath() + "\" is unreadable");
-          
-          try
-          {
-            PemPrivateKey pemPrivateKey = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
-            rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(pemPrivateKey);
-          }
-          catch (IOException e)
-          {
-            throw new IllegalArgumentException("Unable to read credential file \""  + file.getAbsolutePath() + "\".", e);
-          }
-        }
-      }
-      else
-      {
-        rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(config_.getRsaPemCredential());
-      }
-    }
   }
-
+  
   @Override
-  public IAllegroBaseConfiguration getConfiguration()
-  {
-    return config_;
-  }
-
-  @Override
-  public ModelRegistry getModelRegistry()
+  public final ModelRegistry getModelRegistry()
   {
     return modelRegistry_;
+  }
+
+  protected IAllegroDecryptor getDecryptor()
+  {
+    return null;
   }
 
   @Override
@@ -672,7 +415,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
         .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
         .withUnprocessableMessageConsumer(unprocessableConsumer)
-        .withSubscription(new AllegroSqsSubscription(request, feeds.getFeedIds(), this))
+        .withSubscription(new AllegroSqsSubscription(request, feeds.getFeedIds(), getDecryptor()))
         .withModelRegistry(getModelRegistry())
         .withApiClient(objectApiClient_)
         .withHttpClient(apiHttpClient_);
@@ -746,7 +489,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               {
                 try
                 {
-                  IEntity entity = modelRegistry_.parseOne(new StringReader(message.getPayload()));
+                  IEntity entity = getModelRegistry().parseOne(new StringReader(message.getPayload()));
 
                   if (entity instanceof IAbstractStoredApplicationObject)
                   {
@@ -869,7 +612,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       .withObjectApiClient(objectApiClient_)
       .withTraceContextTransactionFactory(traceFactory_)
       .withUnprocessableMessageConsumer(unprocessableConsumer)
-      .withSubscription(new AllegroSubscription(request, this))
+      .withSubscription(new AllegroSubscription(request, getUserId(), getDecryptor()))
       .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
       .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
     .build();
@@ -1168,7 +911,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             {
               try
               {
-                consumerManager.consume(item, trace, this);
+                consumerManager.consume(item, trace, getDecryptor());
               }
               catch (RetryableConsumerException | FatalConsumerException e)
               {
@@ -1196,7 +939,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
     }
   }
-  
 
   @Override
   public PartitionObjectPage fetchPartitionObjectPage(PartitionQuery query)
@@ -1984,7 +1726,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             {
               try
               {
-                consumerManager.consume(item, trace, this);
+                consumerManager.consume(item, trace, getDecryptor());
               }
               catch (RetryableConsumerException | FatalConsumerException e)
               {

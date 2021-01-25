@@ -78,7 +78,7 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
   private AllegroSqsFeedsContainer                                             feeds_;
   private ObjectHttpModelClient                                                objectApiClient_;
   private CloseableHttpClient                                                  apiHttpClient_;
-  private IAllegroMultiTenantApi                                               allegro_;
+  private IBaseObjectStoreApi                                                  allegro_;
 
   AllegroSqsSubscriber(AllegroSqsSubscriberManager manager,
       ObjectHttpModelClient objectApiClient,  CloseableHttpClient apiHttpClient, String feedHash,

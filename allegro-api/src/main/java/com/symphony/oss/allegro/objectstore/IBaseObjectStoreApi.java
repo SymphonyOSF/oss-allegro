@@ -1,5 +1,7 @@
 /*
- * Copyright 2019 Symphony Communication Services, LLC.
+ *
+ *
+ * Copyright 2021 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +43,7 @@ import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.commons.hash.Hash;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IBaseObjectStoreConfiguration;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.object.canon.DeletionType;
@@ -62,19 +64,16 @@ import com.symphony.s2.authz.model.IGeneralEntitlementSpec;
 import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
 
 /**
- * The public interface of the Multi-Tenant Allegro API.
- * <p>
- * The multi-tenant version of AllegroApi does not support any encryption or decryption capabilities and
- * does not require authentication to a pod. This is intended for use by multi-tenant services. For the
- * full API see {@link IAllegroApi}.
+ * The base public interface of all Object Store APIs.
  * <p>
  * Generally methods called {@code getXXX()} return something from the local client whereas methods
  * called {@code fetchXXX()} involve a network request to some server.
  * <p>
  * @author Bruce Skingle
  */
-public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Closeable
+public interface IBaseObjectStoreApi extends IMultiTenantServiceRegistry, Closeable
 {
+
   @Override
   void close();
   
@@ -518,12 +517,12 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * @throws NotFoundException         If the requested object does not exist.
    */
   IStoredApplicationObject fetchObject(Hash partitionHash, SortKey sortKey);
-
+  
+  
   /**
    * Return the current configuration.
    * 
    * @return The current configuration.
    */
-  IAllegroBaseConfiguration getConfiguration();
-
+  IBaseObjectStoreConfiguration getConfiguration();
 }

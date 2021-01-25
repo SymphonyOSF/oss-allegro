@@ -100,7 +100,7 @@ public class AsyncVersionQueryListManager extends AbstractAsyncQueryListManager<
       
       for(VersionQuery query : request_.getQueryList())
       {
-        queryManagers.add(new AsyncVersionQueryManager(allegroApi_, query, consumerManager_, traceFactory_, objectApiClient_,
+        queryManagers.add(new AsyncVersionQueryManager(allegroApi_.getDecryptor(), query, consumerManager_, traceFactory_, objectApiClient_,
             httpClient_, handlerExecutor));
       }
       

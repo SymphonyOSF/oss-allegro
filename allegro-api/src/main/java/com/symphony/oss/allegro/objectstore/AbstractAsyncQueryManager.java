@@ -38,7 +38,7 @@ import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
  */
 public abstract class AbstractAsyncQueryManager implements Runnable
 {
-  private final AllegroDecryptor allegroApi_;
+  private final IAllegroDecryptor    allegroDecryptor_;
   private final AsyncConsumerManager consumerManager_;
   private final ThreadPoolExecutor   handlerExecutor_;
 
@@ -47,10 +47,10 @@ public abstract class AbstractAsyncQueryManager implements Runnable
   private final AtomicBoolean        running_      = new AtomicBoolean(true);
   private final AtomicInteger        handlerCount_ = new AtomicInteger(0);
 
-  protected AbstractAsyncQueryManager(AllegroDecryptor allegroApi, int remainingItems, AsyncConsumerManager consumerManager,
+  protected AbstractAsyncQueryManager(IAllegroDecryptor allegroDecryptor, int remainingItems, AsyncConsumerManager consumerManager,
       ThreadPoolExecutor handlerExecutor)
   {
-    allegroApi_ = allegroApi;
+    allegroDecryptor_ = allegroDecryptor;
     remainingItems_ = new AtomicInteger(remainingItems);
     consumerManager_ = consumerManager;
     handlerExecutor_ = handlerExecutor;
@@ -107,7 +107,7 @@ public abstract class AbstractAsyncQueryManager implements Runnable
       Runnable task = () -> {
         try
         {
-          consumerManager_.consume(item, trace, allegroApi_);
+          consumerManager_.consume(item, trace, allegroDecryptor_);
           
           synchronized(handlerCount_)
           {

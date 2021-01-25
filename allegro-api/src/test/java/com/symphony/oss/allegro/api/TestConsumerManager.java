@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.symphony.oss.allegro.objectstore.AllegroDecryptor;
 import com.symphony.oss.allegro.objectstore.ConsumerManager;
+import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.IConsumer;
 import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
@@ -67,7 +67,7 @@ public class TestConsumerManager
 //      .withPodId(POD_ID)
 //      .withPurgeTime(10000, ChronoUnit.SECONDS)
 //      .build();
-  private static final AllegroDecryptor OPENER = new AllegroDecryptor()
+  private static final IAllegroDecryptor OPENER = new IAllegroDecryptor()
   {
 //    @Override
 //    public IEntity open(IFundamentalObject item)
