@@ -18,7 +18,7 @@
 
 package com.symphony.oss.allegro.objectstore;
 
-import com.symphony.oss.allegro.api.IAllegroPodApi;
+import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
@@ -31,7 +31,7 @@ import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
  */
 public class EncryptedApplicationPayloadBuilder extends BaseEncryptedApplicationPayloadBuilder<EncryptedApplicationPayloadBuilder, IEncryptedApplicationPayload, EncryptedApplicationPayload.Builder>
 {
-  EncryptedApplicationPayloadBuilder(IAllegroPodApi cryptoClient)
+  EncryptedApplicationPayloadBuilder(IAllegroApi cryptoClient)
   {
     super(EncryptedApplicationPayloadBuilder.class, new EncryptedApplicationPayload.Builder(), cryptoClient);
   }

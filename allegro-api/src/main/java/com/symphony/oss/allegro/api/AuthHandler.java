@@ -70,7 +70,7 @@ public class AuthHandler implements IAuthHandler
   private long                             sessionAuthTime_;
   private long                             reauthTime_;
   
-  public AuthHandler(AllegroPodApi.AbstractBuilder<?, ?> builder, String serviceAccountName)
+  public AuthHandler(AllegroApi.AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
     // builder.cookieStore_, builder.config_.getPodUrl(), builder.rsaCredential_
     

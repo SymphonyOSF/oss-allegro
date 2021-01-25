@@ -187,7 +187,7 @@ implements IAllegroQueryManager
   }
 
   @Override
-  public void waitUntilIdle() throws InterruptedException
+  public void waitUntilIdle()
   {
     throw new NotImplementedException();
   }

@@ -78,7 +78,6 @@
   <modules>
     <module>allegro-api</module>
     <module>allegro-ui</module>
-    <module>allegro-pod-api</module>
   </modules>
 
   <repositories>

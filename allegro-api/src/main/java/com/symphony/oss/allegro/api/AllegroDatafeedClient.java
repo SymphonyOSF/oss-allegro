@@ -110,7 +110,7 @@ class AllegroDatafeedClient
     return feed.getFeedId();
   }
   
-  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, IAllegroPodApi opener, ITraceContext trace)
+  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, IAllegroApi opener, ITraceContext trace)
   {
     refreshTokenIfNecessary();
     

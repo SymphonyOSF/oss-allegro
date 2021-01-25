@@ -417,7 +417,6 @@ public abstract class AllegroBaseApi implements IBaseObjectStoreApi
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, feeds.getFeedIds(), getDecryptor()))
         .withModelRegistry(getModelRegistry())
-        .withApiClient(objectApiClient_)
         .withHttpClient(apiHttpClient_);
     
     

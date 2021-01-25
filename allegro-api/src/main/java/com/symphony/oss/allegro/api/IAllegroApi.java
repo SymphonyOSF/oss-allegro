@@ -51,7 +51,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
+public interface IAllegroApi extends IAllegroDecryptor, Closeable
 {
   @Override
   public void close();

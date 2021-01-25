@@ -21,7 +21,7 @@ package com.symphony.oss.allegro.objectstore;
 import java.util.List;
 
 import com.symphony.oss.allegro.api.EncryptablePayloadbuilder;
-import com.symphony.oss.allegro.api.IAllegroPodApi;
+import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
@@ -41,9 +41,9 @@ import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 abstract class BaseEncryptedApplicationPayloadBuilder<T extends BaseEncryptedApplicationPayloadBuilder<T,B,P>, B extends IEncryptedApplicationPayload, P extends EncryptedApplicationPayload.AbstractEncryptedApplicationPayloadBuilder<?,?>> extends EncryptablePayloadbuilder<T, B>
 {
   protected final P  builder_;
-  protected final IAllegroPodApi cryptoClient_;
+  protected final IAllegroApi cryptoClient_;
   
-  BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder, IAllegroPodApi cryptoClient)
+  BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder, IAllegroApi cryptoClient)
   {
     super(type);
     builder_ = builder;

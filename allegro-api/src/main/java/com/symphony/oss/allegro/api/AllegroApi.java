@@ -132,7 +132,7 @@ import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authz.canon.AuthzModel;
 
-public class AllegroPodApi implements IAllegroPodApi
+public class AllegroApi implements IAllegroApi
 {
 
   private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
@@ -141,7 +141,7 @@ public class AllegroPodApi implements IAllegroPodApi
   private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
   
   private static final ObjectMapper             AUTO_CLOSE_MAPPER          = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
-  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroPodApi.class);
+  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroApi.class);
 
   private final ModelRegistry                   modelRegistry_;
   private final ITraceContextTransactionFactory traceFactory_;
@@ -175,7 +175,7 @@ public class AllegroPodApi implements IAllegroPodApi
 
 
 
-  public AllegroPodApi(AbstractBuilder<?, ?> builder)
+  public AllegroApi(AbstractBuilder<?, ?> builder)
   {
     log_.info("AllegroPodApi constructor start with config " + builder.config_.getRedacted());
     
@@ -311,7 +311,7 @@ public class AllegroPodApi implements IAllegroPodApi
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroPodApi>
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
   extends BaseAbstractBuilder<T, B>
   {
 
@@ -593,7 +593,7 @@ public class AllegroPodApi implements IAllegroPodApi
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, IAllegroPodApi>
+  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
   {
     /**
      * Constructor.
@@ -604,9 +604,9 @@ public class AllegroPodApi implements IAllegroPodApi
     }
 
     @Override
-    protected IAllegroPodApi construct()
+    protected IAllegroApi construct()
     {
-      return new AllegroPodApi(this);
+      return new AllegroApi(this);
     }
   }
 

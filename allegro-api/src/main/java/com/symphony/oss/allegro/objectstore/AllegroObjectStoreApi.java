@@ -23,10 +23,10 @@ import java.util.List;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.allegro.api.AllegroPodApi;
+import com.symphony.oss.allegro.api.AllegroApi;
 import com.symphony.oss.allegro.api.ApplicationRecordBuilder;
 import com.symphony.oss.allegro.api.EncryptablePayloadbuilder;
-import com.symphony.oss.allegro.api.IAllegroPodApi;
+import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
@@ -77,7 +77,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
 public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObjectStoreApi
 {
   private final IAllegroObjectStoreConfiguration config_;
-  private final IAllegroPodApi                   allegroApi_;
+  private final IAllegroApi                   allegroApi_;
 
   /**
    * Constructor.
@@ -96,7 +96,7 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
     }
     
     config_     = builder.config_;
-    allegroApi_ = new AllegroPodApi.Builder()
+    allegroApi_ = new AllegroApi.Builder()
         .withConfiguration(builder.config_.getAllegroConfiguration())
         .withModelRegistry(modelRegistry)
         .build();
@@ -209,7 +209,7 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
   }
 
   @Override
-  public IAllegroPodApi getAllegroPodApi()
+  public IAllegroApi getAllegroPodApi()
   {
     return allegroApi_;
   }

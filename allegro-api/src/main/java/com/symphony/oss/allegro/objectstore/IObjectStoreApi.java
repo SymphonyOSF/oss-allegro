@@ -38,6 +38,7 @@ public interface IObjectStoreApi extends IBaseObjectStoreApi
    * 
    * @return The current configuration.
    */
+  @Override
   IObjectStoreConfiguration getConfiguration();
 
 }

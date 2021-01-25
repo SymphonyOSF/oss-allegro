@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.objectstore;
 
-import com.symphony.oss.allegro.api.IAllegroPodApi;
+import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.EncryptedApplicationPayloadAndHeaderBuilder;
@@ -36,7 +36,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroPodApi
+public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroApi
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -143,5 +143,5 @@ public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroPod
    * 
    * @return this API as an IAllegroPodApi.
    */
-  IAllegroPodApi getAllegroPodApi();
+  IAllegroApi getAllegroPodApi();
 }

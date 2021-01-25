@@ -72,7 +72,7 @@ class CertAuthHandler implements IAuthHandler
   private long                             sessionAuthTime_;
   private long                             reauthTime_;
   
-  CertAuthHandler(AllegroPodApi.AbstractBuilder<?, ?> builder)
+  CertAuthHandler(AllegroApi.AbstractBuilder<?, ?> builder)
   {
     cookieStore_    = builder.cookieStore_;
     modelRegistry_  = new ModelRegistry().withFactories(AuthModel.FACTORIES);

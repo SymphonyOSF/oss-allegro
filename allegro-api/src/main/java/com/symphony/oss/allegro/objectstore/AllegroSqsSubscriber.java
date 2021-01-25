@@ -50,7 +50,6 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 /**
  * An SWS SNS subscriber.
@@ -76,12 +75,11 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
   private ReceiveMessageRequest                                                blockingPullRequest_;
   private ReceiveMessageRequest                                                nonBlockingPullRequest_;
   private AllegroSqsFeedsContainer                                             feeds_;
-  private ObjectHttpModelClient                                                objectApiClient_;
   private CloseableHttpClient                                                  apiHttpClient_;
   private IBaseObjectStoreApi                                                  allegro_;
 
   AllegroSqsSubscriber(AllegroSqsSubscriberManager manager,
-      ObjectHttpModelClient objectApiClient,  CloseableHttpClient apiHttpClient, String feedHash,
+      CloseableHttpClient apiHttpClient, String feedHash,
       ITraceContextTransactionFactory traceFactory,
       IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer, 
       ICounter counter, IBusyCounter busyCounter,
@@ -93,7 +91,6 @@ class AllegroSqsSubscriber extends AbstractPullSubscriber
     {
       messageBatchSize_ = 1;
     }
-    objectApiClient_   = objectApiClient;
     apiHttpClient_     = apiHttpClient;
     manager_           = manager;
     feedHash_          =  feedHash;
