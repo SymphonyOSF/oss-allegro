@@ -104,6 +104,7 @@ import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
+import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
@@ -169,6 +170,7 @@ public abstract class AllegroBaseApi implements IBaseObjectStoreApi
       .withFactories(AllegroModel.FACTORIES)
       .withFactories(AuthcModel.FACTORIES)
       .withFactories(AuthzModel.FACTORIES)
+      .withFactories(ObjectModel.FACTORIES)
       .withFactories(CoreModel.FACTORIES);
 
 
