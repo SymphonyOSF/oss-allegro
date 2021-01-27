@@ -22,7 +22,7 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.4.6</version><!-- oss-parent-pom -->
+		<version>0.4.7</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
@@ -69,7 +69,7 @@
     
     <oss.commons.version>0.2.3</oss.commons.version>
     <oss.canon.version>0.3.5</oss.canon.version>
-    <oss.fugue.version>0.2.33</oss.fugue.version>
+    <oss.fugue.version>0.2.34</oss.fugue.version>
     <symphony.security.version>1.63.2</symphony.security.version>
     <messageml.version>0.9.57</messageml.version>
     <oss.models.version>0.7.26</oss.models.version>
