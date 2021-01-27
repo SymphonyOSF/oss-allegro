@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.api.AsyncConsumerManager;
 import com.symphony.oss.commons.concurrent.NamedThreadFactory;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.fugue.Fugue;

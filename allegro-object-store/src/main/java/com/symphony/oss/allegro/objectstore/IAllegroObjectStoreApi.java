@@ -21,6 +21,7 @@ import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObj
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
@@ -144,4 +145,21 @@ public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroApi
    * @return this API as an IAllegroPodApi.
    */
   IAllegroApi getAllegroPodApi();
+  
+
+
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param <T> Type of the required object payload.
+   * 
+   * @param storedApplicationObject An encrypted object.
+   * @param type                    Type of the required object payload.
+   * 
+   * @return The decrypted object.
+   * 
+   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+   */
+  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
+
 }

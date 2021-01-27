@@ -20,7 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.objectstore.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.ConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 
@@ -30,15 +31,15 @@ import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
  * @author Bruce Skingle
  *
  */
-public class FetchPartitionObjectsRequest
+public class FetchFeedObjectsRequest
 {
-  private final ImmutableList<PartitionQuery> queryList_;
+  private final ImmutableList<FeedQuery> queryList_;
   private final AbstractConsumerManager consumerManager_;
   
   /**
    * Constructor.
    */
-  FetchPartitionObjectsRequest(AbstractBuilder<?,?> builder)
+  FetchFeedObjectsRequest(AbstractBuilder<?,?> builder)
   {
     queryList_        = ImmutableList.copyOf(builder.queryList_);
     consumerManager_  = builder.consumerManager_;
@@ -48,11 +49,11 @@ public class FetchPartitionObjectsRequest
    * 
    * @return The list of query specifications.
    */
-  public ImmutableList<PartitionQuery> getQueryList()
+  public ImmutableList<FeedQuery> getQueryList()
   {
     return queryList_;
   }
-
+  
   /**
    * 
    * @return The ConsumerManager to receive objects.
@@ -68,7 +69,7 @@ public class FetchPartitionObjectsRequest
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, FetchPartitionObjectsRequest>
+  public static class Builder extends AbstractBuilder<Builder, FetchFeedObjectsRequest>
   {
     /**
      * Constructor.
@@ -79,9 +80,9 @@ public class FetchPartitionObjectsRequest
     }
 
     @Override
-    protected FetchPartitionObjectsRequest construct()
+    protected FetchFeedObjectsRequest construct()
     {
-      return new FetchPartitionObjectsRequest(this);
+      return new FetchFeedObjectsRequest(this);
     }
   }
 
@@ -93,9 +94,9 @@ public class FetchPartitionObjectsRequest
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchPartitionObjectsRequest> extends BaseAbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends FetchFeedObjectsRequest> extends BaseAbstractBuilder<T,B>
   {
-    protected List<PartitionQuery>    queryList_ = new LinkedList<>();
+    protected List<FeedQuery>         queryList_ = new LinkedList<>();
     protected AbstractConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
@@ -106,13 +107,13 @@ public class FetchPartitionObjectsRequest
     /**
      * Set the direction of scan.
      * 
-     * @param partitionQuery A query specification to fetch objects from a partition.
+     * @param feedQuery A query specification to fetch objects from a feed.
      * 
      * @return This (fluent method)
      */
-    public T withQuery(PartitionQuery partitionQuery)
+    public T withQuery(FeedQuery feedQuery)
     {
-      queryList_.add(partitionQuery);
+      queryList_.add(feedQuery);
       
       return self();
     }
@@ -135,6 +136,10 @@ public class FetchPartitionObjectsRequest
     protected void validate(FaultAccumulator faultAccumulator)
     {
       super.validate(faultAccumulator);
+      
+      // Maybe this should be an error, but for now we'll just create a consumer manager with just the default print to stdout consumer.
+      if(consumerManager_ == null)
+        consumerManager_ = new ConsumerManager.Builder().build();
       
       if(queryList_.isEmpty())
         faultAccumulator.error("At least 1 query must be provided.");

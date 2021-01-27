@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.objectstore;
+package com.symphony.oss.allegro.api;
 
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
 public interface IAllegroDecryptor
 {
@@ -32,7 +32,7 @@ public interface IAllegroDecryptor
    * 
    * @return The decrypted object.
    */
-  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload encryptedApplicationPayload);
+  public IApplicationPayload decryptObject(IEncryptedApplicationRecord encryptedApplicationPayload);
   
   /**
    * Create an IChatMessage from the given ILiveCurrentMessage, if the message

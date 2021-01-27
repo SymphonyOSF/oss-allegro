@@ -16,21 +16,21 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.objectstore;
+package com.symphony.oss.allegro.api;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.symphony.oss.fugue.pipeline.IRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
 import com.symphony.oss.fugue.trace.ITraceContext;
 
-abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
+abstract class ThreadSafeAbstractAdaptor<T> implements IThreadSafeRetryableConsumer<T>
 {
-  private static final Logger log_ = LoggerFactory.getLogger(AbstractAdaptor.class);
+  private static final Logger log_ = LoggerFactory.getLogger(ThreadSafeAbstractAdaptor.class);
   
   private final Class<T> payloadType_;
   
-  protected IRetryableConsumer<Object>           defaultConsumer_ = new IRetryableConsumer<Object>()
+  protected IThreadSafeRetryableConsumer<Object>           defaultConsumer_ = new IThreadSafeRetryableConsumer<Object>()
   {
     @Override
     public synchronized void consume(Object item, ITraceContext trace)
@@ -42,7 +42,7 @@ abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
     public void close(){}
   };
   
-  public AbstractAdaptor(Class<T> payloadType)
+  public ThreadSafeAbstractAdaptor(Class<T> payloadType)
   {
     payloadType_ = payloadType;
   }
@@ -52,7 +52,7 @@ abstract class AbstractAdaptor<T> implements IRetryableConsumer<T>
     return payloadType_;
   }
 
-  public void setDefaultConsumer(IRetryableConsumer<Object> defaultConsumer)
+  public void setDefaultConsumer(IThreadSafeRetryableConsumer<Object> defaultConsumer)
   {
     defaultConsumer_ = defaultConsumer;
   }

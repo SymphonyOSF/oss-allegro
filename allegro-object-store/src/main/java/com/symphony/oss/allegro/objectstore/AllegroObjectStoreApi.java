@@ -23,10 +23,12 @@ import java.util.List;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.AllegroApi;
 import com.symphony.oss.allegro.api.ApplicationRecordBuilder;
 import com.symphony.oss.allegro.api.EncryptablePayloadbuilder;
 import com.symphony.oss.allegro.api.IAllegroApi;
+import com.symphony.oss.allegro.api.IAllegroDecryptor;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
@@ -703,14 +705,25 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
   @Override
   public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
   {
-    return allegroApi_.decryptObject(storedApplicationObject);
+    if(storedApplicationObject.getEncryptedPayload() == null)
+      return null;
+    
+    return cryptoClient_.decrypt(storedApplicationObject);
   }
 
   @Override
   public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
       Class<T> type)
   {
-    return allegroApi_.decryptObject(storedApplicationObject, type);
+    if(storedApplicationObject.getEncryptedPayload() == null)
+      return null;
+    
+    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
+    
+    if(type.isInstance(payload))
+      return type.cast(payload);
+    
+    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
   }
 
   @Override

@@ -116,9 +116,6 @@ import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
 import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
 import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
 import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.ObjectModel;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IStreamType;
@@ -130,7 +127,6 @@ import com.symphony.oss.models.pod.canon.StreamFilter;
 import com.symphony.oss.models.pod.canon.StreamType;
 import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 import com.symphony.s2.authc.canon.AuthcModel;
-import com.symphony.s2.authz.canon.AuthzModel;
 
 public class AllegroApi implements IAllegroApi
 {
@@ -180,9 +176,9 @@ public class AllegroApi implements IAllegroApi
     log_.info("AllegroPodApi constructor start with config " + builder.config_.getRedacted());
     
     modelRegistry_ = builder.modelRegistry_
-        .withFactories(ObjectModel.FACTORIES)
+//        .withFactories(ObjectModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES)
-        .withFactories(AuthzModel.FACTORIES)
+//        .withFactories(AuthzModel.FACTORIES)
         .withFactories(CoreModel.FACTORIES)
         .withFactories(CryptoModel.FACTORIES)
         .withFactories(ChatModel.FACTORIES)
@@ -622,29 +618,29 @@ public class AllegroApi implements IAllegroApi
     return modelRegistry_;
   }
 
-  @Override
-  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
-  {
-    if(storedApplicationObject.getEncryptedPayload() == null)
-      return null;
-    
-    return cryptoClient_.decrypt(storedApplicationObject);
-  }
-
-  @Override
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
-      Class<T> type)
-  {
-    if(storedApplicationObject.getEncryptedPayload() == null)
-      return null;
-    
-    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
-    
-    if(type.isInstance(payload))
-      return type.cast(payload);
-    
-    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
-  }
+//  @Override
+//  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+//  {
+//    if(storedApplicationObject.getEncryptedPayload() == null)
+//      return null;
+//    
+//    return cryptoClient_.decrypt(storedApplicationObject);
+//  }
+//
+//  @Override
+//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
+//      Class<T> type)
+//  {
+//    if(storedApplicationObject.getEncryptedPayload() == null)
+//      return null;
+//    
+//    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
+//    
+//    if(type.isInstance(payload))
+//      return type.cast(payload);
+//    
+//    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
+//  }
   
 
 

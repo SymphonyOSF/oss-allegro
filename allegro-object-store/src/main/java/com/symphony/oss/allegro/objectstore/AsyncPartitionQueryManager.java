@@ -22,38 +22,41 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.allegro.api.request.VersionQuery;
+import com.symphony.oss.allegro.api.AsyncConsumerManager;
+import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
-import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
-import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
+import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 
 /**
- * Class used to fetch asyncronously objects by base hash
  * 
+ * Class used to fetch asyncronously IPageOfStoredApplicationObject
+ *  
  * @author Bruce Skingle
  *
  */
-public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
+public class AsyncPartitionQueryManager extends AbstractAsyncQueryManager
 {
-  private final VersionQuery                    query_;
+  private final PartitionQuery                  query_;
   private final ITraceContextTransactionFactory traceFactory_;
   private final ObjectHttpModelClient           objectApiClient_;
   private final CloseableHttpClient             httpClient_;
+  private final Hash                            partitionHash_;
 
-
-  public AsyncVersionQueryManager(IAllegroDecryptor allegroDecryptor, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
+  public AsyncPartitionQueryManager(AllegroBaseApi allegroApi, PartitionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
-    super(allegroDecryptor, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);
+    super(allegroApi.getDecryptor(), query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);
     
     query_ = query;
     traceFactory_ = traceFactory;
     objectApiClient_ = objectApiClient;
     httpClient_ = httpClient;
+    partitionHash_ = query_.getHash(allegroApi.getUserId());
   }
 
   @Override
@@ -62,26 +65,26 @@ public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
     if(query_.getMaxItems() != null && getRemainingItems() <= 0)
       return;
     
-    Hash    baseHash      = query_.getBaseHash();
     String  after         = query_.getAfter();
 
-    try (ITraceContextTransaction traceTransaction = traceFactory_.createTransaction        ("fetchObjectVersions",
-        baseHash.toString()))
+    try (ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("fetchPartitionObjects",
+        partitionHash_.toString()))
     {
       ITraceContext trace = traceTransaction.open();
 
       do
       {
-        ObjectsObjectHashVersionsGetHttpRequestBuilder pageRequest = objectApiClient_.newObjectsObjectHashVersionsGetHttpRequestBuilder()
-            .withObjectHash(baseHash)
-            .withAfter(after)
-            .withScanForwards(query_.getScanForwards())
-            ;
+        PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
+            .newPartitionsPartitionHashPageGetHttpRequestBuilder()
+              .withPartitionHash(partitionHash_)
+              .withAfter(after)
+              .withSortKeyPrefix(query_.getSortKeyPrefix())
+              .withScanForwards(query_.getScanForwards());
 
         if (query_.getMaxItems() != null)
           pageRequest.withLimit(getRemainingItems());
 
-        IPageOfAbstractStoredApplicationObject page = pageRequest
+        IPageOfStoredApplicationObject page = pageRequest
             .build()
             .execute(httpClient_);
 

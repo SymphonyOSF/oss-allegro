@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import com.symphony.oss.allegro.objectstore.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.internal.pod.canon.AckId;

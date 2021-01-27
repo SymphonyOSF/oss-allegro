@@ -28,7 +28,6 @@ import com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
-import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -37,8 +36,6 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
@@ -184,21 +181,6 @@ public interface IAllegroApi extends IAllegroDecryptor, Closeable
    * @return A new ApplicationRecordBuilder.
    */
   ApplicationRecordBuilder newApplicationRecordBuilder();
-
-  /**
-   * Deserialize and decrypt the given object.
-   * 
-   * @param <T> Type of the required object payload.
-   * 
-   * @param storedApplicationObject An encrypted object.
-   * @param type                    Type of the required object payload.
-   * 
-   * @return The decrypted object.
-   * 
-   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
-   */
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
-
 
   /**
    * Fetch information about a user given a user (login) name.

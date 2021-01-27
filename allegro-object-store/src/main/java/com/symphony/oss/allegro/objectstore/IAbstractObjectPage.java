@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 

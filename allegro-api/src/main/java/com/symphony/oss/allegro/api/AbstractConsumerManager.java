@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.objectstore;
+package com.symphony.oss.allegro.api;
 
 import java.util.HashMap;
 import java.util.LinkedList;

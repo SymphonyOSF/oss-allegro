@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <!--
-   * Copyright 2019 Symphony Communication Services, LLC.
+   * Copyright 2021 Symphony Communication Services, LLC.
    *
    * Licensed under the Apache License, Version 2.0 (the "License");
    * you may not use this file except in compliance with the License.
@@ -23,16 +23,15 @@
     <artifactId>oss-allegro</artifactId>
     <version>0.5.25-SNAPSHOT</version>
   </parent>
-  <artifactId>allegro-api</artifactId>
-    
-  <repositories>
-    <repository>
-        <id>local-maven-repo</id>
-        <url>file:///${project.basedir}/local-maven-repo</url>
-    </repository>
-  </repositories>
+  <artifactId>allegro-object-store</artifactId>
   
   <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>allegro-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    
     <dependency>
       <groupId>com.symphony.oss.commons</groupId>
       <artifactId>commons-core</artifactId>
@@ -49,7 +48,7 @@
       <version>${oss.commons.version}</version>
     </dependency>
     
-<!--     <dependency>
+    <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <artifactId>authc-model</artifactId>
       <version>${oss.models.version}</version>
@@ -58,17 +57,17 @@
       <groupId>com.symphony.oss.models</groupId>
       <artifactId>authz-model</artifactId>
       <version>${oss.models.version}</version>
-    </dependency> -->
+    </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <artifactId>core-model</artifactId>
       <version>${oss.models.version}</version>
     </dependency>
-    <!-- <dependency>
+    <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <artifactId>object-model</artifactId>
       <version>${oss.models.version}</version>
-    </dependency> -->
+    </dependency>
     <dependency>
       <groupId>com.symphony.oss.models</groupId>
       <artifactId>crypto-model</artifactId>
@@ -138,10 +137,10 @@
      </dependency>
     
     <dependency>
-	    <groupId>com.symphony</groupId>
-	    <artifactId>crypto</artifactId>
-	    <version>${symphony.security.version}</version>
-	    <scope>provided</scope>
+      <groupId>com.symphony</groupId>
+      <artifactId>crypto</artifactId>
+      <version>${symphony.security.version}</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.symphonyoss.symphony</groupId>
@@ -202,26 +201,4 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <appendAssemblyId>false</appendAssemblyId>
-          <descriptors>
-            <descriptor>src/assembly/dependencies.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
-		</plugins>
-	</build>
 </project>

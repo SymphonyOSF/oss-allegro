@@ -18,9 +18,8 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationRecord;
+import com.symphony.oss.models.allegro.canon.facade.IStoredApplicationRecord;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
 
 /**
  * Consumer for decrypted StoredApplicationRecords.
@@ -31,7 +30,7 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationRecord;
  * @param <P> The type of the decrypted payload.
  */
 @FunctionalInterface
-public interface IApplicationRecordConsumer<H extends IApplicationObjectHeader, P extends IApplicationObjectPayload>
+public interface IApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
 {
     /**
      * Consume the given decrypted record.

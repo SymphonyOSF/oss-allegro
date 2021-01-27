@@ -78,6 +78,7 @@
   <modules>
     <module>allegro-api</module>
     <module>allegro-ui</module>
+    <module>allegro-object-store</module>
   </modules>
 
   <repositories>

@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
+import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
@@ -156,7 +156,7 @@ public class TestStoredRecordConsumerManager
   
   
   
-  class TestConsumer<H extends IApplicationObjectHeader, P extends IApplicationObjectPayload> implements IApplicationRecordConsumer<H, P>
+  class TestConsumer<H extends IEntity, P extends IEntity> implements IApplicationRecordConsumer<H, P>
   {
     private Class<H> headerType_;
     private Class<P> payloadType_;
@@ -186,7 +186,7 @@ public class TestStoredRecordConsumerManager
     
   }
   
-  <H extends IApplicationObjectHeader, P extends IApplicationObjectPayload> TestConsumer<H,P> newConsumer(Class<H> headerType, Class<P> payloadType)
+  <H extends IEntity, P extends IEntity> TestConsumer<H,P> newConsumer(Class<H> headerType, Class<P> payloadType)
   {
     return new TestConsumer<H,P>(headerType, payloadType);
   }

@@ -26,15 +26,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationRecord;
+import com.symphony.oss.models.allegro.canon.facade.IStoredApplicationRecord;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
 
 /**
  * Base class of Manager of Consumers.
@@ -80,7 +78,7 @@ public class StoredRecordConsumerManager
   private final IAllegroDecryptor                                                               decryptor_;
   private final IModelRegistry                                                                  modelRegistry_;
   private final ImmutableList<StoredRecordConsumerHolder<?, ?>>                                 consumers_;
-  private final IApplicationRecordConsumer<IApplicationObjectHeader, IApplicationObjectPayload> defaultConsumer_;
+  private final IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> defaultConsumer_;
   private final IApplicationRecordErrorConsumer                                                 unprocessableMessageConsumer_;
     
   StoredRecordConsumerManager(AbstractBuilder<?,?> builder)
@@ -105,10 +103,10 @@ public class StoredRecordConsumerManager
     private IAllegroDecryptor                                                               decryptor_;
     private IModelRegistry                                                                  modelRegistry_;
     private List<StoredRecordConsumerHolder<?, ?>>                                          consumers_            = new LinkedList<>();
-    private IApplicationRecordConsumer<IApplicationObjectHeader, IApplicationObjectPayload> defaultConsumer_      = new IApplicationRecordConsumer<IApplicationObjectHeader, IApplicationObjectPayload> ()
+    private IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> defaultConsumer_      = new IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> ()
     {
       @Override
-      public void accept(IStoredApplicationRecord k, IApplicationObjectHeader header, IApplicationObjectPayload payload)
+      public void accept(IStoredApplicationRecord k, IApplicationPayload header, IApplicationPayload payload)
       {
         log_.error("No consumer found for " + (header == null ? "null header" : "header of type " + header.getClass()) + 
             " and " + ((payload == null ? "null payload" : "payload of type " + payload.getClass())));
@@ -143,7 +141,7 @@ public class StoredRecordConsumerManager
       return self();
     }
     
-    public <H extends IApplicationObjectHeader, P extends IApplicationObjectPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
+    public <H extends IApplicationPayload, P extends IApplicationPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
     {
       return withConsumer(new StoredRecordConsumerHolder<H,P>(headerType, payloadType, consumer));
     }
@@ -155,7 +153,7 @@ public class StoredRecordConsumerManager
       return self();
     }
     
-    public T withDefaultConsumer(IApplicationRecordConsumer<IApplicationObjectHeader, IApplicationObjectPayload> defaultConsumer)
+    public T withDefaultConsumer(IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> defaultConsumer)
     {
       defaultConsumer_ = defaultConsumer;
       
@@ -223,7 +221,7 @@ public class StoredRecordConsumerManager
       {
         try
         {
-          IApplicationObjectPayload applicationObjectPayload = decryptor_.decryptObject(storedObject);
+          IApplicationPayload applicationObjectPayload = decryptor_.decryptObject(storedObject);
           
           if(applicationObjectPayload != null)
           {
@@ -246,12 +244,12 @@ public class StoredRecordConsumerManager
   }
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  private void accept(IStoredApplicationRecord storedObject, IApplicationObjectHeader header,
-      IApplicationObjectPayload payload)
+  private void accept(IStoredApplicationRecord storedObject, IApplicationPayload header,
+      IApplicationPayload payload)
   {
 
-    Class<? extends IApplicationObjectHeader>   headerType = header == null ? null : header.getClass();
-    Class<? extends IApplicationObjectPayload> payloadType = payload == null ? null : payload.getClass();
+    Class<? extends IApplicationPayload> headerType   = header == null ? null : header.getClass();
+    Class<? extends IApplicationPayload> payloadType  = payload == null ? null : payload.getClass();
     
         
     StoredRecordConsumerHolder<?, ?> bestConsumer = null;

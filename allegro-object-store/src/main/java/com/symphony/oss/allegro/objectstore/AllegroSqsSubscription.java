@@ -1,7 +1,7 @@
 /*
  *
  *
- * Copyright 2019 Symphony Communication Services, LLC.
+ * Copyright 2020 Symphony Communication Services, LLC.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@
 package com.symphony.oss.allegro.objectstore;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
-import com.symphony.oss.allegro.api.request.FeedQuery;
+import com.symphony.oss.allegro.api.IAllegroDecryptor;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.naming.Name;
@@ -31,22 +32,27 @@ import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.pubsub.ISubscription;
 import com.symphony.oss.fugue.trace.ITraceContext;
-import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
-/* package */ class AllegroSubscription implements ISubscription<IAbstractStoredApplicationObject>
+/**
+ * An SQS Subscription
+ * 
+ * @author Geremia Longobardo
+ *
+ */
+/* package */ class AllegroSqsSubscription implements ISubscription<IAbstractStoredApplicationObject>
 {
   private final IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject> consumer_;
-  private final ImmutableSet<FeedName>                                         subscriptionNames_;
+  private final ImmutableSet<Name>                 subscriptionNames_;
 
-  public AllegroSubscription(FetchFeedObjectsRequest request, PodAndUserId userId, IAllegroDecryptor allegroDecryptor)
+  public AllegroSqsSubscription(FetchFeedObjectsRequest request, List<String> queueUrls, IAllegroDecryptor allegroDecryptor)
   {
-    Set<FeedName> names = new HashSet<>();
+    Set<Name> queueurls = new HashSet<>();
+      
+    for(String q : queueUrls)
+      queueurls.add(new Name(q));
     
-    for(FeedQuery query : request.getQueryList())
-      names.add(new FeedName(query.getHash(userId)));
-    
-    subscriptionNames_ = ImmutableSet.copyOf(names);
+    subscriptionNames_ = ImmutableSet.copyOf(queueurls);
     
     consumer_ = new IThreadSafeRetryableConsumer<IAbstractStoredApplicationObject>()
     {

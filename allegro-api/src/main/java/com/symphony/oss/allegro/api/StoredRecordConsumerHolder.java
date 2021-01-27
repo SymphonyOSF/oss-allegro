@@ -18,12 +18,11 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
 
-class StoredRecordConsumerHolder<H extends IApplicationObjectHeader, P extends IApplicationObjectPayload>
+class StoredRecordConsumerHolder<H extends IApplicationPayload, P extends IApplicationPayload>
 {
-  Class<H>          headerType_;
+  Class<H>                         headerType_;
   Class<P>                         payloadType_;
   IApplicationRecordConsumer<H, P> consumer_;
   
