@@ -48,8 +48,6 @@ import org.slf4j.LoggerFactory;
 
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.AsyncConsumerManager;
-import com.symphony.oss.allegro.api.ConsumerManager;
-import com.symphony.oss.allegro.api.IAllegroDecryptor;
 import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;

@@ -20,32 +20,30 @@ package com.symphony.oss.allegro.api;
 
 import com.symphony.oss.canon.runtime.EntityBuilder;
 import com.symphony.oss.canon.runtime.IEntity;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 
 /**
  * Base class of application objects which can be encrypted.
  * 
- * This is a type expected by AllegroCryptoClient.encrypt(EncryptablePayloadbuilder),
+ * This is a type expected by AllegroCryptoClient.encrypt(EncryptablePayloadBuilder2),
  * I would have made this an interface but I want some methods to be non-public.
  * 
  * @author Bruce Skingle
  *
  * @param <T> The concrete type for fluent methods.
  */
-public abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
+public abstract class EncryptablePayloadBuilder<T extends EncryptablePayloadBuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
 {
-  protected IApplicationObjectPayload payload_;
-  
   /**
    * Constructor.
    * 
    * @param type The concrete type for fluent methods.
    */
-  public EncryptablePayloadbuilder(Class<T> type)
+  public EncryptablePayloadBuilder(Class<T> type)
   {
     super(type);
   }
@@ -54,10 +52,7 @@ public abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuil
    * 
    * @return the unencrypted payload.
    */
-  public IApplicationObjectPayload getPayload()
-  {
-    return payload_;
-  }
+  protected abstract ImmutableByteArray getPayload();
 
   public abstract ThreadId getThreadId();
 

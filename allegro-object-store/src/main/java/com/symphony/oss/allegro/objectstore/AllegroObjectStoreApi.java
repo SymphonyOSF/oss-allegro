@@ -26,18 +26,19 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.AllegroApi;
 import com.symphony.oss.allegro.api.ApplicationRecordBuilder;
-import com.symphony.oss.allegro.api.EncryptablePayloadbuilder;
+import com.symphony.oss.allegro.api.EncryptablePayloadBuilder;
 import com.symphony.oss.allegro.api.IAllegroApi;
-import com.symphony.oss.allegro.api.IAllegroDecryptor;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
@@ -57,9 +58,11 @@ import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
+import com.symphony.oss.models.object.ObjectModelRegistry;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
@@ -201,7 +204,7 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
   @Override
   protected IAllegroDecryptor getDecryptor()
   {
-    return allegroApi_;
+    return this;
   }
 
   @Override
@@ -317,9 +320,10 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
    *
    * @param <T> The concrete type for fluent methods.
    */
-  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadbuilder<T, IStoredApplicationObject>
+  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadBuilder<T, IStoredApplicationObject>
   {
     protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
+    private IApplicationObjectPayload payload_;
     
     BaseApplicationObjectBuilder(Class<T> type)
     {
@@ -437,6 +441,15 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
     public Integer getCanonMinorVersion()
     {
       return builder_.getCanonMinorVersion();
+    }
+
+    @Override
+    protected ImmutableByteArray getPayload()
+    {
+      if(payload_ == null)
+        return null;
+      
+      return payload_.serialize();
     }
 
     @Override
@@ -703,22 +716,40 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
   }
 
   @Override
-  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
   {
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
     
-    return cryptoClient_.decrypt(storedApplicationObject);
+    ImmutableByteArray plainText = allegroApi_.decrypt(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), 
+        storedApplicationObject.getEncryptedPayload());
+    
+    ModelRegistry objectModelRegistry = new ObjectModelRegistry(getModelRegistry(), storedApplicationObject);
+    
+    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
+    ApplicationObjectPayload payload;
+    
+    if(entity instanceof ApplicationObjectPayload)
+    {
+      payload = (ApplicationObjectPayload)entity;
+  
+    }
+    else
+    {
+      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
+    }
+    
+    return payload;
   }
 
   @Override
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject,
       Class<T> type)
   {
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
     
-    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
+    IApplicationObjectPayload payload = decryptObject(storedApplicationObject);
     
     if(type.isInstance(payload))
       return type.cast(payload);
@@ -823,7 +854,7 @@ public class AllegroObjectStoreApi extends AllegroBaseApi implements IAllegroObj
   }
 
   @Override
-  public void encrypt(EncryptablePayloadbuilder<?, ?> builder)
+  public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
   {
     allegroApi_.encrypt(builder);
   }

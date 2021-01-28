@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
@@ -77,9 +78,9 @@ public class StoredRecordConsumerManager
 
   private final IAllegroDecryptor                                                               decryptor_;
   private final IModelRegistry                                                                  modelRegistry_;
-  private final ImmutableList<StoredRecordConsumerHolder<?, ?>>                                 consumers_;
+  private final ImmutableList<ApplicationRecordConsumerHolder<?, ?>>                                 consumers_;
   private final IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> defaultConsumer_;
-  private final IApplicationRecordErrorConsumer                                                 unprocessableMessageConsumer_;
+  private final IErrorConsumer                                                 unprocessableMessageConsumer_;
     
   StoredRecordConsumerManager(AbstractBuilder<?,?> builder)
   {
@@ -102,7 +103,7 @@ public class StoredRecordConsumerManager
   {
     private IAllegroDecryptor                                                               decryptor_;
     private IModelRegistry                                                                  modelRegistry_;
-    private List<StoredRecordConsumerHolder<?, ?>>                                          consumers_            = new LinkedList<>();
+    private List<ApplicationRecordConsumerHolder<?, ?>>                                          consumers_            = new LinkedList<>();
     private IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> defaultConsumer_      = new IApplicationRecordConsumer<IApplicationPayload, IApplicationPayload> ()
     {
       @Override
@@ -113,7 +114,7 @@ public class StoredRecordConsumerManager
       }
     };
 
-    private IApplicationRecordErrorConsumer unprocessableMessageConsumer_ = new IApplicationRecordErrorConsumer()
+    private IErrorConsumer unprocessableMessageConsumer_ = new IErrorConsumer()
     {
       @Override
       public void accept(Object item, String message, Throwable cause)
@@ -143,10 +144,10 @@ public class StoredRecordConsumerManager
     
     public <H extends IApplicationPayload, P extends IApplicationPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
     {
-      return withConsumer(new StoredRecordConsumerHolder<H,P>(headerType, payloadType, consumer));
+      return withConsumer(new ApplicationRecordConsumerHolder<H,P>(headerType, payloadType, consumer));
     }
     
-    public T withConsumer(StoredRecordConsumerHolder<?,?> storedRecordConsumerHolder)
+    public T withConsumer(ApplicationRecordConsumerHolder<?,?> storedRecordConsumerHolder)
     {
       consumers_.add(storedRecordConsumerHolder);
       
@@ -160,7 +161,7 @@ public class StoredRecordConsumerManager
       return self();
     }
     
-    public T withUnprocessableMessageConsumer(IApplicationRecordErrorConsumer errorConsumer)
+    public T withUnprocessableMessageConsumer(IErrorConsumer errorConsumer)
     {
       unprocessableMessageConsumer_ = errorConsumer;
       
@@ -252,9 +253,9 @@ public class StoredRecordConsumerManager
     Class<? extends IApplicationPayload> payloadType  = payload == null ? null : payload.getClass();
     
         
-    StoredRecordConsumerHolder<?, ?> bestConsumer = null;
+    ApplicationRecordConsumerHolder<?, ?> bestConsumer = null;
     
-    for(StoredRecordConsumerHolder<?, ?> t : consumers_)
+    for(ApplicationRecordConsumerHolder<?, ?> t : consumers_)
     {
       if(headerType == null)
       {
@@ -354,7 +355,7 @@ public class StoredRecordConsumerManager
    * 
    * @return All consumers.
    */
-  public ImmutableList<StoredRecordConsumerHolder<?, ?>> getConsumers()
+  public ImmutableList<ApplicationRecordConsumerHolder<?, ?>> getConsumers()
   {
     return consumers_;
   }

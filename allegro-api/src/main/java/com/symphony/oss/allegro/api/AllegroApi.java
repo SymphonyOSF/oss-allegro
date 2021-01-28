@@ -58,6 +58,7 @@ import com.google.common.io.Files;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
+import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
@@ -73,6 +74,7 @@ import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
@@ -97,11 +99,19 @@ import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.chat.canon.IMaestroMessage;
 import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
+import com.symphony.oss.models.core.canon.ApplicationPayload;
 import com.symphony.oss.models.core.canon.CoreModel;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.core.canon.facade.ApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
@@ -128,7 +138,7 @@ import com.symphony.oss.models.pod.canon.StreamType;
 import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 import com.symphony.s2.authc.canon.AuthcModel;
 
-public class AllegroApi implements IAllegroApi
+public class AllegroApi extends AllegroDecryptor implements IAllegroApi
 {
 
   private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
@@ -141,7 +151,7 @@ public class AllegroApi implements IAllegroApi
 
   private final ModelRegistry                   modelRegistry_;
   private final ITraceContextTransactionFactory traceFactory_;
-  final AllegroCryptoClient                     cryptoClient_;
+  private final AllegroCryptoClient             cryptoClient_;
   private final PodAndUserId                    userId_;
   private final String                          userName_;
   private final String                          clientType_;
@@ -605,12 +615,6 @@ public class AllegroApi implements IAllegroApi
       return new AllegroApi(this);
     }
   }
-
-  @Override
-  public void encrypt(EncryptablePayloadbuilder<?, ?> builder)
-  {
-    cryptoClient_.encrypt(builder);
-  }
   
   @Override
   public ModelRegistry getModelRegistry()
@@ -627,20 +631,7 @@ public class AllegroApi implements IAllegroApi
 //    return cryptoClient_.decrypt(storedApplicationObject);
 //  }
 //
-//  @Override
-//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
-//      Class<T> type)
-//  {
-//    if(storedApplicationObject.getEncryptedPayload() == null)
-//      return null;
-//    
-//    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
-//    
-//    if(type.isInstance(payload))
-//      return type.cast(payload);
-//    
-//    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
-//  }
+//  
   
 
 
@@ -951,11 +942,9 @@ public class AllegroApi implements IAllegroApi
   }
   
   @Override
-  public StoredRecordConsumerManager.Builder newConsumerManagerBuilder()
+  public AllegroConsumerManager.Builder newConsumerManagerBuilder()
   {
-    return new StoredRecordConsumerManager.Builder()
-        .withModelRegistry(getModelRegistry())
-        .withDecryptor(this);
+    return new AllegroConsumerManager.Builder(this, getModelRegistry());
   }
 
   @Override
@@ -1012,10 +1001,46 @@ public class AllegroApi implements IAllegroApi
     }
   }
 
-  /**
-   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
-   * the Markdown content and JSON entities and returns their PresentationML representation.
-   */
+
+  @Override
+  public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
+  {
+    cryptoClient_.encrypt(builder);
+  }
+
+  @Override
+  public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
+  {
+    return cryptoClient_.decrypt(threadId, rotationId, encryptedPayload);
+  }
+  
+  @Override
+  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    ApplicationRecord.Builder builder = new ApplicationRecord.Builder()
+        .withHeader(encryptedApplicationRecord.getHeader());
+    
+    if(encryptedApplicationRecord.getEncryptedPayload() != null)
+    {
+      ImmutableByteArray plainText = decrypt(encryptedApplicationRecord.getThreadId(), encryptedApplicationRecord.getRotationId(), 
+          encryptedApplicationRecord.getEncryptedPayload());
+      
+      IEntity entity = modelRegistry_.parseOne(plainText.getReader());
+      
+      if(entity instanceof IApplicationPayload)
+      {
+        builder.withPayload((IApplicationPayload)entity);
+      }
+      else
+      {
+        builder.withPayload(new ApplicationPayload(entity.getJsonObject(), modelRegistry_));
+      }
+    }
+    
+    return builder.build();
+  }
+
+
   @Override
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {

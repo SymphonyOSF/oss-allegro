@@ -16,17 +16,18 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.objectstore;
 
-import com.symphony.oss.commons.fault.FaultAccumulator;
-import com.symphony.oss.fugue.pipeline.ISimpleThreadSafeRetryableConsumer;
-import com.symphony.oss.fugue.pipeline.IThreadSafeErrorConsumer;
-import com.symphony.oss.fugue.pipeline.IThreadSafeRetryableConsumer;
-import com.symphony.oss.fugue.pipeline.IThreadSafeSimpleErrorConsumer;
-import com.symphony.oss.fugue.trace.ITraceContext;
+import com.symphony.oss.allegro.api.AbstractAdaptor;
+import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.AbstractConsumerManager.AbstractBuilder;
+import com.symphony.oss.fugue.pipeline.IErrorConsumer;
+import com.symphony.oss.fugue.pipeline.IRetryableConsumer;
+import com.symphony.oss.fugue.pipeline.ISimpleErrorConsumer;
+import com.symphony.oss.fugue.pipeline.ISimpleRetryableConsumer;
 
 /**
- * Manager of Thread Safe Consumers.
+ * Single Threaded Manager of Consumers.
  * 
  * When the consume method is called the consumer with the most specific type to the object
  * being consumed will be selected. Objects will be unwrapped if necessary to obtain a more
@@ -62,9 +63,9 @@ import com.symphony.oss.fugue.trace.ITraceContext;
  * 
  * @author Bruce Skingle
  */
-public class AsyncConsumerManager extends AbstractAsyncConsumerManager
+public class ConsumerManager extends AbstractConsumerManager
 {
-  protected AsyncConsumerManager(AbstractBuilder<?,?> builder)
+  ConsumerManager(AbstractBuilder<?,?> builder)
   {
     super(builder);
   }
@@ -77,93 +78,11 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractConsumerManager> extends AbstractAsyncConsumerManager.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AbstractConsumerManager> extends AbstractConsumerManager.AbstractBuilder<T,B>
   {
     AbstractBuilder(Class<T> type)
     {
       super(type);
-    }
-
-    /**
-     * Set the consumer to which unprocessable messages will be directed.
-     * 
-     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
-     * 
-     * @return This (fluent method)
-     */
-    protected T withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
-    {
-      return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
-    }
-
-    /**
-     * Set the consumer to which unprocessable messages will be directed.
-     * 
-     * @param unprocessableMessageConsumer The consumer to which unprocessable messages will be directed.
-     * 
-     * @return This (fluent method)
-     */
-    protected T withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
-    {
-      return super.withUnprocessableMessageConsumer(new IThreadSafeErrorConsumer<Object>()
-      {
-
-        @Override
-        public void consume(Object item, ITraceContext trace, String message, Throwable cause)
-        {
-          unprocessableMessageConsumer.consume(item, trace, message, cause);
-        }
-
-        @Override
-        public void close(){}
-      });
-    }
-
-    /**
-     * Set the size of the thread pool for subscriber requests.
-     * 
-     * @param subscriberThreadPoolSize The size of the thread pool for subscriber requests.
-     * 
-     * The subscriber thread pool is used to make connections over the network to request a batch
-     * of messages. Once a batch is received, all but one of the messages in the batch are passed
-     * individually to the handler thread pool and the final one is processed in the subscriber thread.
-     * 
-     * @return This (fluent method)
-     */
-    public T withSubscriberThreadPoolSize(Integer subscriberThreadPoolSize)
-    {
-      subscriberThreadPoolSize_ = subscriberThreadPoolSize;
-      
-      return self();
-    }
-
-    /**
-     * Set the size of the thread pool for handler requests.
-     * 
-     * @param handlerThreadPoolSize The size of the thread pool for handler requests.
-     * 
-     * The handler thread pool is used to process messages received in a batch in parallel.
-     * The optimum size of the handler thread pool is 9 * subscriberThreadPoolSize.
-     * 
-     * @return This (fluent method)
-     */
-    public T withHandlerThreadPoolSize(Integer handlerThreadPoolSize)
-    {
-      handlerThreadPoolSize_ = handlerThreadPoolSize;
-      
-      return self();
-    }
-    
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-      
-      if(subscriberThreadPoolSize_!=null && subscriberThreadPoolSize_ < 1)
-        faultAccumulator.error("SubscriberThreadPoolSize must be at least 1 or not set.");
-      
-      if(handlerThreadPoolSize_!=null && handlerThreadPoolSize_ < 1)
-        faultAccumulator.error("HandlerThreadPoolSize must be at least 1 or not set.");
     }
   }
   
@@ -173,7 +92,7 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
    * @author Bruce Skingle
    *
    */
-  public static class Builder extends AbstractBuilder<Builder, AsyncConsumerManager>
+  public static class Builder extends AbstractBuilder<Builder, ConsumerManager>
   {
     /**
      * Constructor.
@@ -184,9 +103,9 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
     }
 
     @Override
-    public AsyncConsumerManager construct()
+    protected ConsumerManager construct()
     {
-      return new AsyncConsumerManager(this);
+      return new ConsumerManager(this);
     }
 
     /**
@@ -200,7 +119,8 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * 
      * @return This (fluent method).
      */
-    public <C> Builder withConsumer(Class<C> type, IThreadSafeRetryableConsumer<C> consumer)
+    @Override
+    public <C> Builder withConsumer(Class<C> type, IRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -217,17 +137,9 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * 
      * @return This (fluent method).
      */
-    public Builder withConsumer(ThreadSafeAbstractAdaptor<?> adaptor)
+    public Builder withConsumer(AbstractAdaptor<?> adaptor)
     {
-      return withConsumerAdaptor(adaptor);
-    }
-    
-    @SuppressWarnings("unchecked")
-    private Builder withConsumerAdaptor(@SuppressWarnings("rawtypes") ThreadSafeAbstractAdaptor adaptor)
-    {
-      adaptor.setDefaultConsumer((IThreadSafeRetryableConsumer<Object>) getDefaultConsumer());
-      
-      return withConsumer(adaptor.getPayloadType(), adaptor);
+      return super.withConsumerAdaptor(adaptor);
     }
 
     /**
@@ -242,7 +154,8 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * 
      * @return This (fluent method).
      */
-    public <C> Builder withConsumer(Class<C> type, ISimpleThreadSafeRetryableConsumer<C> consumer)
+    @Override
+    public <C> Builder withConsumer(Class<C> type, ISimpleRetryableConsumer<C> consumer)
     {
       return super.withConsumer(type, consumer);
     }
@@ -259,7 +172,8 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * 
      * @return This (fluent method).
      */
-    public Builder withDefaultConsumer(ISimpleThreadSafeRetryableConsumer<Object> defaultConsumer)
+    @Override
+    public Builder withDefaultConsumer(ISimpleRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
     }
@@ -275,7 +189,8 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * 
      * @return This (fluent method).
      */
-    public Builder withDefaultConsumer(IThreadSafeRetryableConsumer<Object> defaultConsumer)
+    @Override
+    public Builder withDefaultConsumer(IRetryableConsumer<Object> defaultConsumer)
     {
       return super.withDefaultConsumer(defaultConsumer);
     }
@@ -288,7 +203,7 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * @return This (fluent method)
      */
     @Override
-    public Builder withUnprocessableMessageConsumer(IThreadSafeErrorConsumer<Object> unprocessableMessageConsumer)
+    public Builder withUnprocessableMessageConsumer(IErrorConsumer<Object> unprocessableMessageConsumer)
     {
       return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
     }
@@ -304,7 +219,7 @@ public class AsyncConsumerManager extends AbstractAsyncConsumerManager
      * @return This (fluent method)
      */
     @Override
-    public Builder withUnprocessableMessageConsumer(IThreadSafeSimpleErrorConsumer<Object> unprocessableMessageConsumer)
+    public Builder withUnprocessableMessageConsumer(ISimpleErrorConsumer<Object> unprocessableMessageConsumer)
     {
       return super.withUnprocessableMessageConsumer(unprocessableMessageConsumer);
     }

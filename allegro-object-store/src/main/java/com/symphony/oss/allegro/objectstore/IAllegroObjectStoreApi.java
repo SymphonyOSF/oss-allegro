@@ -21,7 +21,6 @@ import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObj
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.objectstore.AllegroObjectStoreApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
@@ -37,7 +36,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroApi
+public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroApi, IAllegroDecryptor
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -160,6 +159,9 @@ public interface IAllegroObjectStoreApi extends IBaseObjectStoreApi, IAllegroApi
    * 
    * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
    */
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
+
+  @Override
+  IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject);
 
 }

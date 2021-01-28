@@ -18,18 +18,24 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 
 /**
- * Synchronous consumer for decrypted ApplicationRecords.
+ * Consumer for decrypted LiveCurrentMessages.
  * 
  * @author Bruce Skingle
  *
- * @param <H> The type of the unencrypted header.
- * @param <P> The type of the decrypted payload.
+ * @param <M> The type of the decrypted message.
  */
 @FunctionalInterface
-public interface IApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
-  extends IAbstractApplicationRecordConsumer<H,P>, IConsumer
+public interface IAbstractLiveCurrentMessageConsumer<M extends IAbstractReceivedChatMessage>
 {
+    /**
+     * Consume the given decrypted record.
+     *
+     * @param encryptedMessage the message as stored (with encrypted payload). 
+     * @param message the decrypted message.
+     */
+    void accept(ILiveCurrentMessage encryptedMessage, M message);
 }

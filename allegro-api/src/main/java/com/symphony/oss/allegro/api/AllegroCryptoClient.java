@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
@@ -35,6 +34,7 @@ import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.ICipherSuite;
 import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
@@ -180,67 +180,53 @@ class AllegroCryptoClient
     return helper.encrypt(clearText, podInfo_.getPodId(), rotationId.getValue());
   }
   
-  void encrypt(EncryptablePayloadbuilder<?,?> builder)
+  void encrypt(EncryptablePayloadBuilder<?,?> builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     
     AllegroCryptoHelper helper = contentKeyCache_.getContentKey(builder.getThreadId(), rotationId, internalUserId_);
     
-    builder.withEncryptedPayload(cipherSuite_.encrypt(helper.getSecretKey(), builder.getPayload().serialize()))
+    builder.withEncryptedPayload(cipherSuite_.encrypt(helper.getSecretKey(), builder.getPayload()))
       .withRotationId(rotationId)
       .withCipherSuiteId(cipherSuite_.getId());
   }
   
-  IApplicationObjectPayload decrypt(IStoredApp encryptedApplicationRecord)
+//  IApplicationObjectPayload decrypt(IStoredApp encryptedApplicationRecord)
+//  {
+//    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(encryptedApplicationRecord.getThreadId(), encryptedApplicationRecord.getRotationId(), internalUserId_);
+//
+//    ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), encryptedApplicationRecord.getEncryptedPayload());
+//    
+//    ModelRegistry objectModelRegistry = encryptedApplicationRecord instanceof IStoredApplicationObject 
+//        ? new ObjectModelRegistry(modelRegistry_, (IStoredApplicationObject)encryptedApplicationRecord) 
+//            : modelRegistry_;
+//    
+//    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
+//    ApplicationObjectPayload payload;
+//    
+//    if(entity instanceof ApplicationObjectPayload)
+//    {
+//      payload = (ApplicationObjectPayload)entity;
+//
+//    }
+//    else
+//    {
+//      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
+//    }
+//    
+//    return payload;
+//  }
+  
+  ImmutableByteArray decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
-    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(encryptedApplicationRecord.getThreadId(), encryptedApplicationRecord.getRotationId(), internalUserId_);
-
-    ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), encryptedApplicationRecord.getEncryptedPayload());
-    
-    ModelRegistry objectModelRegistry = encryptedApplicationRecord instanceof IStoredApplicationObject 
-        ? new ObjectModelRegistry(modelRegistry_, (IStoredApplicationObject)encryptedApplicationRecord) 
-            : modelRegistry_;
-    
-    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
-    ApplicationObjectPayload payload;
-    
-    if(entity instanceof ApplicationObjectPayload)
-    {
-      payload = (ApplicationObjectPayload)entity;
-
-    }
-    else
-    {
-      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
-    }
-    
-    return payload;
+    return decrypt(encryptedApplicationRecord.getThreadId(), encryptedApplicationRecord.getRotationId(), encryptedApplicationRecord.getEncryptedPayload());
   }
   
-  IApplicationObjectPayload decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
+  ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
   {
-    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(encryptedApplicationRecord.getThreadId(), encryptedApplicationRecord.getRotationId(), internalUserId_);
+    AllegroCryptoHelper helper = contentKeyCache_.getContentKey(threadId, rotationId, internalUserId_);
 
-    ImmutableByteArray plainText = cipherSuite_.decrypt(helper.getSecretKey(), encryptedApplicationRecord.getEncryptedPayload());
-    
-    ModelRegistry objectModelRegistry = encryptedApplicationRecord instanceof IStoredApplicationObject 
-        ? new ObjectModelRegistry(modelRegistry_, (IStoredApplicationObject)encryptedApplicationRecord) 
-            : modelRegistry_;
-    
-    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
-    ApplicationObjectPayload payload;
-    
-    if(entity instanceof ApplicationObjectPayload)
-    {
-      payload = (ApplicationObjectPayload)entity;
-
-    }
-    else
-    {
-      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
-    }
-    
-    return payload;
+    return cipherSuite_.decrypt(helper.getSecretKey(), encryptedPayload);
   }
 
   String decrypt(ThreadId threadId, String cipherText)

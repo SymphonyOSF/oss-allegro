@@ -23,7 +23,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 import com.symphony.oss.allegro.api.AsyncConsumerManager;
-import com.symphony.oss.allegro.api.IAllegroDecryptor;
 import com.symphony.oss.allegro.api.request.VersionQuery;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.fugue.trace.ITraceContext;

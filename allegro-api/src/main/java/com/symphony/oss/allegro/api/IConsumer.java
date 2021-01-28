@@ -18,18 +18,15 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.core.canon.IApplicationPayload;
-
 /**
- * Synchronous consumer for decrypted ApplicationRecords.
+ * A consumer for Allegro payloads.
+ * 
+ * It is assumed that sub-interfaces will define an accept method and be @Functional
  * 
  * @author Bruce Skingle
  *
- * @param <H> The type of the unencrypted header.
- * @param <P> The type of the decrypted payload.
  */
-@FunctionalInterface
-public interface IApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
-  extends IAbstractApplicationRecordConsumer<H,P>, IConsumer
+public interface IConsumer
 {
+
 }

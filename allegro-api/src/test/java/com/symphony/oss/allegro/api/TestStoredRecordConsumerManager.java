@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
+import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
@@ -167,9 +168,9 @@ public class TestStoredRecordConsumerManager
       payloadType_ = payloadType;
     }
     
-    public StoredRecordConsumerHolder<?, ?> holder()
+    public ApplicationRecordConsumerHolder<?, ?> holder()
     {
-      return new StoredRecordConsumerHolder<H,P>(headerType_, payloadType_, this);
+      return new ApplicationRecordConsumerHolder<H,P>(headerType_, payloadType_, this);
     }
 
     @Override

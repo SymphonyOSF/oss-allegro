@@ -21,7 +21,7 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
-import com.symphony.oss.allegro.api.ConsumerManager;
+import com.symphony.oss.allegro.objectstore.ConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 

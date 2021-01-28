@@ -30,10 +30,18 @@ import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
@@ -48,7 +56,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroDecryptor, Closeable
+public interface IAllegroApi extends Closeable
 {
   @Override
   public void close();
@@ -241,5 +249,35 @@ public interface IAllegroApi extends IAllegroDecryptor, Closeable
    * 
    * @param builder
    */
-  void encrypt(EncryptablePayloadbuilder<?, ?> builder);
+  void encrypt(EncryptablePayloadBuilder<?, ?> builder);
+
+  /**
+   * Decrypt the given payload.
+   * 
+   * @param threadId          The threadId whose content key is used to encrypt the payload. 
+   * @param rotationId        The rotation in force when the payload was encrypted
+   * @param encryptedPayload  The payload.
+   * 
+   * @return The decrypted payload.
+   */
+  ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload);
+
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param encryptedApplicationRecord An encrypted object.
+   * 
+   * @return The decrypted object.
+   */
+  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
+
+  /**
+   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
+   * the Markdown content and JSON entities and returns their PresentationML representation.
+   * 
+   * @param message   A LiveCurrentMessage with encrypted payload.
+   * 
+   * @return          A ReceivedChatMessage with the decrypted payload.
+   */
+  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
 }
