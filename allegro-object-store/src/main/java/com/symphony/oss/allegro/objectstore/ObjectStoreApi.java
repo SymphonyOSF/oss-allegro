@@ -37,6 +37,8 @@ import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
@@ -203,6 +205,12 @@ public class ObjectStoreApi extends AllegroBaseApi implements IObjectStoreApi
     {
       return config_;
     }
+  }
+
+  @Override
+  IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload)
+  {
+    return null;
   }
 
   @Override

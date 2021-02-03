@@ -75,8 +75,6 @@ import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
-import com.symphony.oss.fugue.pipeline.FatalConsumerException;
-import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.ITraceContextTransaction;
 import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
@@ -848,31 +846,19 @@ public class AllegroApi extends AllegroDecryptor implements IAllegroApi
   @Override
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
-    {
-      ITraceContext trace = traceTransaction.open();
+    IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
+        .withId(request.getThreadId().toBase64UrlSafeString())
+        .withFrom(0L)
+        .withLimit(request.getMaxItems())
+        .withExcludeFields("tokenIds")
+        .build()
+        .execute(podHttpClient_);
       
-      IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
-          .withId(request.getThreadId().toBase64UrlSafeString())
-          .withFrom(0L)
-          .withLimit(request.getMaxItems())
-          .withExcludeFields("tokenIds")
-          .build()
-          .execute(podHttpClient_);
-        
-      for(IMessageEnvelope envelope : thread.getEnvelopes())
-      {
-        ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
-        
-        try
-        {
-          request.getConsumerManager().consume(lcmessage, trace, this);
-        }
-        catch (RetryableConsumerException | FatalConsumerException e)
-        {
-          request.getConsumerManager().getUnprocessableMessageConsumer().consume(lcmessage, trace, "Failed to process message", e);
-        }
-      }
+    for(IMessageEnvelope envelope : thread.getEnvelopes())
+    {
+      ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
+      
+      request.getConsumerManager().accept(lcmessage);
     }
   }
 

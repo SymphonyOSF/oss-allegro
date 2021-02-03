@@ -22,38 +22,36 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.symphony.oss.allegro.objectstore.IAllegroDecryptor;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.ApplicationPayload;
 import com.symphony.oss.models.core.canon.CoreModel;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.ObjectModel;
-import com.symphony.oss.models.object.canon.facade.ApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationRecord;
-import com.symphony.oss.models.object.canon.facade.StoredApplicationRecord;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.core.canon.facade.ApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.crypto.canon.CryptoModel;
 
-public class TestStoredRecordConsumerManager
+public class TestAllegroConsumerManager
 {
-  class Header1 extends ApplicationObjectHeader  {
+  class Header1 extends ApplicationPayload  {
 
     public Header1()
     {
-      super(new ApplicationObjectHeader.Builder());
+      super(new ApplicationPayload.Builder());
     }
   }
   class Header2 extends Header1  {}
   class Header3 extends Header2  {}
   
-  class Payload1 extends ApplicationObjectPayload  {
+  class Payload1 extends ApplicationPayload  {
 
     public Payload1()
     {
-      super(new ApplicationObjectPayload.Builder());
+      super(new ApplicationPayload.Builder());
     }}
   class Payload2 extends Payload1  {}
   class Payload3 extends Payload2  {}
@@ -65,11 +63,11 @@ public class TestStoredRecordConsumerManager
   @Test
   public void testDispatch()
   {
-    IAllegroDecryptor decryptor = new IAllegroDecryptor()
+    AllegroDecryptor decryptor = new AllegroDecryptor()
     {
       
 //      @Override
-//      public IApplicationObjectPayload decryptObject(IStoredApplicationRecord storedApplicationRecord)
+//      public IApplicationObjectPayload decryptObject(IEncryptedApplicationRecord storedApplicationRecord)
 //      {
 //        if(storedApplicationRecord instanceof TestStoredApplicationRecord)
 //        {
@@ -78,15 +76,15 @@ public class TestStoredRecordConsumerManager
 //        return null;
 //      }
       
-      @Override
-      public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload encryptedApplicationPayload)
-      {
-        if(encryptedApplicationPayload instanceof TestStoredApplicationRecord)
-        {
-          return ((TestStoredApplicationRecord)encryptedApplicationPayload).payload_;
-        }
-        return null;
-      }
+//      @Override
+//      public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload encryptedApplicationPayload)
+//      {
+//        if(encryptedApplicationPayload instanceof TestStoredApplicationRecord)
+//        {
+//          return ((TestStoredApplicationRecord)encryptedApplicationPayload).payload_;
+//        }
+//        return null;
+//      }
       
       @Override
       public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
@@ -94,11 +92,23 @@ public class TestStoredRecordConsumerManager
         // TODO Auto-generated method stub
         return null;
       }
+
+      @Override
+      IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+      {
+        if(encryptedApplicationRecord instanceof TestEncryptedApplicationRecord)
+        {
+          return new TestApplicationRecord.Builder()
+              .withHeader(encryptedApplicationRecord.getHeader())
+              .withPayload(((TestEncryptedApplicationRecord)encryptedApplicationRecord).payload_)
+              .build();
+        }
+        return null;
+      }
     };
     
-    StoredRecordConsumerManager consumerManager = new StoredRecordConsumerManager.Builder()
-        .withModelRegistry(new ModelRegistry().withFactories(CoreModel.FACTORIES).withFactories(ObjectModel.FACTORIES))
-        .withDecryptor(decryptor)
+    AllegroConsumerManager consumerManager = new AllegroConsumerManager.Builder(decryptor,
+          new ModelRegistry().withFactories(CoreModel.FACTORIES).withFactories(CryptoModel.FACTORIES))
         .withConsumer(newConsumer(Header2.class, Payload1.class).holder())
         .withConsumer(newConsumer(Header1.class, Payload2.class).holder())
         .withConsumer(newConsumer(Header1.class, Payload1.class).holder())
@@ -107,7 +117,7 @@ public class TestStoredRecordConsumerManager
     
     
     
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withHeader(new Header2())
         .withPayload(new Payload2())
         .build());
@@ -115,7 +125,7 @@ public class TestStoredRecordConsumerManager
     assertEquals(Header1.class, calledHeaderType_);
     assertEquals(Payload2.class, calledPayloadType_);
     
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withHeader(new Header2())
         .withPayload(new Payload1())
         .build());
@@ -123,7 +133,7 @@ public class TestStoredRecordConsumerManager
     assertEquals(Header2.class, calledHeaderType_);
     assertEquals(Payload1.class, calledPayloadType_);
     
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withHeader(new Header1())
         .withPayload(new Payload1())
         .build());
@@ -131,7 +141,7 @@ public class TestStoredRecordConsumerManager
     assertEquals(Header1.class, calledHeaderType_);
     assertEquals(Payload1.class, calledPayloadType_);
 
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withHeader(new Header2())
         .withPayload(new Payload2())
         .build());
@@ -139,7 +149,7 @@ public class TestStoredRecordConsumerManager
     assertEquals(Header1.class, calledHeaderType_);
     assertEquals(Payload2.class, calledPayloadType_);
     
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withPayload(new Payload2())
         .build());
 
@@ -147,7 +157,7 @@ public class TestStoredRecordConsumerManager
     assertEquals(Payload2.class, calledPayloadType_);
     
 
-    consumerManager.accept(new TestStoredApplicationRecord.Builder()
+    consumerManager.accept(new TestEncryptedApplicationRecord.Builder()
         .withPayload(new Payload3())
         .build());
 
@@ -157,7 +167,7 @@ public class TestStoredRecordConsumerManager
   
   
   
-  class TestConsumer<H extends IEntity, P extends IEntity> implements IApplicationRecordConsumer<H, P>
+  class TestConsumer<H extends IApplicationPayload, P extends IApplicationPayload> implements IApplicationRecordConsumer<H, P>
   {
     private Class<H> headerType_;
     private Class<P> payloadType_;
@@ -168,13 +178,13 @@ public class TestStoredRecordConsumerManager
       payloadType_ = payloadType;
     }
     
-    public ApplicationRecordConsumerHolder<?, ?> holder()
+    public ApplicationConsumerHolder<?, ?> holder()
     {
-      return new ApplicationRecordConsumerHolder<H,P>(headerType_, payloadType_, this);
+      return new ApplicationConsumerHolder<H,P>(headerType_, payloadType_, this);
     }
 
     @Override
-    public void accept(IStoredApplicationRecord record, H header, P payload)
+    public void accept(IEncryptedApplicationRecord record, H header, P payload)
     {
       System.out.println("consumer " + 
           (headerType_ == null ? "null" : headerType_.getSimpleName()) + " " + 
@@ -187,25 +197,25 @@ public class TestStoredRecordConsumerManager
     
   }
   
-  <H extends IEntity, P extends IEntity> TestConsumer<H,P> newConsumer(Class<H> headerType, Class<P> payloadType)
+  <H extends IApplicationPayload, P extends IApplicationPayload> TestConsumer<H,P> newConsumer(Class<H> headerType, Class<P> payloadType)
   {
     return new TestConsumer<H,P>(headerType, payloadType);
   }
 }
 
-class TestStoredApplicationRecord extends StoredApplicationRecord implements IStoredApplicationRecord
+class TestApplicationRecord extends ApplicationRecord implements IApplicationRecord
 {
-  public final IApplicationObjectPayload payload_;
+  public final IApplicationPayload payload_;
 
-  public TestStoredApplicationRecord(Builder builder)
+  public TestApplicationRecord(Builder builder)
   {
     super(builder);
     payload_ = builder.payload_;
   }
 
-  static class Builder extends StoredApplicationRecord.AbstractStoredApplicationRecordBuilder<Builder, IStoredApplicationRecord>
+  static class Builder extends ApplicationRecord.AbstractApplicationRecordBuilder<Builder, IApplicationRecord>
   {
-    private IApplicationObjectPayload payload_;
+    private IApplicationPayload payload_;
 
     /**
      * Constructor.
@@ -215,7 +225,37 @@ class TestStoredApplicationRecord extends StoredApplicationRecord implements ISt
       super(Builder.class);
     }
 
-    public Builder withPayload(IApplicationObjectPayload payload)
+    @Override
+    protected IApplicationRecord construct()
+    {
+      return new TestApplicationRecord(this);
+    }
+  }
+}
+
+class TestEncryptedApplicationRecord extends EncryptedApplicationRecord implements IEncryptedApplicationRecord
+{
+  public final IApplicationPayload payload_;
+
+  public TestEncryptedApplicationRecord(Builder builder)
+  {
+    super(builder);
+    payload_ = builder.payload_;
+  }
+
+  static class Builder extends EncryptedApplicationRecord.AbstractEncryptedApplicationRecordBuilder<Builder, IEncryptedApplicationRecord>
+  {
+    private IApplicationPayload payload_;
+
+    /**
+     * Constructor.
+     */
+    public Builder()
+    {
+      super(Builder.class);
+    }
+
+    public Builder withPayload(IApplicationPayload payload)
     {
       payload_ = payload;
       withEncryptedPayload(payload.serialize());
@@ -224,9 +264,9 @@ class TestStoredApplicationRecord extends StoredApplicationRecord implements ISt
     }
 
     @Override
-    protected IStoredApplicationRecord construct()
+    protected IEncryptedApplicationRecord construct()
     {
-      return new TestStoredApplicationRecord(this);
+      return new TestEncryptedApplicationRecord(this);
     }
   }
 }

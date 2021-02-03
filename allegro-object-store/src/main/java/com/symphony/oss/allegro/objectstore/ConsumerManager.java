@@ -18,7 +18,6 @@
 
 package com.symphony.oss.allegro.objectstore;
 
-import com.symphony.oss.allegro.api.AbstractAdaptor;
 import com.symphony.oss.allegro.api.AbstractConsumerManager;
 import com.symphony.oss.allegro.api.AbstractConsumerManager.AbstractBuilder;
 import com.symphony.oss.fugue.pipeline.IErrorConsumer;

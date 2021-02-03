@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.objectstore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

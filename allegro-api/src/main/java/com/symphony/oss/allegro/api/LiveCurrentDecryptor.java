@@ -18,17 +18,18 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 
-class LiveCurrentMessageConsumerHolder<M extends IAbstractReceivedChatMessage>
+public abstract class LiveCurrentDecryptor
 {
-  Class<M>                       payloadType_;
-  ILiveCurrentMessageConsumer<M> consumer_;
-  
-  LiveCurrentMessageConsumerHolder(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
-  {
-    headerType_ = headerType;
-    payloadType_ = payloadType;
-    consumer_ = consumer;
-  }
+  /**
+   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
+   * the Markdown content and JSON entities and returns their PresentationML representation.
+   * 
+   * @param message   A LiveCurrentMessage with encrypted payload.
+   * 
+   * @return          A ReceivedChatMessage with the decrypted payload.
+   */
+  public abstract IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
 }

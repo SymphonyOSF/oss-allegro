@@ -149,7 +149,7 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * @author Bruce Skingle
  *
  */
-public abstract class AllegroBaseApi implements IBaseObjectStoreApi
+public abstract class AllegroBaseApi extends ObjectStoreDecryptor implements IBaseObjectStoreApi
 {
   
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);

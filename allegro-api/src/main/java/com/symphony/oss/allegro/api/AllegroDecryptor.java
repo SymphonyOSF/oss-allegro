@@ -18,7 +18,17 @@
 
 package com.symphony.oss.allegro.api;
 
-abstract class AllegroDecryptor
-{
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
+abstract class AllegroDecryptor extends LiveCurrentDecryptor
+{
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param encryptedApplicationRecord An encrypted object.
+   * 
+   * @return The decrypted object.
+   */
+  abstract IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
 }

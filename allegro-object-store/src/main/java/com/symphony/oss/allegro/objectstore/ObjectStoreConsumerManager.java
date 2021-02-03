@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package com.symphony.oss.allegro.api;
+package com.symphony.oss.allegro.objectstore;
 
 import java.io.StringReader;
 import java.util.LinkedList;
@@ -27,34 +27,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.symphony.oss.allegro.api.IErrorConsumer;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 import com.symphony.oss.canon.runtime.exception.PermissionDeniedException;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
-import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
-import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
-import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
-public class AllegroConsumerManager extends LiveCurrentConsumerManager
+public class ObjectStoreConsumerManager
 {
-  private static final Logger log_ = LoggerFactory.getLogger(AllegroConsumerManager.class);
+  private static final Logger log_ = LoggerFactory.getLogger(ObjectStoreConsumerManager.class);
   
-  private final AllegroDecryptor                               allegroDecryptor_;
+  private final ObjectStoreDecryptor                               decryptor_;
   private final IModelRegistry                                 modelRegistry_;
   private final ImmutableList<ApplicationConsumerHolder<?, ?>> applicationConsumers_;
-  private final ImmutableList<LiveCurrentConsumerHolder<?>>    liveCurrentConsumers_;
   private final IErrorConsumer                                 errorConsumer_;
 
-  private AllegroConsumerManager(AbstractBuilder<?,?> builder)
+  ObjectStoreConsumerManager(AbstractBuilder<?,?> builder)
   {
-    allegroDecryptor_            = builder.decryptor_;
+    decryptor_            = builder.decryptor_;
     modelRegistry_        = builder.modelRegistry_;
     applicationConsumers_ = ImmutableList.copyOf(builder.applicationConsumers_);
-    liveCurrentConsumers_ = ImmutableList.copyOf(builder.liveCurrentConsumers_);
     errorConsumer_        = builder.errorConsumer_;
   }
   
@@ -66,12 +63,11 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AllegroConsumerManager> extends BaseAbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends ObjectStoreConsumerManager> extends BaseAbstractBuilder<T,B>
   {
-    private final AllegroDecryptor                      decryptor_;
+    private final ObjectStoreDecryptor                      decryptor_;
     private final IModelRegistry                        modelRegistry_;
     private final List<ApplicationConsumerHolder<?, ?>> applicationConsumers_ = new LinkedList<>();
-    private final List<LiveCurrentConsumerHolder<?>>    liveCurrentConsumers_ = new LinkedList<>();
     private IErrorConsumer                              errorConsumer_        = new IErrorConsumer()
     {
       @Override
@@ -81,7 +77,7 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
       }
     };
     
-    AbstractBuilder(Class<T> type, AllegroDecryptor decryptor, IModelRegistry modelRegistry)
+    AbstractBuilder(Class<T> type, ObjectStoreDecryptor decryptor, IModelRegistry modelRegistry)
     {
       super(type);
       
@@ -92,7 +88,7 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
       modelRegistry_  = modelRegistry;
     }
     
-    public <H extends IApplicationPayload, P extends IApplicationPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
+    public <H extends IApplicationObjectHeader, P extends IApplicationObjectPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationObjectConsumer<H, P> consumer)
     {
       applicationConsumers_.add(new ApplicationConsumerHolder<H,P>(headerType, payloadType, consumer));
       
@@ -102,20 +98,6 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
     T withConsumer(ApplicationConsumerHolder<?,?> holder)
     {
       applicationConsumers_.add(holder);
-      
-      return self();
-    }
-    
-    public <M extends IAbstractReceivedChatMessage> T withConsumer(Class<M> payloadType, ILiveCurrentMessageConsumer<M> consumer)
-    {
-      liveCurrentConsumers_.add(new LiveCurrentConsumerHolder<M>(payloadType, consumer));
-      
-      return self();
-    }
-    
-    T withConsumer(LiveCurrentConsumerHolder<?> holder)
-    {
-      liveCurrentConsumers_.add(holder);
       
       return self();
     }
@@ -138,17 +120,17 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
     }
   }
   
-  public static class Builder extends AbstractBuilder<Builder, AllegroConsumerManager>
+  public static class Builder extends AbstractBuilder<Builder, ObjectStoreConsumerManager>
   {
-    public Builder(AllegroDecryptor allegroDecryptor, IModelRegistry modelRegistry)
+    public Builder(ObjectStoreDecryptor allegroDecryptor, IModelRegistry modelRegistry)
     {
       super(Builder.class, allegroDecryptor, modelRegistry);
     }
 
     @Override
-    protected AllegroConsumerManager construct()
+    protected ObjectStoreConsumerManager construct()
     {
-      return new AllegroConsumerManager(this);
+      return new ObjectStoreConsumerManager(this);
     }
   }
   
@@ -158,17 +140,13 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
     {
       IEntity entity = modelRegistry_.parseOne(new StringReader(json));
       
-      if(entity instanceof IEncryptedApplicationRecord)
+      if(entity instanceof IStoredApplicationObject)
       {
-        accept((IEncryptedApplicationRecord)entity);
-      }
-      else if(entity instanceof ILiveCurrentMessage)
-      {
-        accept((ILiveCurrentMessage)entity);
+        accept((IStoredApplicationObject)entity);
       }
       else
       {
-        errorConsumer_.accept(entity, "Unable to process record, not an IEncryptedApplicationRecord.", null);
+        errorConsumer_.accept(entity, "Unable to process record, not an IEncryptedApplicationObject.", null);
       }
     }
     catch (RuntimeException e)
@@ -176,112 +154,20 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
       errorConsumer_.accept(json, "Unable to parse record", e);
     }
   }
-  
 
-
-  public void accept(ILiveCurrentMessage lcmessage)
+  public void accept(IStoredApplicationObject storedObject)
   {
     try
     {
-      if(allegroDecryptor_ != null)
+      if(decryptor_ != null && storedObject.getEncryptedPayload() != null)
       {
         try
         {
-          IReceivedChatMessage chatMessage = allegroDecryptor_.decryptChatMessage(lcmessage);
-
-          if(chatMessage != null)
-          {
-              accept(lcmessage, chatMessage);
-              return;
-          }
-        }
-        catch(PermissionDeniedException e)
-        {
-          // can't decrypt
-        }
-      }
-      
-      accept(lcmessage, null);
-    }
-    catch (RuntimeException e)
-    {
-      errorConsumer_.accept(lcmessage, "Unable to process record", e);
-    }
-  }
-
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  private void accept(ILiveCurrentMessage lcmessage, IReceivedChatMessage receivedMessage)
-  {
-    Class<? extends IReceivedChatMessage> payloadType  = receivedMessage == null ? null : receivedMessage.getClass();
-    
-        
-    LiveCurrentConsumerHolder<?> bestConsumer = null;
-    
-    for(LiveCurrentConsumerHolder<?> t : liveCurrentConsumers_)
-    { 
-      if(payloadType == null)
-      {
-        if(t.payloadType_ != null)
-        {
-          continue;
-        }
-      }
-      else
-      {
-        if(t.payloadType_ == null || !t.payloadType_.isAssignableFrom(payloadType))
-        {
-          continue;
-        }
-      }
-      
-      // This is a candidate
-      
-      if(bestConsumer == null)
-      {
-        bestConsumer = t;
-      }
-      else
-      {
-        // this is a candidate and we have a current candidate.
-        // if the payload is a closer match we will take it
-        if(payloadType != null && bestConsumer.payloadType_ != null && bestConsumer.payloadType_.isAssignableFrom(t.payloadType_))
-        {
-          bestConsumer = t;
-        }
-
-      }
-    }
-    
-    if(bestConsumer == null)
-    {
-      errorConsumer_.accept(lcmessage, "No consumer for Application object " + lcmessage, null);
-    }
-    else
-    {
-      try
-      {
-        ((ILiveCurrentMessageConsumer)bestConsumer.consumer_).accept(lcmessage, receivedMessage);
-      }
-      catch(RuntimeException e)
-      {
-        errorConsumer_.accept(lcmessage, "Failed to process message", e);
-      }
-    }
-  }
-
-  public void accept(IEncryptedApplicationRecord storedObject)
-  {
-    try
-    {
-      if(allegroDecryptor_ != null && storedObject.getEncryptedPayload() != null)
-      {
-        try
-        {
-          IApplicationRecord applicationRecord = allegroDecryptor_.decryptObject(storedObject);
+          IApplicationObjectPayload applicationPayload = decryptor_.decryptObject(storedObject);
           
-          if(applicationRecord != null)
+          if(applicationPayload != null)
           {
-              accept(storedObject, storedObject.getHeader(), applicationRecord.getPayload());
+              accept(storedObject, storedObject.getHeader(), applicationPayload);
               return;
           }
         }
@@ -300,8 +186,8 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
   }
 
   @SuppressWarnings({ "unchecked", "rawtypes" })
-  private void accept(IEncryptedApplicationRecord storedObject, IApplicationPayload header,
-      IApplicationPayload payload)
+  private void accept(IStoredApplicationObject storedObject, IApplicationObjectHeader header,
+      IApplicationObjectPayload payload)
   {
 
     Class<? extends IApplicationPayload> headerType   = header == null ? null : header.getClass();
@@ -404,7 +290,7 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
     {
       try
       {
-        ((IApplicationRecordConsumer)bestConsumer.consumer_).accept(storedObject, header, payload);
+        ((IApplicationObjectConsumer)bestConsumer.consumer_).accept(storedObject, header, payload);
       }
       catch(RuntimeException e)
       {
@@ -414,28 +300,28 @@ public class AllegroConsumerManager extends LiveCurrentConsumerManager
   }
 }
 
-class ApplicationConsumerHolder<H extends IApplicationPayload, P extends IApplicationPayload>
+class ApplicationConsumerHolder<H extends IApplicationObjectHeader, P extends IApplicationObjectPayload>
 {
   Class<H>                         headerType_;
   Class<P>                         payloadType_;
-  IApplicationRecordConsumer<H, P> consumer_;
+  IApplicationObjectConsumer<H, P> consumer_;
   
-  ApplicationConsumerHolder(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
+  ApplicationConsumerHolder(Class<H> headerType, Class<P> payloadType, IApplicationObjectConsumer<H, P> consumer)
   {
     headerType_ = headerType;
     payloadType_ = payloadType;
     consumer_ = consumer;
   }
 }
-
-class LiveCurrentConsumerHolder<M extends IAbstractReceivedChatMessage>
-{
-  Class<M>                       payloadType_;
-  ILiveCurrentMessageConsumer<M> consumer_;
-  
-  LiveCurrentConsumerHolder(Class<M> payloadType, ILiveCurrentMessageConsumer<M> consumer)
-  {
-    payloadType_ = payloadType;
-    consumer_ = consumer;
-  }
-}
+//
+//class LiveCurrentConsumerHolder<M extends IAbstractReceivedChatMessage>
+//{
+//  Class<M>                       payloadType_;
+//  ILiveCurrentMessageConsumer<M> consumer_;
+//  
+//  LiveCurrentConsumerHolder(Class<M> payloadType, ILiveCurrentMessageConsumer<M> consumer)
+//  {
+//    payloadType_ = payloadType;
+//    consumer_ = consumer;
+//  }
+//}
