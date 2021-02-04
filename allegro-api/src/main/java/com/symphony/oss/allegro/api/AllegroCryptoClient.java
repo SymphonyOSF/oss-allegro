@@ -184,7 +184,7 @@ class AllegroCryptoClient
     return helper.encrypt(clearText, podInfo_.getPodId(), rotationId.getValue());
   }
   
-  void encrypt(EncryptablePayloadbuilder<?,?> builder)
+  void encrypt(EncryptablePayloadBuilder<?,?> builder)
   {
     RotationId rotationId = getRotationForThread(builder.getThreadId());
     

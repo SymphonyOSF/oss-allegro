@@ -30,10 +30,14 @@ import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
@@ -190,6 +194,24 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
    * @return A new ApplicationRecordBuilder.
    */
   ApplicationRecordBuilder newApplicationRecordBuilder();
+
+  /**
+   * Encrypt the given payload.
+   * 
+   * @param builder
+   */
+  void encrypt(EncryptablePayloadBuilder<?, ?> builder);
+
+  /**
+   * Decrypt the given payload.
+   * 
+   * @param threadId          The threadId whose content key is used to encrypt the payload. 
+   * @param rotationId        The rotation in force when the payload was encrypted
+   * @param encryptedPayload  The payload.
+   * 
+   * @return The decrypted payload.
+   */
+  ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload);
 
   /**
    * Deserialize and decrypt the given object.

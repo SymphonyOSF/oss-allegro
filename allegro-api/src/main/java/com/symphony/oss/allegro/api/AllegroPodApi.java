@@ -73,6 +73,7 @@ import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
@@ -100,8 +101,11 @@ import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
+import com.symphony.oss.models.core.canon.facade.RotationId;
+import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
+import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
@@ -602,6 +606,18 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
   public ModelRegistry getModelRegistry()
   {
     return modelRegistry_;
+  }
+  
+  @Override
+  public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
+  {
+    cryptoClient_.encrypt(builder);
+  }
+
+  @Override
+  public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
+  {
+    return cryptoClient_.decrypt(threadId, rotationId, encryptedPayload);
   }
 
   @Override
