@@ -32,9 +32,6 @@ import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
 import com.symphony.oss.canon.runtime.jjwt.JwtBase;
-import com.symphony.oss.fugue.pipeline.FatalConsumerException;
-import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
-import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.AckIdObject;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
@@ -109,7 +106,7 @@ class AllegroDatafeedClient
     return feed.getFeedId();
   }
   
-  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AbstractConsumerManager consumerManager, AllegroDecryptor opener, ITraceContext trace)
+  AckId fetchFeedEvents(FeedId feedId, @Nullable AckId ackId, AllegroConsumerManager consumerManager)
   {
     refreshTokenIfNecessary();
     
@@ -125,14 +122,7 @@ class AllegroDatafeedClient
     
     for(IEvent event : events.getEvents())
     {
-      try
-      {
-        consumerManager.consume(event.getPayload(), trace, opener);
-      }
-      catch (RetryableConsumerException | FatalConsumerException e)
-      {
-        consumerManager.getUnprocessableMessageConsumer().consume(event.getPayload(), trace, "Failed to process message", e);
-      }
+      consumerManager.accept(event.getPayload());
     }
     
     return events.getAckId();

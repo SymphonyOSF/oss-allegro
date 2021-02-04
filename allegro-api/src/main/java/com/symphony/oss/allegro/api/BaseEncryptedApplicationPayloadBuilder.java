@@ -42,10 +42,10 @@ import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 abstract class BaseEncryptedApplicationPayloadBuilder<T extends BaseEncryptedApplicationPayloadBuilder<T,B,P>, B extends IEncryptedApplicationPayload, P extends EncryptedApplicationPayload.AbstractEncryptedApplicationPayloadBuilder<?,?>> extends EncryptablePayloadBuilder<T, B>
 {
   protected final P  builder_;
-  protected final IAllegroApi cryptoClient_;
+  protected final IAllegroPodApi cryptoClient_;
   private IApplicationObjectPayload payload_;
   
-  BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder, IAllegroApi cryptoClient)
+  BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder, IAllegroPodApi cryptoClient)
   {
     super(type);
     builder_ = builder;

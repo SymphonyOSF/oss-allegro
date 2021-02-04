@@ -102,6 +102,16 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
   }
   
   /**
+   * Create a new EncryptedApplicationPayloadBuilder.
+   * 
+   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
+   * 
+   * @return A new EncryptedApplicationPayloadBuilder.
+   */
+  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
+  
+  /**
    * Fetch information about a user given a user (login) name.
    * 
    * @param userName  The userName with which the required user logs in.
@@ -133,4 +143,27 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
    * @return this API as an IAllegroPodApi.
    */
   IAllegroPodApi getAllegroPodApi();
+  
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param <T> Type of the required object payload.
+   * 
+   * @param storedApplicationObject An encrypted object.
+   * @param type                    Type of the required object payload.
+   * 
+   * @return The decrypted object.
+   * 
+   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+   */
+  <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
+  
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param encryptedApplicationPayload An encrypted object.
+   * 
+   * @return The decrypted object.
+   */
+  IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload);
 }

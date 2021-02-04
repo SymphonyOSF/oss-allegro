@@ -18,26 +18,20 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.core.canon.IApplicationPayload;
-import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
-
 /**
- * Consumer for decrypted StoredApplicationRecords.
+ * Consumer for unprocessable records..
  * 
  * @author Bruce Skingle
- *
- * @param <H> The type of the unencrypted header.
- * @param <P> The type of the decrypted payload.
  */
 @FunctionalInterface
-public interface IApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
+public interface IErrorConsumer
 {
     /**
      * Consume the given decrypted record.
      *
-     * @param record the record as stored (with encrypted payload). 
-     * @param header the unencrypted header.
-     * @param payload the decrypted payload.
+     * @param record the source record. 
+     * @param message the error description.
+     * @param cause  An optional cause.
      */
-    void accept(IEncryptedApplicationRecord record, H header, P payload);
+    void accept(Object record, String message, Throwable cause);
 }

@@ -18,13 +18,11 @@
 
 package com.symphony.oss.allegro.api;
 
-import java.io.Closeable;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder;
 import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
@@ -33,6 +31,8 @@ import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -40,8 +40,6 @@ import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
@@ -54,7 +52,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
+public interface IAllegroPodApi extends AutoCloseable
 {
   /**
    * Return the user ID of the user we have authenticated as.
@@ -177,16 +175,6 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
   @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
   
   /**
-   * Create a new EncryptedApplicationPayloadBuilder.
-   * 
-   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
-   * or elsewhere
-   * 
-   * @return A new EncryptedApplicationPayloadBuilder.
-   */
-  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
-  
-  /**
    * Create a new ApplicationRecordBuilder.
    * 
    * This can be used to build an encrypted payload which can be stored in a database.
@@ -213,19 +201,38 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
    */
   ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload);
 
+//  /**
+//   * Deserialize and decrypt the given object.
+//   * 
+//   * @param encryptedApplicationRecord An encrypted object.
+//   * 
+//   * @return The decrypted object.
+//   */
+//  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
+
   /**
-   * Deserialize and decrypt the given object.
+   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
+   * the Markdown content and JSON entities and returns their PresentationML representation.
    * 
-   * @param <T> Type of the required object payload.
+   * @param message   A LiveCurrentMessage with encrypted payload.
    * 
-   * @param storedApplicationObject An encrypted object.
-   * @param type                    Type of the required object payload.
-   * 
-   * @return The decrypted object.
-   * 
-   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+   * @return          A ReceivedChatMessage with the decrypted payload.
    */
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
+  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
+
+//  /**
+//   * Deserialize and decrypt the given object.
+//   * 
+//   * @param <T> Type of the required object payload.
+//   * 
+//   * @param storedApplicationObject An encrypted object.
+//   * @param type                    Type of the required object payload.
+//   * 
+//   * @return The decrypted object.
+//   * 
+//   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
+//   */
+//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
 
 
   /**
@@ -280,5 +287,5 @@ public interface IAllegroPodApi extends IAllegroDecryptor, Closeable
    * 
    * @return a new StoredRecordConsumerManager builder.
    */
-  Builder newConsumerManagerBuilder();
+  AllegroConsumerManager.Builder newConsumerManagerBuilder();
 }

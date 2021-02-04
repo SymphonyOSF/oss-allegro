@@ -44,8 +44,8 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IAbstractReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 /**
  * Base class of Manager of Consumers.
@@ -286,16 +286,16 @@ public abstract class AbstractConsumerManager
    * @throws FatalConsumerException       If thrown by the called consumer
    * @throws RetryableConsumerException   If thrown by the called consumer
    */
-  public void consume(Object object, ITraceContext traceContext, IAllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
+  public void consume(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(consumeChatTypes(object, traceContext, opener))
       return;
     
-    IEncryptedApplicationPayload storedApplicationObject = null;
+    IStoredApplicationObject storedApplicationObject = null;
     
-    if(object instanceof IEncryptedApplicationPayload)
+    if(object instanceof IStoredApplicationObject)
     {
-      storedApplicationObject = (IEncryptedApplicationPayload) object;
+      storedApplicationObject = (IStoredApplicationObject) object;
     }
     
     if(storedApplicationObject != null && storedApplicationObject.getEncryptedPayload() != null)
@@ -329,7 +329,7 @@ public abstract class AbstractConsumerManager
       defaultConsumer_.consume(object, traceContext);
   }
   
-  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IAllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
+  private boolean consumeChatTypes(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {

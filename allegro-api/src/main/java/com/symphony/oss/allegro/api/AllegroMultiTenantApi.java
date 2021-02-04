@@ -35,7 +35,11 @@ import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.CoreModel;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
@@ -250,5 +254,17 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   public String getApiAuthorizationToken()
   {
     return jwtBuilder_.createJwt();
+  }
+  
+  @Override
+  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  {
+    return null;
+  }
+
+  @Override
+  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    return null;
   }
 }

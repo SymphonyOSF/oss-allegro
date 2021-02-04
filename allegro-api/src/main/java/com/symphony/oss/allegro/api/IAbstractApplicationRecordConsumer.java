@@ -30,7 +30,7 @@ import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
  * @param <P> The type of the decrypted payload.
  */
 @FunctionalInterface
-public interface IApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
+public interface IAbstractApplicationRecordConsumer<H extends IApplicationPayload, P extends IApplicationPayload>
 {
     /**
      * Consume the given decrypted record.

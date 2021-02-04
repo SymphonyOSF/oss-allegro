@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.AllegroConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 
 /**
@@ -29,7 +29,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
 {
   private final Integer         maxItems_;
   private final String          after_;
-  private final AbstractConsumerManager consumerManager_;
+  private final AllegroConsumerManager consumerManager_;
   
   /**
    * Constructor.
@@ -65,7 +65,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public AbstractConsumerManager getConsumerManager()
+  public AllegroConsumerManager getConsumerManager()
   {
     return consumerManager_;
   }
@@ -105,7 +105,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
   {
     protected Integer         maxItems_;
     protected String          after_;
-    protected AbstractConsumerManager consumerManager_;
+    protected AllegroConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -147,7 +147,7 @@ public class FetchThreadObjectsRequest extends ThreadRequest
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(AbstractConsumerManager consumerManager)
+    public T withConsumerManager(AllegroConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       

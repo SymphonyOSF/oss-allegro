@@ -18,8 +18,10 @@
 
 package com.symphony.oss.allegro.api;
 
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
 /**
  * Base class for AllegroApi implementations.
@@ -31,31 +33,24 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  * @author Bruce Skingle
  *
  */
-abstract class AllegroDecryptor extends Allegro2Decryptor
+abstract class Allegro2Decryptor
 {
-
-//  /**
-//   * Open (deserialize and decrypt) the given object.
-//   * 
-//   * @param storedApplicationObject An encrypted object.
-//   * 
-//   * @return The decrypted object.
-//   */
-//  @Override
-//  public @Nullable IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
-//  {
-//    return null;
-//  }
+  /**
+   * Create an IChatMessage from the given ILiveCurrentMessage, if the message
+   * is an ISocialMessage then the message payload is decrypted.
+   * 
+   * @param message An ILiveCurrentMessage.
+   * 
+   * @return An IChatMessage representing the given message.
+   */
+  abstract IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
   
   /**
    * Deserialize and decrypt the given object.
    * 
-   * @param encryptedApplicationPayload An encrypted object.
+   * @param encryptedApplicationRecord An encrypted object.
    * 
    * @return The decrypted object.
    */
-  public IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload)
-  {
-    return null;
-  }
+  abstract IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
 }

@@ -30,7 +30,7 @@ import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
  */
 public class EncryptedApplicationPayloadBuilder extends BaseEncryptedApplicationPayloadBuilder<EncryptedApplicationPayloadBuilder, IEncryptedApplicationPayload, EncryptedApplicationPayload.Builder>
 {
-  EncryptedApplicationPayloadBuilder(AllegroCryptoClient cryptoClient)
+  EncryptedApplicationPayloadBuilder(IAllegroApi cryptoClient)
   {
     super(EncryptedApplicationPayloadBuilder.class, new EncryptedApplicationPayload.Builder(), cryptoClient);
   }

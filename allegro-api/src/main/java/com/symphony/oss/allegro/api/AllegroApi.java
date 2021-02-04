@@ -28,11 +28,13 @@ import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
@@ -42,6 +44,8 @@ import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.HashType;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -50,9 +54,11 @@ import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
+import com.symphony.oss.models.object.ObjectModelRegistry;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
@@ -290,7 +296,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     EncryptedApplicationPayloadAndHeaderBuilder()
     {
-      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder(), allegroPodApi_.cryptoClient_);
+      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder(), allegroPodApi_);
     }
 
     /**
@@ -335,9 +341,10 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    *
    * @param <T> The concrete type for fluent methods.
    */
-  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadbuilder<T, IStoredApplicationObject>
+  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadBuilder<T, IStoredApplicationObject>
   {
     protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
+    private IApplicationObjectPayload payload_;
     
     BaseApplicationObjectBuilder(Class<T> type)
     {
@@ -366,7 +373,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withEncryptedPayload(
+    protected T withEncryptedPayload(
         EncryptedData value)
     {
       builder_.withEncryptedPayload(value);
@@ -375,7 +382,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withCipherSuiteId(
+    protected T withCipherSuiteId(
         CipherSuiteId value)
     {
       builder_.withCipherSuiteId(value);
@@ -384,7 +391,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withRotationId(RotationId value)
+    protected T withRotationId(RotationId value)
     {
       builder_.withRotationId(value);
       
@@ -458,6 +465,15 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
+    protected ImmutableByteArray getPayload()
+    {
+      if(payload_ == null)
+        return null;
+      
+      return payload_.serialize();
+    }
+
+    @Override
     protected void populateAllFields(List<Object> result)
     {
       builder_.populateAllFields(result);
@@ -513,7 +529,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          allegroPodApi_.cryptoClient_.encrypt(this);
+          allegroPodApi_.encrypt(this);
         }
       }
       
@@ -726,17 +742,59 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return allegroPodApi_.getModelRegistry();
   }
 
+//  @Override
+//  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+//  {
+//    return allegroPodApi_.decryptObject(storedApplicationObject);
+//  }
+
+//  @Override
+//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
+//      Class<T> type)
+//  {
+//    return allegroPodApi_.decryptObject(storedApplicationObject, type);
+//  }
+
   @Override
-  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
   {
-    return allegroPodApi_.decryptObject(storedApplicationObject);
+    if(storedApplicationObject.getEncryptedPayload() == null)
+      return null;
+    
+    ImmutableByteArray plainText = allegroPodApi_.decrypt(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), 
+        storedApplicationObject.getEncryptedPayload());
+    
+    ModelRegistry objectModelRegistry = new ObjectModelRegistry(getModelRegistry(), storedApplicationObject);
+    
+    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
+    ApplicationObjectPayload payload;
+    
+    if(entity instanceof ApplicationObjectPayload)
+    {
+      payload = (ApplicationObjectPayload)entity;
+  
+    }
+    else
+    {
+      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
+    }
+    
+    return payload;
   }
 
   @Override
-  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
+  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject,
       Class<T> type)
   {
-    return allegroPodApi_.decryptObject(storedApplicationObject, type);
+    if(storedApplicationObject.getEncryptedPayload() == null)
+      return null;
+    
+    IApplicationObjectPayload payload = decryptObject(storedApplicationObject);
+    
+    if(type.isInstance(payload))
+      return type.cast(payload);
+    
+    throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
   }
 
   @Override
@@ -834,11 +892,11 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     return allegroPodApi_.fetchFeedMessages(request);
   }
-
+  
   @Override
   public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
   {
-    return allegroPodApi_.newEncryptedApplicationPayloadBuilder();
+    return new EncryptedApplicationPayloadBuilder(this);
   }
 
   @Override
@@ -854,7 +912,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public com.symphony.oss.allegro.api.StoredRecordConsumerManager.Builder newConsumerManagerBuilder()
+  public AllegroConsumerManager.Builder newConsumerManagerBuilder()
   {
     return allegroPodApi_.newConsumerManagerBuilder();
   }
@@ -869,5 +927,23 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
     return allegroPodApi_.decryptChatMessage(message);
+  }
+
+  @Override
+  public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
+  {
+    allegroPodApi_.encrypt(builder);
+  }
+
+  @Override
+  public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
+  {
+    return allegroPodApi_.decrypt(threadId, rotationId, encryptedPayload);
+  }
+
+  @Override
+  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    return allegroPodApi_.decryptObject(encryptedApplicationRecord);
   }
 }

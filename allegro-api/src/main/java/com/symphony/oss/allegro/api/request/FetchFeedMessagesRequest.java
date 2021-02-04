@@ -16,7 +16,7 @@
 
 package com.symphony.oss.allegro.api.request;
 
-import com.symphony.oss.allegro.api.AbstractConsumerManager;
+import com.symphony.oss.allegro.api.AllegroConsumerManager;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.models.internal.pod.canon.AckId;
@@ -32,7 +32,7 @@ public class FetchFeedMessagesRequest
 {
   private final FeedId                  feedId_;
   private final AckId                   ackId_;
-  private final AbstractConsumerManager consumerManager_;
+  private final AllegroConsumerManager consumerManager_;
   
   FetchFeedMessagesRequest(AbstractBuilder<?,?> builder)
   {
@@ -63,7 +63,7 @@ public class FetchFeedMessagesRequest
    * 
    * @return The ConsumerManager to receive objects.
    */
-  public AbstractConsumerManager getConsumerManager()
+  public AllegroConsumerManager getConsumerManager()
   {
     return consumerManager_;
   }
@@ -103,7 +103,7 @@ public class FetchFeedMessagesRequest
   {
     private FeedId                  feedId_;
     private AckId                   ackId_;
-    private AbstractConsumerManager consumerManager_;
+    private AllegroConsumerManager consumerManager_;
     
     AbstractBuilder(Class<T> type)
     {
@@ -145,7 +145,7 @@ public class FetchFeedMessagesRequest
      * 
      * @return This (fluent method)
      */
-    public T withConsumerManager(AbstractConsumerManager consumerManager)
+    public T withConsumerManager(AllegroConsumerManager consumerManager)
     {
       consumerManager_ = consumerManager;
       

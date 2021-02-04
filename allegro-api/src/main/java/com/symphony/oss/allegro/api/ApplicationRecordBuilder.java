@@ -21,19 +21,21 @@ package com.symphony.oss.allegro.api;
 import java.util.List;
 
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
+import com.symphony.oss.models.core.canon.IApplicationPayload;
+import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationRecord;
-import com.symphony.oss.models.object.canon.facade.StoredApplicationRecord;
 
-public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<ApplicationRecordBuilder, IStoredApplicationRecord>
+public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<ApplicationRecordBuilder, IEncryptedApplicationRecord>
 {
-  protected final StoredApplicationRecord.Builder  builder_ = new StoredApplicationRecord.Builder();
+  protected final EncryptedApplicationRecord.Builder  builder_ = new EncryptedApplicationRecord.Builder();
   protected final AllegroCryptoClient cryptoClient_;
+  
+  private IApplicationPayload payload_;
   
   ApplicationRecordBuilder(AllegroCryptoClient cryptoClient)
   {
@@ -63,7 +65,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withEncryptedPayload(
+  protected ApplicationRecordBuilder withEncryptedPayload(
       EncryptedData value)
   {
     builder_.withEncryptedPayload(value);
@@ -72,7 +74,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withCipherSuiteId(
+  protected ApplicationRecordBuilder withCipherSuiteId(
       CipherSuiteId value)
   {
     builder_.withCipherSuiteId(value);
@@ -81,7 +83,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
   }
 
   @Override
-  ApplicationRecordBuilder withRotationId(RotationId value)
+  protected ApplicationRecordBuilder withRotationId(RotationId value)
   {
     builder_.withRotationId(value);
     
@@ -95,7 +97,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
    * 
    * @return This (fluent method).
    */
-  public ApplicationRecordBuilder withPayload(IApplicationObjectPayload payload)
+  public ApplicationRecordBuilder withPayload(IApplicationPayload payload)
   {
     payload_ = payload;
     
@@ -109,7 +111,7 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
    * 
    * @return This (fluent method).
    */
-  public ApplicationRecordBuilder withHeader(IApplicationObjectHeader header)
+  public ApplicationRecordBuilder withHeader(IApplicationPayload header)
   {
     builder_.withHeader(header);
     
@@ -183,11 +185,19 @@ public class ApplicationRecordBuilder extends EncryptablePayloadbuilder<Applicat
     
     super.validate();
   }
-  
 
   @Override
-  protected IStoredApplicationRecord construct()
+  protected IEncryptedApplicationRecord construct()
   {
     return builder_.build();
+  }
+
+  @Override
+  protected ImmutableByteArray getPayload()
+  {
+    if(payload_ == null)
+      return null;
+    
+    return payload_.serialize();
   }
 }

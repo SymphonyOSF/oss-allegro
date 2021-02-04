@@ -33,8 +33,11 @@ import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.fugue.trace.NoOpTraceContext;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
 @SuppressWarnings("javadoc")
 public class TestConsumerManager
@@ -98,7 +101,13 @@ public class TestConsumerManager
     }
 
     @Override
-    public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
+    public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
+    {
+      throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
     {
       throw new RuntimeException("Not implemented");
     }
