@@ -82,10 +82,10 @@ import com.symphony.oss.fugue.trace.NoOpContextFactory;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.AllegroModel;
 import com.symphony.oss.models.allegro.canon.EntityJson;
-import com.symphony.oss.models.allegro.canon.facade.AllegroPodConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.Allegro2Configuration;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
-import com.symphony.oss.models.allegro.canon.facade.IAllegroPodConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IAllegro2Configuration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
@@ -329,7 +329,7 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
     CloseableHttpClient             certKeyAuthHttpClient_;
     CloseableHttpClient             defaultCertAuthHttpClient_;
 
-    IAllegroPodConfiguration        config_;
+    IAllegro2Configuration        config_;
     CloseableHttpClient             defaultHttpClient_;
     PrivateKey                      rsaCredential_;
     boolean                         rsaCredentialIsSet_;
@@ -345,7 +345,7 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
       super(type);
     }
     
-    public T withConfiguration(IAllegroPodConfiguration configuration)
+    public T withConfiguration(IAllegro2Configuration configuration)
     {
       config_ = configuration;
       
@@ -354,7 +354,7 @@ public class AllegroPodApi extends AllegroDecryptor implements IAllegroPodApi
     
     public T withConfiguration(Reader reader)
     {
-      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroPodConfiguration.TYPE_ID, IAllegroPodConfiguration.class));
+      return withConfiguration(allegroModelRegistry_.parseOne(reader, Allegro2Configuration.TYPE_ID, IAllegro2Configuration.class));
     }
     
     public T withConfigurationFile(String fileName) throws FileNotFoundException, IOException

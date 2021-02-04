@@ -22,7 +22,7 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.4.6</version><!-- oss-parent-pom -->
+		<version>0.4.7</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
@@ -78,6 +78,7 @@
   <modules>
     <module>allegro-api</module>
     <module>allegro-ui</module>
+    <module>allegro2-api</module>
   </modules>
 
   <repositories>
