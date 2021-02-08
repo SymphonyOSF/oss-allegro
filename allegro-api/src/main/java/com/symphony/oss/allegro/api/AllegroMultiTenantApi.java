@@ -43,6 +43,8 @@ import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
@@ -257,13 +259,19 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   }
   
   @Override
-  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
     return null;
   }
 
   @Override
-  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    return null;
+  }
+
+  @Override
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload)
   {
     return null;
   }

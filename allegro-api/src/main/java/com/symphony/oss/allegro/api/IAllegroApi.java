@@ -19,6 +19,7 @@ package com.symphony.oss.allegro.api;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
+import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
@@ -35,7 +36,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
+public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegro2Api
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -142,7 +143,7 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegroPodApi
    * 
    * @return this API as an IAllegroPodApi.
    */
-  IAllegroPodApi getAllegroPodApi();
+  IAllegro2Api getAllegroPodApi();
   
   /**
    * Deserialize and decrypt the given object.

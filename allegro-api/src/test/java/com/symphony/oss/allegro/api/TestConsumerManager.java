@@ -35,7 +35,6 @@ import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
@@ -68,7 +67,7 @@ public class TestConsumerManager
 //      .withPodId(POD_ID)
 //      .withPurgeTime(10000, ChronoUnit.SECONDS)
 //      .build();
-  private static final AllegroDecryptor OPENER = new AllegroDecryptor()
+  private static final IAllegroDecryptor OPENER = new IAllegroDecryptor()
   {
 //    @Override
 //    public IEntity open(IFundamentalObject item)
@@ -107,7 +106,7 @@ public class TestConsumerManager
     }
 
     @Override
-    IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+    public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
     {
       throw new RuntimeException("Not implemented");
     }

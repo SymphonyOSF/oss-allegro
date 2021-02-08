@@ -24,10 +24,15 @@ import java.time.Instant;
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
+import com.symphony.oss.allegro2.api.Allegro2Api;
+import com.symphony.oss.allegro2.api.AllegroConsumerManager;
+import com.symphony.oss.allegro2.api.ApplicationRecordBuilder;
+import com.symphony.oss.allegro2.api.EncryptablePayloadBuilder;
+import com.symphony.oss.allegro2.api.FetchFeedMessagesRequest;
+import com.symphony.oss.allegro2.api.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro2.api.FetchStreamsRequest;
+import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
@@ -77,7 +82,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  */
 public class AllegroApi extends AllegroBaseApi implements IAllegroApi
 {
-  private final AllegroPodApi                  allegroPodApi_;
+  private final IAllegro2Api                  allegroPodApi_;
   
   /**
    * Constructor.
@@ -88,7 +93,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     super(builder);
     
-    allegroPodApi_ = new AllegroPodApi(builder.podApiBuilder_);
+    allegroPodApi_ = builder.podApiBuilder_.build();
     
   }
 
@@ -109,7 +114,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
   AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
   {
-    AllegroPodApi.Builder podApiBuilder_ = new AllegroPodApi.Builder();
+    Allegro2Api.Builder podApiBuilder_ = new Allegro2Api.Builder();
     
     public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
     {
@@ -143,7 +148,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Deprecated
     public T withSessionToken(String sessionToken)
     {
-      podApiBuilder_.sessionTokenSupplier_ = () -> sessionToken;
+      podApiBuilder_.withSessionTokenSupplier(() -> sessionToken);
       
       return self();
     }
@@ -160,7 +165,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     @Deprecated
     public T withKeymanagerToken(String keymanagerToken)
     {
-      podApiBuilder_.keyManagerTokenSupplier_ = () -> keymanagerToken;
+      podApiBuilder_.withKeymanagerTokenSupplier(() -> keymanagerToken);
       
       return self();
     }
@@ -195,9 +200,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     {
       super.validate(faultAccumulator);
       
-      podApiBuilder_.config_ = config_;
-      podApiBuilder_.rsaCredential_ = rsaCredential_;
-      podApiBuilder_.rsaCredentialIsSet_ = true;
+      podApiBuilder_.withConfiguration(config_)
+        .withRsaCredential(rsaCredential_);
     }
 
     public T withSessionTokenSupplier(
@@ -241,7 +245,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public IAllegroPodApi getAllegroPodApi()
+  public IAllegro2Api getAllegroPodApi()
   {
     return allegroPodApi_;
   }
@@ -942,7 +946,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
     return allegroPodApi_.decryptObject(encryptedApplicationRecord);
   }

@@ -32,12 +32,12 @@ import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
 
 abstract class AbstractObjectPage<T extends IAbstractStoredApplicationObject> implements IAbstractObjectPage<T>
 {
-  final AllegroBaseApi allegroApi_;
-  final String         after_;
-  final String         before_;
-  final List<T>        data_;
+  final IAllegroMultiTenantApi allegroApi_;
+  final String                 after_;
+  final String                 before_;
+  final List<T>                data_;
 
-  AbstractObjectPage(AllegroBaseApi allegroApi, IPagination pagination, boolean scanForwards, List<T> data)
+  AbstractObjectPage(IAllegroMultiTenantApi allegroApi, IPagination pagination, boolean scanForwards, List<T> data)
   {
     String after  = null;
     String before = null;

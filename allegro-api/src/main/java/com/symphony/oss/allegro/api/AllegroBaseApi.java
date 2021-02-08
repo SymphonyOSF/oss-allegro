@@ -158,7 +158,7 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * @author Bruce Skingle
  *
  */
-public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
+public abstract class AllegroBaseApi implements IAllegroMultiTenantApi
 {
   /** Distinguished value for API url which causes Allegro to access all services individually on the local host. */
   public static final URL ALL_SERVICES_LOCAL_URL;
@@ -244,6 +244,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
   private String initUrl(URL url, MultiTenantService service)
   {
+    if(url == null)
+      return "https://api.symphony.com";
+    
     if(url.equals(ALL_SERVICES_LOCAL_URL))
       return "http://127.0.0.1:" + service.getHttpPort();
     

@@ -50,7 +50,7 @@ class PartitionObjectPage extends AbstractObjectPage<IStoredApplicationObject> i
   }
 
   @Override
-  public @Nullable PartitionObjectPage  fetchNextPage()
+  public @Nullable IObjectPage  fetchNextPage()
   {
     if(after_ == null)
       return null;
@@ -66,7 +66,7 @@ class PartitionObjectPage extends AbstractObjectPage<IStoredApplicationObject> i
   }
   
   @Override
-  public @Nullable PartitionObjectPage  fetchPrevPage()
+  public @Nullable IObjectPage  fetchPrevPage()
   {
     if(before_ == null)
       return null;

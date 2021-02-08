@@ -73,7 +73,7 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * <p>
  * @author Bruce Skingle
  */
-public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Closeable
+public interface IAllegroMultiTenantApi  extends IAllegroDecryptor, IMultiTenantServiceRegistry, Closeable
 {
   @Override
   void close();

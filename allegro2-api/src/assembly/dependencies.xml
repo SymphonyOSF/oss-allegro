@@ -14,7 +14,7 @@
       <scope>provided</scope>
       <includes>
         <include>com.symphony:crypto</include>
-        <include>com.symphony.oss.allegro:allegro-api</include>
+        <include>com.symphony.oss.allegro:allegro2-api</include>
       </includes>
     </dependencySet>
   </dependencySets>

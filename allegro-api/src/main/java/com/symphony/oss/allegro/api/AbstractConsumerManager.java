@@ -286,7 +286,7 @@ public abstract class AbstractConsumerManager
    * @throws FatalConsumerException       If thrown by the called consumer
    * @throws RetryableConsumerException   If thrown by the called consumer
    */
-  public void consume(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
+  public void consume(Object object, ITraceContext traceContext, IAllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(consumeChatTypes(object, traceContext, opener))
       return;
@@ -329,7 +329,7 @@ public abstract class AbstractConsumerManager
       defaultConsumer_.consume(object, traceContext);
   }
   
-  private boolean consumeChatTypes(Object object, ITraceContext traceContext, AllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
+  private boolean consumeChatTypes(Object object, ITraceContext traceContext, IAllegroDecryptor opener) throws RetryableConsumerException, FatalConsumerException
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {
