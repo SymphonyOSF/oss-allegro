@@ -18,10 +18,13 @@
 
 package com.symphony.oss.allegro2.api;
 
+import java.io.StringReader;
 import java.util.List;
 
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
+import com.symphony.oss.models.core.canon.ApplicationPayload;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
@@ -32,16 +35,18 @@ import com.symphony.oss.models.crypto.canon.EncryptedData;
 
 public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<ApplicationRecordBuilder, IEncryptedApplicationRecord>
 {
-  protected final EncryptedApplicationRecord.Builder  builder_ = new EncryptedApplicationRecord.Builder();
-  protected final AllegroCryptoClient cryptoClient_;
+  protected final EncryptedApplicationRecord.Builder builder_ = new EncryptedApplicationRecord.Builder();
+  protected final AllegroCryptoClient                cryptoClient_;
+  protected final ModelRegistry                      modelRegistry_;
   
   private IApplicationPayload payload_;
   
-  ApplicationRecordBuilder(AllegroCryptoClient cryptoClient)
+  ApplicationRecordBuilder(AllegroCryptoClient cryptoClient, ModelRegistry modelRegistry)
   {
     super(ApplicationRecordBuilder.class);
     
     cryptoClient_ = cryptoClient;
+    modelRegistry_ = modelRegistry;
   }
 
   /**
@@ -105,6 +110,22 @@ public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<Applicat
   }
 
   /**
+   * Set the object payload (which is to be encrypted).
+   * 
+   * @param payload The object payload (which is to be encrypted).
+   * 
+   * @return This (fluent method).
+   */
+  public ApplicationRecordBuilder withPayload(String payload)
+  {
+    IApplicationPayload entity = modelRegistry_.parseOne(new StringReader(payload), ApplicationPayload.TYPE_ID, IApplicationPayload.class);
+    
+    payload_ = entity;
+    
+    return self();
+  }
+
+  /**
    * Set the unencrypted header for this object.
    * 
    * @param header The unencrypted header for this object.
@@ -114,6 +135,22 @@ public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<Applicat
   public ApplicationRecordBuilder withHeader(IApplicationPayload header)
   {
     builder_.withHeader(header);
+    
+    return self();
+  }
+
+  /**
+   * Set the unencrypted header for this object.
+   * 
+   * @param header The unencrypted header for this object.
+   * 
+   * @return This (fluent method).
+   */
+  public ApplicationRecordBuilder withHeader(String header)
+  {
+    IApplicationPayload entity = modelRegistry_.parseOne(new StringReader(header), ApplicationPayload.TYPE_ID, IApplicationPayload.class);
+
+    builder_.withHeader(entity);
     
     return self();
   }

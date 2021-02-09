@@ -929,7 +929,7 @@ public class Allegro2Api implements IAllegro2Api
   @Override
   public ApplicationRecordBuilder newApplicationRecordBuilder()
   {
-    return new ApplicationRecordBuilder(cryptoClient_);
+    return new ApplicationRecordBuilder(cryptoClient_, modelRegistry_);
   }
   
   @Override

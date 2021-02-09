@@ -77,7 +77,7 @@ public class AllegroConsumerManager
       @Override
       public void accept(Object item, String message, Throwable cause)
       {
-        log_.error("Failed to process object of type " + item.getClass() + ": " + message + "\n" + item, cause);
+        log_.error(message + "\n" + item, cause);
       }
     };
     
@@ -398,7 +398,8 @@ public class AllegroConsumerManager
     
     if(bestConsumer == null)
     {
-      errorConsumer_.accept(storedObject, "No consumer for Application object " + storedObject, null);
+      errorConsumer_.accept(storedObject, "No consumer for header " + headerType +
+          ", payload " + payloadType, null);
     }
     else
     {
