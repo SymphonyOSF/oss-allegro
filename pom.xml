@@ -79,6 +79,7 @@
     <module>allegro-api</module>
     <module>allegro-ui</module>
     <module>allegro2-api</module>
+    <module>allegro2-mongo-api</module>
   </modules>
 
   <repositories>

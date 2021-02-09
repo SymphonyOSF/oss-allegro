@@ -72,10 +72,6 @@ import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
-import com.symphony.oss.fugue.trace.ITraceContext;
-import com.symphony.oss.fugue.trace.ITraceContextTransaction;
-import com.symphony.oss.fugue.trace.ITraceContextTransactionFactory;
-import com.symphony.oss.fugue.trace.NoOpContextFactory;
 import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
 import com.symphony.oss.models.allegro.canon.AllegroModel;
 import com.symphony.oss.models.allegro.canon.EntityJson;
@@ -145,7 +141,6 @@ public class Allegro2Api implements IAllegro2Api
   private static final Logger                   log_                       = LoggerFactory.getLogger(Allegro2Api.class);
 
   private final ModelRegistry                   modelRegistry_;
-  private final ITraceContextTransactionFactory traceFactory_;
   final AllegroCryptoClient                     cryptoClient_;
   private final PodAndUserId                    userId_;
   private final String                          userName_;
@@ -176,11 +171,9 @@ public class Allegro2Api implements IAllegro2Api
 
 
 
-  public Allegro2Api(AbstractBuilder<?, ?> builder)
+  protected Allegro2Api(AbstractBuilder<?, ?> builder)
   {
-    log_.info("AllegroPodApi constructor start with config " + builder.config_.getRedacted());
-    
-    traceFactory_ = builder.traceFactory_;
+    log_.info("Allegro2Api constructor start with config " + builder.config_.getRedacted());
     
     modelRegistry_ = new ModelRegistry()
 //        .withFactories(ObjectModel.FACTORIES)
@@ -316,7 +309,7 @@ public class Allegro2Api implements IAllegro2Api
    * @param <T> The type of the concrete Builder
    * @param <B> The type of the built class, some subclass of AllegroApi
    */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegro2Api>
+  static public abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegro2Api>
   extends BaseAbstractBuilder<T, B>
   {
 
@@ -336,12 +329,11 @@ public class Allegro2Api implements IAllegro2Api
     boolean                         rsaCredentialIsSet_;
     CookieStore                     cookieStore_          = new BasicCookieStore();
     List<IEntityFactory<?, ?, ?>>   factories_            = new LinkedList<>();
-    ITraceContextTransactionFactory traceFactory_         = new NoOpContextFactory();
     ModelRegistry                   allegroModelRegistry_ = new ModelRegistry()
         .withFactories(AllegroModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES);
     
-    AbstractBuilder(Class<T> type)
+    protected AbstractBuilder(Class<T> type)
     {
       super(type);
     }
@@ -381,13 +373,6 @@ public class Allegro2Api implements IAllegro2Api
         for(IEntityFactory<?, ?, ?> factory : factories)
           factories_.add(factory);
       }
-      
-      return self();
-    }
-    
-    public T withTraceFactory(ITraceContextTransactionFactory traceFactory)
-    {
-      traceFactory_ = traceFactory;
       
       return self();
     }
@@ -585,7 +570,7 @@ public class Allegro2Api implements IAllegro2Api
   }
   
   /**
-   * Builder for AllegroPodApi.
+   * Builder.
    * 
    * @author Bruce Skingle
    *
@@ -852,24 +837,19 @@ public class Allegro2Api implements IAllegro2Api
   @Override
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
-    {
-      ITraceContext trace = traceTransaction.open();
+    IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
+        .withId(request.getThreadId().toBase64UrlSafeString())
+        .withFrom(0L)
+        .withLimit(request.getMaxItems())
+        .withExcludeFields("tokenIds")
+        .build()
+        .execute(podHttpClient_);
       
-      IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
-          .withId(request.getThreadId().toBase64UrlSafeString())
-          .withFrom(0L)
-          .withLimit(request.getMaxItems())
-          .withExcludeFields("tokenIds")
-          .build()
-          .execute(podHttpClient_);
-        
-      for(IMessageEnvelope envelope : thread.getEnvelopes())
-      {
-        ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
-        
-        request.getConsumerManager().accept(lcmessage);
-      }
+    for(IMessageEnvelope envelope : thread.getEnvelopes())
+    {
+      ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
+      
+      request.getConsumerManager().accept(lcmessage);
     }
   }
 
@@ -918,18 +898,13 @@ public class Allegro2Api implements IAllegro2Api
   @Override
   public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
   {
-    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchFeedMessagesRequest", request.getFeedId().toString()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-      return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager());
-    }
+    return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager());
   }
   
   @Override
   public ApplicationRecordBuilder newApplicationRecordBuilder()
   {
-    return new ApplicationRecordBuilder(cryptoClient_, modelRegistry_);
+    return new ApplicationRecordBuilder(this, modelRegistry_);
   }
   
   @Override
@@ -939,7 +914,7 @@ public class Allegro2Api implements IAllegro2Api
   }
   
   @Override
-  public AllegroConsumerManager.Builder newConsumerManagerBuilder()
+  public AllegroConsumerManager.AbstractBuilder<?,?> newConsumerManagerBuilder()
   {
     return new AllegroConsumerManager.Builder(this, getModelRegistry());
   }

@@ -916,7 +916,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public AllegroConsumerManager.Builder newConsumerManagerBuilder()
+  public AllegroConsumerManager.AbstractBuilder<?,?> newConsumerManagerBuilder()
   {
     return allegroPodApi_.newConsumerManagerBuilder();
   }

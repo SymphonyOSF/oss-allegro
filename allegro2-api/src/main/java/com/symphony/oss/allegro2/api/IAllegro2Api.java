@@ -288,5 +288,5 @@ public interface IAllegro2Api  extends IAllegro2Decryptor, AutoCloseable
    * 
    * @return a new StoredRecordConsumerManager builder.
    */
-  AllegroConsumerManager.Builder newConsumerManagerBuilder();
+  AllegroConsumerManager.AbstractBuilder<?,?> newConsumerManagerBuilder();
 }

@@ -36,12 +36,12 @@ import com.symphony.oss.models.crypto.canon.EncryptedData;
 public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<ApplicationRecordBuilder, IEncryptedApplicationRecord>
 {
   protected final EncryptedApplicationRecord.Builder builder_ = new EncryptedApplicationRecord.Builder();
-  protected final AllegroCryptoClient                cryptoClient_;
+  protected final IAllegro2Api                       cryptoClient_;
   protected final ModelRegistry                      modelRegistry_;
   
   private IApplicationPayload payload_;
   
-  ApplicationRecordBuilder(AllegroCryptoClient cryptoClient, ModelRegistry modelRegistry)
+  protected ApplicationRecordBuilder(IAllegro2Api cryptoClient, ModelRegistry modelRegistry)
   {
     super(ApplicationRecordBuilder.class);
     

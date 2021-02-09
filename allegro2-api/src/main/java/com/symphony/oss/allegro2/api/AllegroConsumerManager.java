@@ -49,7 +49,7 @@ public class AllegroConsumerManager
   private final ImmutableList<LiveCurrentConsumerHolder<?>>    liveCurrentConsumers_;
   private final IErrorConsumer                                 errorConsumer_;
 
-  private AllegroConsumerManager(AbstractBuilder<?,?> builder)
+  protected AllegroConsumerManager(AbstractBuilder<?,?> builder)
   {
     allegroDecryptor_            = builder.decryptor_;
     modelRegistry_        = builder.modelRegistry_;
@@ -81,7 +81,7 @@ public class AllegroConsumerManager
       }
     };
     
-    AbstractBuilder(Class<T> type, IAllegro2Decryptor decryptor, IModelRegistry modelRegistry)
+    protected AbstractBuilder(Class<T> type, IAllegro2Decryptor decryptor, IModelRegistry modelRegistry)
     {
       super(type);
       
