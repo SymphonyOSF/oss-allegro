@@ -26,7 +26,13 @@ import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 
-class EncryptedDocumentBuilder extends BaseAbstractBuilder<EncryptedDocumentBuilder, Document>
+/**
+ * A builder for BSON documents containing an EncryptedApplicationRecord.
+ * 
+ * @author Bruce Skingle
+ *
+ */
+public class EncryptedDocumentBuilder extends BaseAbstractBuilder<EncryptedDocumentBuilder, Document>
 {
   protected final ApplicationRecordBuilder builder_;
 

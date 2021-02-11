@@ -48,7 +48,7 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AllegroMongoConsumerManager> extends AllegroConsumerManager.AbstractBuilder<T,B>
+  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AllegroMongoConsumerManager> extends AllegroConsumerManager.AbstractBuilder<T,B>
   {
     private final Allegro2MongoApi allegroMongoDecryptor_;
 
@@ -60,7 +60,13 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
     }
   }
   
-  static class Builder extends AbstractBuilder<Builder, AllegroMongoConsumerManager>
+  /**
+   * Builder.
+   * 
+   * @author Bruce Skingle
+   *
+   */
+  public static class Builder extends AbstractBuilder<Builder, AllegroMongoConsumerManager>
   {
     Builder(Allegro2MongoApi allegroMongoDecryptor, IModelRegistry modelRegistry)
     {
