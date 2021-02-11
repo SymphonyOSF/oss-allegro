@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.symphony.oss.allegro2.api.AllegroConsumerManager;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
@@ -34,10 +33,8 @@ import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
-import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
+@SuppressWarnings("javadoc")
 public class TestAllegroConsumerManager
 {
   class Header1 extends ApplicationPayload  {
@@ -90,14 +87,14 @@ public class TestAllegroConsumerManager
 //      }
       
       @Override
-      public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+      public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
       {
         // TODO Auto-generated method stub
         return null;
       }
 
       @Override
-      public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+      public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
       {
         if(encryptedApplicationRecord instanceof TestEncryptedApplicationRecord)
         {

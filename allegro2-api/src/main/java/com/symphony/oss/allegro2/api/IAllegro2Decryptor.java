@@ -43,7 +43,7 @@ public interface IAllegro2Decryptor
    * 
    * @return An IChatMessage representing the given message.
    */
-  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
+  IReceivedChatMessage decrypt(ILiveCurrentMessage message);
   
   /**
    * Deserialize and decrypt the given object.
@@ -52,5 +52,5 @@ public interface IAllegro2Decryptor
    * 
    * @return The decrypted object.
    */
-  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
+  IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord);
 }

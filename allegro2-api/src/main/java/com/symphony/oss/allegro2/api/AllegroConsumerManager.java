@@ -236,7 +236,7 @@ public class AllegroConsumerManager
       {
         try
         {
-          IReceivedChatMessage chatMessage = allegroDecryptor_.decryptChatMessage(lcmessage);
+          IReceivedChatMessage chatMessage = allegroDecryptor_.decrypt(lcmessage);
 
           if(chatMessage != null)
           {
@@ -331,7 +331,7 @@ public class AllegroConsumerManager
       {
         try
         {
-          IApplicationRecord applicationRecord = allegroDecryptor_.decryptObject(storedObject);
+          IApplicationRecord applicationRecord = allegroDecryptor_.decrypt(storedObject);
           
           if(applicationRecord != null)
           {

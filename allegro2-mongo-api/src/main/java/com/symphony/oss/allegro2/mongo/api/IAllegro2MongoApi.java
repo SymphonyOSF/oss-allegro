@@ -20,6 +20,12 @@ package com.symphony.oss.allegro2.mongo.api;
 
 import com.symphony.oss.allegro2.api.IAllegro2Api;
 
+/**
+ * A specialisation of IAllegro2Api with support for MongoDb data types.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public interface IAllegro2MongoApi extends IAllegro2Api, IAllegro2MongoDecryptor
 {
   /**

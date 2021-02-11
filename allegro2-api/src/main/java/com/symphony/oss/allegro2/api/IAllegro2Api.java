@@ -28,8 +28,6 @@ import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
@@ -210,32 +208,6 @@ public interface IAllegro2Api  extends IAllegro2Decryptor, AutoCloseable
    * @return The decrypted object.
    */
   IApplicationRecord decrypt(String jsonObject);
-
-  /**
-   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
-   * the Markdown content and JSON entities and returns their PresentationML representation.
-   * 
-   * @param message   A LiveCurrentMessage with encrypted payload.
-   * 
-   * @return          A ReceivedChatMessage with the decrypted payload.
-   */
-  @Override
-  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
-
-//  /**
-//   * Deserialize and decrypt the given object.
-//   * 
-//   * @param <T> Type of the required object payload.
-//   * 
-//   * @param storedApplicationObject An encrypted object.
-//   * @param type                    Type of the required object payload.
-//   * 
-//   * @return The decrypted object.
-//   * 
-//   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
-//   */
-//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject, Class<T> type);
-
 
   /**
    * Fetch information about a user given a user (login) name.

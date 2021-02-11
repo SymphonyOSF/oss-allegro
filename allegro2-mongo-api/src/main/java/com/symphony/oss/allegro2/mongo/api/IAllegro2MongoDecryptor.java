@@ -23,9 +23,20 @@ import org.bson.Document;
 import com.symphony.oss.allegro2.api.IAllegro2Decryptor;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 
+/**
+ * A specialisation of IAllegro2Decryptor with support for MongoDb data types.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public interface IAllegro2MongoDecryptor extends IAllegro2Decryptor
 {
-
-
+  /**
+   * Decrypt the given BSON Document which contains an EncryptedApplicationRecord.
+   * 
+   * @param doc A BSON Document which contains an EncryptedApplicationRecord.
+   * 
+   * @return The decrypted ApplicationRecord.
+   */
   IApplicationRecord decrypt(Document doc);
 }

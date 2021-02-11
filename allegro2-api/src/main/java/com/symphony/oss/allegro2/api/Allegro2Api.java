@@ -1072,11 +1072,11 @@ public class Allegro2Api implements IAllegro2Api
   @Override
   public IApplicationRecord decrypt(String jsonObject)
   {
-    return decryptObject(parse(jsonObject));
+    return decrypt(parse(jsonObject));
   }
   
   @Override
-  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
     ApplicationRecord.Builder builder = new ApplicationRecord.Builder()
         .withHeader(encryptedApplicationRecord.getHeader());
@@ -1106,7 +1106,7 @@ public class Allegro2Api implements IAllegro2Api
    * the Markdown content and JSON entities and returns their PresentationML representation.
    */
   @Override
-  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
   {
     if(message instanceof ISocialMessage)
       return decryptSocialMessage((ISocialMessage) message);

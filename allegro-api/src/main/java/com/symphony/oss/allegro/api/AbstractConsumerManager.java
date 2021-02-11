@@ -333,7 +333,7 @@ public abstract class AbstractConsumerManager
   {
     if(hasChatTypes_ && object instanceof ILiveCurrentMessage)
     {
-      IReceivedChatMessage chatMessage = opener.decryptChatMessage((ILiveCurrentMessage) object);
+      IReceivedChatMessage chatMessage = opener.decrypt((ILiveCurrentMessage) object);
 
       if(chatMessage != null)
       {

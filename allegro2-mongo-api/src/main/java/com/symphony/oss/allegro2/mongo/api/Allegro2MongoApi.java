@@ -24,6 +24,12 @@ import com.symphony.oss.allegro2.api.Allegro2Api;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
+/**
+ * Implementation of IAllegro2MongoApi
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class Allegro2MongoApi extends Allegro2Api implements IAllegro2MongoApi
 {
   protected Allegro2MongoApi(AbstractBuilder<?, ?> builder)
@@ -90,7 +96,7 @@ public class Allegro2MongoApi extends Allegro2Api implements IAllegro2MongoApi
   @Override
   public IApplicationRecord decrypt(Document doc)
   {
-    return decryptObject(parse(doc));
+    return decrypt(parse(doc));
   }
 
   @Override

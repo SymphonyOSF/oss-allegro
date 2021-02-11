@@ -94,7 +94,7 @@ public class TestConsumerManager
 //    }
 
     @Override
-    public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+    public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
     {
       throw new RuntimeException("Not implemented");
     }
@@ -106,7 +106,7 @@ public class TestConsumerManager
     }
 
     @Override
-    public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+    public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
     {
       throw new RuntimeException("Not implemented");
     }

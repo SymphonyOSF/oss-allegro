@@ -259,13 +259,13 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   }
   
   @Override
-  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
+  public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
   {
     return null;
   }
 
   @Override
-  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
     return null;
   }

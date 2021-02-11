@@ -935,9 +935,16 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
+  public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
+  {
+    return allegroPodApi_.decrypt(message);
+  }
+
+  @Override
+  @Deprecated
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
-    return allegroPodApi_.decryptChatMessage(message);
+    return allegroPodApi_.decrypt(message);
   }
 
   @Override
@@ -953,8 +960,8 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord)
+  public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
-    return allegroPodApi_.decryptObject(encryptedApplicationRecord);
+    return allegroPodApi_.decrypt(encryptedApplicationRecord);
   }
 }

@@ -21,6 +21,8 @@ import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
 import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.pod.canon.IUserV2;
@@ -166,6 +168,19 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegro2Api
    * 
    * @return The decrypted object.
    */
+  
   @Override
   IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload);
+  /**
+   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
+   * the Markdown content and JSON entities and returns their PresentationML representation.
+   * 
+   * @param message   A LiveCurrentMessage with encrypted payload.
+   * 
+   * @return          A ReceivedChatMessage with the decrypted payload.
+   * 
+   * @deprecated Use decrypt(message).
+   */
+  @Deprecated
+  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
 }

@@ -26,7 +26,7 @@ import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
 
-public class EncryptedDocumentBuilder extends BaseAbstractBuilder<EncryptedDocumentBuilder, Document>
+class EncryptedDocumentBuilder extends BaseAbstractBuilder<EncryptedDocumentBuilder, Document>
 {
   protected final ApplicationRecordBuilder builder_;
 
@@ -51,6 +51,11 @@ public class EncryptedDocumentBuilder extends BaseAbstractBuilder<EncryptedDocum
     return self();
   }
 
+  /**
+   * Return the threadId to be used to encrypt the payload.
+   * 
+   * @return the threadId to be used to encrypt the payload.
+   */
   public ThreadId getThreadId()
   {
     return builder_.getThreadId();

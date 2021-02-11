@@ -23,6 +23,12 @@ import org.bson.Document;
 import com.symphony.oss.allegro2.api.AllegroConsumerManager;
 import com.symphony.oss.canon.runtime.IModelRegistry;
 
+/**
+ * ConsumerManager implementation for Allegro2MongoApi.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class AllegroMongoConsumerManager extends AllegroConsumerManager
 {
   private final Allegro2MongoApi allegroMongoDecryptor_;
@@ -42,7 +48,7 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
    * @param <T> Concrete type of the builder for fluent methods.
    * @param <B> Concrete type of the built object for fluent methods.
    */
-  public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AllegroMongoConsumerManager> extends AllegroConsumerManager.AbstractBuilder<T,B>
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends AllegroMongoConsumerManager> extends AllegroConsumerManager.AbstractBuilder<T,B>
   {
     private final Allegro2MongoApi allegroMongoDecryptor_;
 
@@ -54,9 +60,9 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
     }
   }
   
-  public static class Builder extends AbstractBuilder<Builder, AllegroMongoConsumerManager>
+  static class Builder extends AbstractBuilder<Builder, AllegroMongoConsumerManager>
   {
-    public Builder(Allegro2MongoApi allegroMongoDecryptor, IModelRegistry modelRegistry)
+    Builder(Allegro2MongoApi allegroMongoDecryptor, IModelRegistry modelRegistry)
     {
       super(Builder.class, allegroMongoDecryptor, modelRegistry);
     }
@@ -68,6 +74,11 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
     }
   }
 
+  /**
+   * Iterate over the given input and handle each Document contained.
+   *  
+   * @param iterable A source of Documents to be handled.
+   */
   public void accept(Iterable<Document> iterable)
   {
     for(Document doc : iterable)
@@ -76,6 +87,11 @@ public class AllegroMongoConsumerManager extends AllegroConsumerManager
     }
   }
 
+  /**
+   * Handle the give Document.
+   * 
+   * @param doc A Document to be handled.
+   */
   public void accept(Document doc)
   {
     accept(allegroMongoDecryptor_.parse(doc));
