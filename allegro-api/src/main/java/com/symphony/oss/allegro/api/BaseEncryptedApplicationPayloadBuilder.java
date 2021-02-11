@@ -20,7 +20,6 @@ package com.symphony.oss.allegro.api;
 
 import java.util.List;
 
-import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro2.api.EncryptablePayloadBuilder;
 import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;

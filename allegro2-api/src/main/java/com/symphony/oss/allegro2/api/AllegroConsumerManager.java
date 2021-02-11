@@ -39,11 +39,19 @@ import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
+/**
+ * The manager of Allegro Consumers.
+ * 
+ * This class handles the routing of objects to the consumer with the closest type match to a received object.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class AllegroConsumerManager
 {
   private static final Logger log_ = LoggerFactory.getLogger(AllegroConsumerManager.class);
   
-  private final IAllegro2Decryptor                               allegroDecryptor_;
+  private final IAllegro2Decryptor                             allegroDecryptor_;
   private final IModelRegistry                                 modelRegistry_;
   private final ImmutableList<ApplicationConsumerHolder<?, ?>> applicationConsumers_;
   private final ImmutableList<LiveCurrentConsumerHolder<?>>    liveCurrentConsumers_;
@@ -92,6 +100,17 @@ public class AllegroConsumerManager
       modelRegistry_  = modelRegistry;
     }
     
+    /**
+     * Add the given IApplicationRecordConsumer to this manager.
+     * 
+     * @param <H>           The concrete type of the header to be consumed.
+     * @param <P>           The concrete type of the payload to be consumed.
+     * @param headerType    The concrete type of the header to be consumed.
+     * @param payloadType   The concrete type of the payload to be consumed.
+     * @param consumer      The consumer.
+     * 
+     * @return This (fluent method).
+     */
     public <H extends IApplicationPayload, P extends IApplicationPayload> T withConsumer(Class<H> headerType, Class<P> payloadType, IApplicationRecordConsumer<H, P> consumer)
     {
       applicationConsumers_.add(new ApplicationConsumerHolder<H,P>(headerType, payloadType, consumer));
@@ -106,6 +125,15 @@ public class AllegroConsumerManager
       return self();
     }
     
+    /**
+     * Add the given ILiveCurrentMessageConsumer to this manager.
+     * 
+     * @param <M>           The concrete type of the payload to be consumed.
+     * @param payloadType   The concrete type of the payload to be consumed.
+     * @param consumer      The consumer.
+     * 
+     * @return This (fluent method).
+     */
     public <M extends IAbstractReceivedChatMessage> T withConsumer(Class<M> payloadType, ILiveCurrentMessageConsumer<M> consumer)
     {
       liveCurrentConsumers_.add(new LiveCurrentConsumerHolder<M>(payloadType, consumer));
@@ -120,6 +148,15 @@ public class AllegroConsumerManager
       return self();
     }
     
+    /**
+     * Set the error consumer to be used in the event that no valid consumer can be found for a message or the consumer
+     * implementation throws a RuntimeException.
+     * 
+     * @param errorConsumer the error consumer to be used in the event that no valid consumer can be found for a message or the consumer
+     * implementation throws a RuntimeException.
+     * 
+     * @return This (fluent method).
+     */
     public T withErrorConsumer(IErrorConsumer errorConsumer)
     {
       errorConsumer_ = errorConsumer;
@@ -132,15 +169,19 @@ public class AllegroConsumerManager
     {
       super.validate(faultAccumulator);
 
-//      faultAccumulator.checkNotNull(modelRegistry_,     "Model Registry");
-//      faultAccumulator.checkNotNull(decryptor_,  "Decryptor");
       faultAccumulator.checkNotNull(errorConsumer_,     "ErrorConsumer must not be set to null (there is a default, you don't have to set one)");
     }
   }
   
+  /**
+   * Builder.
+   * 
+   * @author Bruce Skingle
+   *
+   */
   public static class Builder extends AbstractBuilder<Builder, AllegroConsumerManager>
   {
-    public Builder(IAllegro2Decryptor allegroDecryptor, IModelRegistry modelRegistry)
+    Builder(IAllegro2Decryptor allegroDecryptor, IModelRegistry modelRegistry)
     {
       super(Builder.class, allegroDecryptor, modelRegistry);
     }
@@ -152,6 +193,11 @@ public class AllegroConsumerManager
     }
   }
   
+  /**
+   * Handle the given message or object.
+   * 
+   * @param json The JSON representation of a message or object.
+   */
   public void accept(String json)
   {
     try
@@ -177,8 +223,11 @@ public class AllegroConsumerManager
     }
   }
   
-
-
+  /**
+   * Handle the given message.
+   * 
+   * @param lcmessage and ILiveCurrentMessage
+   */
   public void accept(ILiveCurrentMessage lcmessage)
   {
     try
@@ -268,7 +317,12 @@ public class AllegroConsumerManager
       }
     }
   }
-
+  
+  /**
+   * Handle the given object.
+   * 
+   * @param storedObject The encrypted object.
+   */
   public void accept(IEncryptedApplicationRecord storedObject)
   {
     try
@@ -367,33 +421,8 @@ public class AllegroConsumerManager
           {
             bestConsumer = t;
           }
-//          else if(headerType != null && bestConsumer.headerType_ != null && bestConsumer.headerType_.isAssignableFrom(t.headerType_))
-//          {
-//            bestConsumer = t;
-//          }
         }
       }
-//        if(payloadType == null)
-//      {
-//        // If the headerType is a better match we will take it
-//        if(headerType != null && bestConsumer.headerType_ != null && bestConsumer.headerType_.isAssignableFrom(headerType))
-//        {
-//          bestConsumer = t;
-//        }
-//      }
-//      else 
-//      {
-//        if(headerType != null)
-//        // If the headerType is a better match we will take it
-//        if(headerType != null && bestConsumer.payloadType_ != null && bestConsumer.payloadType_.isAssignableFrom(headerType))
-//      }
-//        
-//      if(!t.isAssignableFrom(type))
-//        continue;
-//      
-//      if(bestType == null || bestType.isAssignableFrom(t))
-//        bestType = t;
-      
     }
     
     if(bestConsumer == null)

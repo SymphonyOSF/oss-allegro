@@ -677,7 +677,6 @@ public abstract class AllegroBaseApi implements IAllegroMultiTenantApi
         .withUnprocessableMessageConsumer(unprocessableConsumer)
         .withSubscription(new AllegroSqsSubscription(request, feeds.getFeedIds(), this))
         .withModelRegistry(getModelRegistry())
-        .withApiClient(objectApiClient_)
         .withHttpClient(apiHttpClient_);
     
     

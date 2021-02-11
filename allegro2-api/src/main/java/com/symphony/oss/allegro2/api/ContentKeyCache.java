@@ -47,6 +47,7 @@ import com.symphony.security.exceptions.SymphonyInputException;
 import com.symphony.security.helper.KeyIdentifier;
 import com.symphony.security.hsm.TransportableWrappedKey;
 
+@SuppressWarnings("deprecation") // SBE crypto deprecated the transport but does not provide a replacement.
 class ContentKeyCache
 {
   private final CloseableHttpClient        httpclient_;
@@ -166,12 +167,6 @@ class ContentKeyCache
   }
   
   
-  
-  
-  
-  
-  
-  
   /*
    * 
    * 
@@ -181,7 +176,6 @@ class ContentKeyCache
    */
 
   // For deprecated API's,
-  private static final long DEFAULT_ROTATION_ID = 0;
   private static final RotationId ACCOUNT_KEY_ROTIOTON_ID_THAT_DECRYPTS_ROTATION_0_CONTENT_KEY = RotationId.newBuilder().build(0L);
   
   /**

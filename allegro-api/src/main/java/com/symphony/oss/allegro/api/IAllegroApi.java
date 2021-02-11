@@ -166,5 +166,6 @@ public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegro2Api
    * 
    * @return The decrypted object.
    */
+  @Override
   IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload);
 }

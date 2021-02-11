@@ -54,7 +54,7 @@ class EntityKeyCache
             @Override
             public AllegroCryptoHelper load(RotationId rotationId)
             {
-              return fetchEntityKey(rotationId);
+              return fetchEntityKey();
             }
           });
 
@@ -83,7 +83,7 @@ class EntityKeyCache
     }
   }
 
-  private AllegroCryptoHelper fetchEntityKey(RotationId rotationId)
+  private AllegroCryptoHelper fetchEntityKey()
   {
     IWrappedEntityKey wrappedEntityKeyResponse = kmInternalClient_.newKeysEntityKeyGetHttpRequestBuilder()
       .build()

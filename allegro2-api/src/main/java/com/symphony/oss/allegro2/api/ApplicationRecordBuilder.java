@@ -33,6 +33,12 @@ import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
 
+/**
+ * A builder and encryptor for EncryptedApplicationRecords.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<ApplicationRecordBuilder, IEncryptedApplicationRecord>
 {
   protected final EncryptedApplicationRecord.Builder builder_ = new EncryptedApplicationRecord.Builder();
@@ -154,20 +160,6 @@ public class ApplicationRecordBuilder extends EncryptablePayloadBuilder<Applicat
     
     return self();
   }
-
-//  /**
-//   * Set the purge date for this object.
-//   * 
-//   * @param purgeDate The date after which this object may be deleted by the system.
-//   * 
-//   * @return This (fluent method).
-//   */
-//  public ApplicationRecordBuilder withPurgeDate(Instant purgeDate)
-//  {
-//    builder_.withPurgeDate(purgeDate);
-//    
-//    return self();
-//  }
   
   @Override
   public ImmutableJsonObject getJsonObject()

@@ -44,6 +44,7 @@ import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
 import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
@@ -910,7 +911,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   }
 
   @Override
-  public com.symphony.oss.models.allegro.canon.ChatMessageEntity.Builder newChatMessageBuilder()
+  public ChatMessage.Builder newChatMessageBuilder()
   {
     return allegroPodApi_.newChatMessageBuilder();
   }
@@ -925,6 +926,12 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public void sendMessage(IChatMessage chatMessage)
   {
     allegroPodApi_.sendMessage(chatMessage);
+  }
+
+  @Override
+  public IApplicationRecord decrypt(String jsonObject)
+  {
+    return allegroPodApi_.decrypt(jsonObject);
   }
 
   @Override

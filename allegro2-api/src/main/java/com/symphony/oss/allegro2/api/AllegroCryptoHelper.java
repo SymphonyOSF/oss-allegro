@@ -32,7 +32,7 @@ import com.symphony.security.exceptions.SymphonyEncryptionException;
 import com.symphony.security.exceptions.SymphonyInputException;
 import com.symphony.security.helper.CDecryptionHelper;
 
-public class AllegroCryptoHelper
+class AllegroCryptoHelper
 {
   private static final ICipherSuite cipherSuite_ = CipherSuite.get(CipherSuiteId.RSA2048_AES256);
   private final CDecryptionHelper   cDecryptionHelper_;
@@ -40,7 +40,7 @@ public class AllegroCryptoHelper
   private final SecretKey           secretKey_;
   private final WrappedKey          encryptedKey_;
 
-  public AllegroCryptoHelper(byte[] contentKey, WrappedKey encryptedKey)
+  AllegroCryptoHelper(byte[] contentKey, WrappedKey encryptedKey)
   {
     cDecryptionHelper_  = new CDecryptionHelper(contentKey);
     encodedKey_         = Base64SecretKey.newBuilder().build(Base64.encodeBase64String(contentKey));
@@ -48,27 +48,27 @@ public class AllegroCryptoHelper
     encryptedKey_       = encryptedKey;
   }
 
-  public static ICipherSuite getCiphersuite()
+  static ICipherSuite getCiphersuite()
   {
     return cipherSuite_;
   }
 
-  public Base64SecretKey getEncodedKey()
+  Base64SecretKey getEncodedKey()
   {
     return encodedKey_;
   }
 
-  public SecretKey getSecretKey()
+  SecretKey getSecretKey()
   {
     return secretKey_;
   }
 
-  public WrappedKey getEncryptedKey()
+  WrappedKey getEncryptedKey()
   {
     return encryptedKey_;
   }
 
-  public String decrypt(String message)
+  String decrypt(String message)
   {
     try
     {
@@ -81,7 +81,7 @@ public class AllegroCryptoHelper
     }
   }
 
-  public byte[] decrypt(byte[] message)
+  byte[] decrypt(byte[] message)
   {
     try
     {
@@ -94,7 +94,7 @@ public class AllegroCryptoHelper
     }
   }
 
-  public String encrypt(String message, int podId, long rotationId)
+  String encrypt(String message, int podId, long rotationId)
   {
     try
     {
@@ -106,7 +106,7 @@ public class AllegroCryptoHelper
     }
   }
 
-  public byte[] encrypt(byte[] message, int podId, long rotationId)
+  byte[] encrypt(byte[] message, int podId, long rotationId)
   {
     try
     {
@@ -118,7 +118,7 @@ public class AllegroCryptoHelper
     }
   }
 
-  public byte[] encrypt(byte[] message, int podId, long rotationId, byte mode)
+  byte[] encrypt(byte[] message, int podId, long rotationId, byte mode)
   {
     try
     {

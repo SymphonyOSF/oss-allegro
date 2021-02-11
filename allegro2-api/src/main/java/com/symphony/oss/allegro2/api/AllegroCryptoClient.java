@@ -26,7 +26,6 @@ import java.util.function.Supplier;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
@@ -72,7 +71,6 @@ class AllegroCryptoClient
   private final PodAndUserId               internalUserId_;
   private final Supplier<IAccountInfo>     accountInfoProvider_;
 
-  private final ModelRegistry              modelRegistry_;
   private final ClientCryptoHandler        clientCryptoHandler_;
   private final AccountKeyCache            accountKeyCache_;
   private final ContentKeyCache            contentKeyCache_;
@@ -85,7 +83,7 @@ class AllegroCryptoClient
   AllegroCryptoClient(CloseableHttpClient podHttpClient, PodInternalHttpModelClient podInternalApiClient,
       CloseableHttpClient kmHttpClient, KmInternalHttpModelClient kmInternalClient,
       IPodInfo podInfo, PodAndUserId internalUserId,
-      Supplier<IAccountInfo> accountInfoProvider, ModelRegistry modelRegistry)
+      Supplier<IAccountInfo> accountInfoProvider)
   {
     podHttpClient_ = podHttpClient;
     podInternalApiClient_ = podInternalApiClient;
@@ -94,8 +92,6 @@ class AllegroCryptoClient
     podInfo_ = podInfo;
     internalUserId_ = internalUserId;
     accountInfoProvider_ = accountInfoProvider;
-    
-    modelRegistry_ = modelRegistry;
     
     clientCryptoHandler_ = new ClientCryptoHandler();
     cipherSuite_ = CipherSuite.get(ThreadSeurityContextCipherSuiteId);

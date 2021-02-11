@@ -34,20 +34,6 @@ import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
  */
 public interface IAllegroDecryptor extends IAllegro2Decryptor
 {
-
-//  /**
-//   * Open (deserialize and decrypt) the given object.
-//   * 
-//   * @param storedApplicationObject An encrypted object.
-//   * 
-//   * @return The decrypted object.
-//   */
-//  @Override
-//  public @Nullable IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
-//  {
-//    return null;
-//  }
-  
   /**
    * Deserialize and decrypt the given object.
    * 

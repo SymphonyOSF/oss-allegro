@@ -49,7 +49,7 @@ import com.symphony.oss.models.auth.canon.Token;
  * @author Bruce Skingle
  *
  */
-public class AuthHandler implements IAuthHandler
+class AuthHandler implements IAuthHandler
 {
   private static final Logger              log_        = LoggerFactory.getLogger(AuthHandler.class);
   private static final long                RETRY_LIMIT = 30000;
@@ -70,7 +70,7 @@ public class AuthHandler implements IAuthHandler
   private long                             sessionAuthTime_;
   private long                             reauthTime_;
   
-  public AuthHandler(Allegro2Api.AbstractBuilder<?, ?> builder, String serviceAccountName)
+  AuthHandler(Allegro2Api.AbstractBuilder<?, ?> builder, String serviceAccountName)
   {
     // builder.cookieStore_, builder.config_.getPodUrl(), builder.rsaCredential_
     

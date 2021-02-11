@@ -30,6 +30,7 @@ import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -201,14 +202,14 @@ public interface IAllegro2Api  extends IAllegro2Decryptor, AutoCloseable
    */
   ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload);
 
-//  /**
-//   * Deserialize and decrypt the given object.
-//   * 
-//   * @param encryptedApplicationRecord An encrypted object.
-//   * 
-//   * @return The decrypted object.
-//   */
-//  IApplicationRecord decryptObject(IEncryptedApplicationRecord encryptedApplicationRecord);
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param jsonObject An EncryptedApplicationRecord object.
+   * 
+   * @return The decrypted object.
+   */
+  IApplicationRecord decrypt(String jsonObject);
 
   /**
    * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses

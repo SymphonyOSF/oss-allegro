@@ -94,6 +94,7 @@ import com.symphony.oss.models.core.canon.ApplicationPayload;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.IApplicationPayload;
 import com.symphony.oss.models.core.canon.facade.ApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
@@ -129,46 +130,51 @@ import com.symphony.oss.models.pod.canon.StreamType;
 import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 import com.symphony.s2.authc.canon.AuthcModel;
 
+/**
+ * Implementation of IAllegro2Api.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class Allegro2Api implements IAllegro2Api
 {
+  private static final String              FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
+  private static final ObjectMapper        OBJECT_MAPPER              = new ObjectMapper(); // TODO: get rid of this
+  private static final int                 ENCRYPTION_ORDINAL         = 0;
+  private static final int                 MEIDA_ENCRYPTION_ORDINAL   = 2;
 
-  private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
-  private static final ObjectMapper             OBJECT_MAPPER              = new ObjectMapper();  // TODO: get rid of this
-  private static final int                      ENCRYPTION_ORDINAL         = 0;
-  private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
-  
-  private static final ObjectMapper             AUTO_CLOSE_MAPPER          = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
-  private static final Logger                   log_                       = LoggerFactory.getLogger(Allegro2Api.class);
+  private static final ObjectMapper        AUTO_CLOSE_MAPPER          = new ObjectMapper()
+      .configure(Feature.AUTO_CLOSE_SOURCE, false);
+  private static final Logger              log_                       = LoggerFactory.getLogger(Allegro2Api.class);
 
-  private final ModelRegistry                   modelRegistry_;
-  final AllegroCryptoClient                     cryptoClient_;
-  private final PodAndUserId                    userId_;
-  private final String                          userName_;
-  private final String                          clientType_;
-  private final ICipherSuite                    cipherSuite_;
-  private final IAuthHandler                    authHandler_;
-  private final PodHttpModelClient              podApiClient_;
-  private final PodInternalHttpModelClient      podInternalApiClient_;
-  private final KmInternalHttpModelClient       kmInternalClient_;
-  private final AllegroDatafeedClient           datafeedClient_;
-  private final IPodInfo                        podInfo_;
-  private final AllegroDataProvider             dataProvider_;
-  private final V4MessageTransformer            messageTramnsformer_;
-  private final EncryptionHandler               agentEncryptionHandler_;
-  private final CloseableHttpClient             podHttpClient_;
-  private final CloseableHttpClient             keyManagerHttpClient_;
+  private final ModelRegistry              modelRegistry_;
+  private final AllegroCryptoClient        cryptoClient_;
+  private final PodAndUserId               userId_;
+  private final String                     userName_;
+  private final String                     clientType_;
+  private final ICipherSuite               cipherSuite_;
+  private final IAuthHandler               authHandler_;
+  private final PodHttpModelClient         podApiClient_;
+  private final PodInternalHttpModelClient podInternalApiClient_;
+  private final KmInternalHttpModelClient  kmInternalClient_;
+  private final AllegroDatafeedClient      datafeedClient_;
+  private final IPodInfo                   podInfo_;
+  private final AllegroDataProvider        dataProvider_;
+  private final V4MessageTransformer       messageTramnsformer_;
+  private final EncryptionHandler          agentEncryptionHandler_;
+  private final CloseableHttpClient        podHttpClient_;
+  private final CloseableHttpClient        keyManagerHttpClient_;
 
-  private PodAndUserId                          internalUserId_;
-  private PodId                                 podId_;
+  private PodAndUserId                     internalUserId_;
+  private PodId                            podId_;
 
-  private final Supplier<IAccountInfo>          accountInfoProvider_;
-  private final Supplier<X509Certificate>       podCertProvider_;
+  private final Supplier<IAccountInfo>     accountInfoProvider_;
+  private final Supplier<X509Certificate>  podCertProvider_;
 
-  private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
-  private ServiceTokenManager                   serviceTokenManager_;
+  private LiveCurrentMessageFactory        liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
+  private ServiceTokenManager              serviceTokenManager_;
 
-  private Map<Integer, IResponseHandler> responseHandlerMap_ = new HashMap<>();
-
+  private Map<Integer, IResponseHandler>   responseHandlerMap_        = new HashMap<>();
 
 
   protected Allegro2Api(AbstractBuilder<?, ?> builder)
@@ -176,10 +182,13 @@ public class Allegro2Api implements IAllegro2Api
     log_.info("Allegro2Api constructor start with config " + builder.config_.getRedacted());
     
     modelRegistry_ = new ModelRegistry()
-//        .withFactories(ObjectModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES)
-//        .withFactories(AuthzModel.FACTORIES)
         .withFactories(CoreModel.FACTORIES)
+        .withFactories(CryptoModel.FACTORIES)
+        .withFactories(ChatModel.FACTORIES)
+        .withFactories(PodModel.FACTORIES)
+        .withFactories(PodInternalModel.FACTORIES)
+        .withFactories(KmInternalModel.FACTORIES)
         ;
     
     for(IEntityFactory<?, ?, ?> factory : builder.factories_)
@@ -188,25 +197,17 @@ public class Allegro2Api implements IAllegro2Api
     podHttpClient_        = builder.getPodHttpClient();
     keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
     
-    userName_ = builder.config_.getUserName();
+    userName_             = builder.config_.getUserName();
     
-    modelRegistry_
-        .withFactories(CryptoModel.FACTORIES)
-        .withFactories(ChatModel.FACTORIES)
-        .withFactories(PodModel.FACTORIES)
-        .withFactories(PodInternalModel.FACTORIES)
-        .withFactories(KmInternalModel.FACTORIES)
-        ;
-    
-    clientType_     = getClientVersion();
-    cipherSuite_    = builder.cipherSuite_;
+    clientType_           = getClientVersion();
+    cipherSuite_          = builder.cipherSuite_;
     
 
-    podApiClient_ = new PodHttpModelClient(
-        modelRegistry_,
-        builder.config_.getPodUrl(), "/pod", null, responseHandlerMap_);
+    podApiClient_         = new PodHttpModelClient(
+                              modelRegistry_,
+                              builder.config_.getPodUrl(), "/pod", null, responseHandlerMap_);
     
-    authHandler_    = createAuthHandler(builder); 
+    authHandler_          = createAuthHandler(builder); 
     
     log_.info("sbe auth....");
     authHandler_.authenticate(true, false);
@@ -280,8 +281,7 @@ public class Allegro2Api implements IAllegro2Api
     cryptoClient_ = new AllegroCryptoClient(podHttpClient_, podInternalApiClient_,
         keyManagerHttpClient_, kmInternalClient_,
         podInfo_, internalUserId_,
-        accountInfoProvider_,
-        modelRegistry_);
+        accountInfoProvider_);
     
     messageTramnsformer_= new V4MessageTransformer(clientType_);
     
@@ -312,32 +312,38 @@ public class Allegro2Api implements IAllegro2Api
   static public abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegro2Api>
   extends BaseAbstractBuilder<T, B>
   {
+    ICipherSuite                  cipherSuite_;
+    Supplier<String>              sessionTokenSupplier_;
+    Supplier<String>              keyManagerTokenSupplier_;
 
-    ICipherSuite                    cipherSuite_;
-    Supplier<String>                sessionTokenSupplier_;
-    Supplier<String>                keyManagerTokenSupplier_;
-
-    CloseableHttpClient             podHttpClient_;
-    CloseableHttpClient             keyManagerHttpClient_;
-    CloseableHttpClient             certSessionAuthHttpClient_;
-    CloseableHttpClient             certKeyAuthHttpClient_;
-    CloseableHttpClient             defaultCertAuthHttpClient_;
+    CloseableHttpClient           podHttpClient_;
+    CloseableHttpClient           keyManagerHttpClient_;
+    CloseableHttpClient           certSessionAuthHttpClient_;
+    CloseableHttpClient           certKeyAuthHttpClient_;
+    CloseableHttpClient           defaultCertAuthHttpClient_;
 
     IAllegro2Configuration        config_;
-    CloseableHttpClient             defaultHttpClient_;
-    PrivateKey                      rsaCredential_;
-    boolean                         rsaCredentialIsSet_;
-    CookieStore                     cookieStore_          = new BasicCookieStore();
-    List<IEntityFactory<?, ?, ?>>   factories_            = new LinkedList<>();
-    ModelRegistry                   allegroModelRegistry_ = new ModelRegistry()
-        .withFactories(AllegroModel.FACTORIES)
-        .withFactories(AuthcModel.FACTORIES);
+    CloseableHttpClient           defaultHttpClient_;
+    PrivateKey                    rsaCredential_;
+    boolean                       rsaCredentialIsSet_;
+    CookieStore                   cookieStore_          = new BasicCookieStore();
+    List<IEntityFactory<?, ?, ?>> factories_            = new LinkedList<>();
+    ModelRegistry                 allegroModelRegistry_ = new ModelRegistry()
+                                                            .withFactories(AllegroModel.FACTORIES)
+                                                            .withFactories(AuthcModel.FACTORIES);
     
     protected AbstractBuilder(Class<T> type)
     {
       super(type);
     }
     
+    /**
+     * Set the RSA authentication credential to be used directly as a PrivateKey object.
+     * 
+     * @param rsaCredential the RSA authentication credential to be used.
+     * 
+     * @return This (fluent method).
+     */
     public T withRsaCredential(PrivateKey rsaCredential)
     {
       rsaCredential_ = rsaCredential;
@@ -346,6 +352,13 @@ public class Allegro2Api implements IAllegro2Api
       return self();
     }
     
+    /**
+     * Set the configuration to be used directly as an IAllegro2Configuration object.
+     * 
+     * @param configuration the configuration to be used.
+     * 
+     * @return This (fluent method).
+     */
     public T withConfiguration(IAllegro2Configuration configuration)
     {
       config_ = configuration;
@@ -353,11 +366,28 @@ public class Allegro2Api implements IAllegro2Api
       return self();
     }
     
+    /**
+     * Read the configuration to be used from the given Reader.
+     * 
+     * @param reader the source for the configuration to be used.
+     * 
+     * @return This (fluent method).
+     */
     public T withConfiguration(Reader reader)
     {
       return withConfiguration(allegroModelRegistry_.parseOne(reader, Allegro2Configuration.TYPE_ID, IAllegro2Configuration.class));
     }
     
+    /**
+     * Read the configuration to be used from the file with the given name.
+     * 
+     * @param fileName the source for the configuration to be used.
+     * 
+     * @return This (fluent method).
+     * 
+     * @throws FileNotFoundException  If the file does not exist. 
+     * @throws IOException  If the file cannot be read.
+     */
     public T withConfigurationFile(String fileName) throws FileNotFoundException, IOException
     {
       try(Reader reader = new FileReader(fileName))
@@ -366,6 +396,13 @@ public class Allegro2Api implements IAllegro2Api
       }
     }
     
+    /**
+     * Add the given model factories to the model registry used to deserialise objects.
+     * 
+     * @param factories One or more model factories to the model registry used to deserialise objects.
+     * 
+     * @return This (fluent method).
+     */
     public T withFactories(IEntityFactory<?, ?, ?>... factories)
     {
       if(factories != null)
@@ -377,6 +414,15 @@ public class Allegro2Api implements IAllegro2Api
       return self();
     }
     
+    /**
+     * Use the given supplier to obtain Symphony session tokens rather than using the authentication flow.
+     * 
+     * @param sessionTokenSupplier a supplier to obtain Symphony session tokens rather than using the authentication flow.
+     * 
+     * One might use this in an application which handles authentication itself and already has a valid token.
+     * 
+     * @return This (fluent method).
+     */
     public T withSessionTokenSupplier(Supplier<String> sessionTokenSupplier)
     {
       sessionTokenSupplier_ = sessionTokenSupplier;
@@ -384,6 +430,15 @@ public class Allegro2Api implements IAllegro2Api
       return self();
     }
     
+    /**
+     * Use the given supplier to obtain Symphony key manager tokens rather than using the authentication flow.
+     * 
+     * @param keymanagerTokenSupplier a supplier to obtain Symphony key manager tokens rather than using the authentication flow.
+     * 
+     * One might use this in an application which handles authentication itself and already has a valid token.
+     * 
+     * @return This (fluent method).
+     */
     public T withKeymanagerTokenSupplier(Supplier<String> keymanagerTokenSupplier)
     {
       keyManagerTokenSupplier_ = keymanagerTokenSupplier;
@@ -483,6 +538,11 @@ public class Allegro2Api implements IAllegro2Api
       return defaultHttpClient_;
     }
 
+    /**
+     * Return the HTTP client which is used to communicate with the Pod.
+     * 
+     * @return the HTTP client which is used to communicate with the Pod.
+     */
     public synchronized CloseableHttpClient getPodHttpClient()
     {
       if(podHttpClient_ == null)
@@ -500,6 +560,11 @@ public class Allegro2Api implements IAllegro2Api
       return podHttpClient_;
     }
     
+    /**
+     * Return the HTTP client which is used to communicate with the Key Manager.
+     * 
+     * @return the HTTP client which is used to communicate with the Key Manager.
+     */
     public synchronized CloseableHttpClient getKeyManagerHttpClient()
     {
       if(keyManagerHttpClient_ == null)
@@ -534,6 +599,13 @@ public class Allegro2Api implements IAllegro2Api
       return defaultCertAuthHttpClient_;
     }
     
+    /**
+     * Return the HTTP client which is used to communicate with the Pod certificate auth endpoint.
+     * 
+     * @param sslContextBuilder A builder for the SSL context to be used. 
+     * 
+     * @return the HTTP client which is used to communicate with the Pod certificate auth endpoint.
+     */
     public synchronized CloseableHttpClient getCertSessionAuthHttpClient(SSLContextBuilder sslContextBuilder)
     {
       if(certSessionAuthHttpClient_ == null)
@@ -551,6 +623,13 @@ public class Allegro2Api implements IAllegro2Api
       return certSessionAuthHttpClient_;
     }
     
+    /**
+     * Return the HTTP client which is used to communicate with the Key Manager certificate auth endpoint.
+     * 
+     * @param sslContextBuilder A builder for the SSL context to be used.
+     * 
+     * @return the HTTP client which is used to communicate with the Key Manager certificate auth endpoint.
+     */
     public synchronized CloseableHttpClient getCertKeyAuthHttpClient(SSLContextBuilder sslContextBuilder)
     {
       if(certKeyAuthHttpClient_ == null)
@@ -983,6 +1062,17 @@ public class Allegro2Api implements IAllegro2Api
   public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
   {
     return cryptoClient_.decrypt(threadId, rotationId, encryptedPayload);
+  }
+  
+  protected IEncryptedApplicationRecord parse(String jsonObject)
+  {
+    return getModelRegistry().parseOne(new StringReader(jsonObject), EncryptedApplicationRecord.TYPE_ID, IEncryptedApplicationRecord.class);
+  }
+  
+  @Override
+  public IApplicationRecord decrypt(String jsonObject)
+  {
+    return decryptObject(parse(jsonObject));
   }
   
   @Override

@@ -31,7 +31,7 @@ import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
  * @author Bruce Skingle
  *
  */
-public class DummyAuthHandler implements IAuthHandler
+class DummyAuthHandler implements IAuthHandler
 {
   private static final long      RETRY_LIMIT = 30000;
 
@@ -45,7 +45,7 @@ public class DummyAuthHandler implements IAuthHandler
   private long                   sessionAuthTime_;
   private long                   reauthTime_;
   
-  public DummyAuthHandler(Supplier<String> sessionTokenSupplier, Supplier<String> keyManagerTokenSupplier, CookieStore cookieStore, URL podUrl)
+  DummyAuthHandler(Supplier<String> sessionTokenSupplier, Supplier<String> keyManagerTokenSupplier, CookieStore cookieStore, URL podUrl)
   {
     sessionTokenSupplier_ = sessionTokenSupplier;
     keyManagerTokenSupplier_ = keyManagerTokenSupplier;

@@ -18,12 +18,9 @@
 
 package com.symphony.oss.allegro2.mongo.api;
 
-import java.io.StringReader;
-
 import org.bson.Document;
 
 import com.symphony.oss.allegro2.api.Allegro2Api;
-import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 
@@ -87,7 +84,7 @@ public class Allegro2MongoApi extends Allegro2Api implements IAllegro2MongoApi
   
   IEncryptedApplicationRecord parse(Document doc)
   {
-    return getModelRegistry().parseOne(new StringReader(doc.toJson()), EncryptedApplicationRecord.TYPE_ID, IEncryptedApplicationRecord.class);
+    return parse(doc.toJson());
   }
 
   @Override

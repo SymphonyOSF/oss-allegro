@@ -35,6 +35,7 @@ import com.symphony.oss.models.crypto.canon.EncryptedData;
  * @author Bruce Skingle
  *
  * @param <T> The concrete type for fluent methods.
+ * @param <B> The concrete type of the built type.
  */
 public abstract class EncryptablePayloadBuilder<T extends EncryptablePayloadBuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
 {
@@ -54,6 +55,11 @@ public abstract class EncryptablePayloadBuilder<T extends EncryptablePayloadBuil
    */
   protected abstract ImmutableByteArray getPayload();
 
+  /**
+   * Return the threadId to be used to encrypt the payload.
+   * 
+   * @return the threadId to be used to encrypt the payload.
+   */
   public abstract ThreadId getThreadId();
 
   protected abstract T withEncryptedPayload(EncryptedData value);
