@@ -29,7 +29,7 @@ class ObjectVersionPage extends AbstractObjectPage<IAbstractStoredApplicationObj
 {
   private final VersionQuery query_;
 
-  public ObjectVersionPage(AllegroBaseApi allegroApi, VersionQuery query, IPageOfAbstractStoredApplicationObject page)
+  public ObjectVersionPage(IAllegroMultiTenantApi allegroApi, VersionQuery query, IPageOfAbstractStoredApplicationObject page)
   {
     super(allegroApi, page.getPagination(), Boolean.TRUE == query.getScanForwards(), page.getData());
 
@@ -47,7 +47,7 @@ class ObjectVersionPage extends AbstractObjectPage<IAbstractStoredApplicationObj
   }
 
   @Override
-  public @Nullable ObjectVersionPage  fetchNextPage()
+  public @Nullable IObjectVersionPage  fetchNextPage()
   {
     if(after_ == null)
       return null;
@@ -62,7 +62,7 @@ class ObjectVersionPage extends AbstractObjectPage<IAbstractStoredApplicationObj
   }
   
   @Override
-  public @Nullable ObjectVersionPage  fetchPrevPage()
+  public @Nullable IObjectVersionPage  fetchPrevPage()
   {
     if(before_ == null)
       return null;

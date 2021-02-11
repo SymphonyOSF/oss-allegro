@@ -23,9 +23,6 @@ import javax.annotation.Nullable;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
@@ -73,12 +70,14 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * <p>
  * @author Bruce Skingle
  */
-public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Closeable
+public interface IAllegroMultiTenantApi  extends IAllegroDecryptor, IMultiTenantServiceRegistry, Closeable
 {
   @Override
   void close();
   
   /**
+   * Return the user ID of the user we have authenticated as.
+   * 
    * @return The user ID of the user we have authenticated as.
    */
   PodAndUserId getUserId();
@@ -269,7 +268,6 @@ public interface IAllegroMultiTenantApi extends IMultiTenantServiceRegistry, Clo
    * }</pre>
    * <p>
    * @param feed The id of the feed.
-   * @param request The details of the feed to be created or returned.
    */
   void deleteFeed(FeedId feed);
   

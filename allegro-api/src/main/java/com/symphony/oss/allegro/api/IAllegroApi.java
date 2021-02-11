@@ -16,30 +16,15 @@
 
 package com.symphony.oss.allegro.api;
 
-import java.security.cert.X509Certificate;
-import java.util.List;
-
-import javax.annotation.Nullable;
-
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectBuilder;
 import com.symphony.oss.allegro.api.AllegroApi.ApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadAndHeaderBuilder;
-import com.symphony.oss.allegro.api.AllegroApi.EncryptedApplicationPayloadBuilder;
-import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
+import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
-import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.core.canon.facade.PodAndUserId;
-import com.symphony.oss.models.core.canon.facade.PodId;
-import com.symphony.oss.models.internal.pod.canon.AckId;
-import com.symphony.oss.models.internal.pod.canon.FeedId;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
-import com.symphony.oss.models.pod.canon.IStreamAttributes;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
 
@@ -53,7 +38,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegroApi extends IAllegroMultiTenantApi
+public interface IAllegroApi extends IAllegroMultiTenantApi, IAllegro2Api
 {
   /** Resource path for Symphony dev/QA root certificate */
   static final String SYMPHONY_DEV_QA_ROOT_CERT         = "/certs/symphony/devQaRoot.pem";
@@ -62,120 +47,6 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   /** Resource path for Symphony dev certificate */
   static final String SYMPHONY_DEV_CERT                 = "/certs/symphony/dev.pem";
 
-  /**
-   * The session token is required in a header called sessionToken for calls to public API methods and as a cookie called
-   * skey in private methods intended for use by Symphony clients.
-   *
-   * @return The session token.
-   */
-  String getSessionToken();
-  
-  /**
-   * Force authentication.
-   */
-  void authenticate();
-
-  /**
-   * 
-   * @return Session info for the session with the pod.
-   */
-  IUserV2 getSessioninfo();
-
-  /**
-   * 
-   * @return Info for the logged in user.
-   */
-  IUserV2 getUserInfo();
-  
-  /**
-   * Fetch a chat message by its ID.
-   * 
-   * @param messageId The ID of the required message.
-   * 
-   * @return The required message.
-   * 
-   * @throws NotFoundException      If the object does not exist.
-   */
-  String getMessage(String messageId);
-
-  /**
-   * Fetch recent messages from a thread (conversation).
-   * 
-   * This implementation retrieves messages from the pod.
-   * 
-   * @param request   A request object containing the threadId and other parameters.
-   * 
-   */
-  void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request);
-
-  /**
-   * Send the given chat message.
-   * 
-   * @param chatMessage A message to be sent.
-   */
-  void sendMessage(IChatMessage chatMessage);
-
-  /**
-   * 
-   * @return The pod certificate of the pod we are connected to.
-   */
-  X509Certificate getPodCert();
-  
-  /**
-   * 
-   * @return A new builder for a chat message.
-   */
-  ChatMessage.Builder newChatMessageBuilder();
-
-  /**
-   * 
-   * @return The pod ID of the pod we are connected to.
-   */
-  PodId getPodId();
-
-  /**
-   * The key manager token is required in a cookie called kmsession for calls to private Key Manager methods.
-   * 
-   * THIS TOKEN SHOULD NEVER BE SENT TO ANY NON-KEY MANAGER ENDPOINTS, TO DO SO IS A SECURITY RISK.
-   * 
-   * @return The key manager token.
-   */
-  String getKeyManagerToken();
-
-  /**
-   * Create a new message feed.
-   * 
-   * There is a limit to the number of feeds which any one user may create.
-   * 
-   * @return The ID of the new feed.
-   */
-  FeedId createMessageFeed();
-
-  /**
-   * List all currently active message feeds for the calling user.
-   * 
-   * @return A list of FeedIds for all currently active message feeds for the calling user.
-   */
-  List<FeedId> listMessageFeeds();
-
-  /**
-   * Fetch messages from a message feed (Datafeed 2.0 feed).
-   * 
-   * @param request Request parameters.
-   * 
-   * @return The AckId which should be passed to the next request.
-   */
-  @Nullable AckId fetchFeedMessages(FetchFeedMessagesRequest request);
-  
-  /**
-   * Create a new EncryptedApplicationPayloadBuilder.
-   * 
-   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
-   * or elsewhere
-   * 
-   * @return A new EncryptedApplicationPayloadBuilder.
-   */
-  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
   
   /**
    * Create a new EncryptedApplicationPayloadAndHeaderBuilder.
@@ -232,40 +103,17 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   {
     return newApplicationObjectUpdater(existingObject.getStoredApplicationObject());
   }
-
+  
   /**
-   * Create an IChatMessage from the given ILiveCurrentMessage, if the message
-   * is an ISocialMessage then the message payload is decrypted.
+   * Create a new EncryptedApplicationPayloadBuilder.
    * 
-   * @param message An ILiveCurrentMessage.
+   * This can be used to build an encrypted payload which can be sent to a server end point to be stored in the object store 
+   * or elsewhere
    * 
-   * @return An IChatMessage representing the given message.
+   * @return A new EncryptedApplicationPayloadBuilder.
    */
-  public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
-
-  /**
-   * Deserialize and decrypt the given object.
-   * 
-   * @param storedApplicationObject An encrypted object.
-   * 
-   * @return The decrypted object.
-   */
-  public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject);
-
-  /**
-   * Deserialize and decrypt the given object.
-   * 
-   * @param <T> Type of the required object payload.
-   * 
-   * @param storedApplicationObject An encrypted object.
-   * @param type                    Type of the required object payload.
-   * 
-   * @return The decrypted object.
-   * 
-   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
-   */
-  public <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
-
+  EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder();
+  
   /**
    * Fetch information about a user given a user (login) name.
    * 
@@ -293,42 +141,46 @@ public interface IAllegroApi extends IAllegroMultiTenantApi
   IV2UserList getUsersByName(String... userNames);
 
   /**
-   * Fetch information about a user given a user (login) name.
+   * Return this API as an IAllegroPodApi.
    * 
-   * @param userName  The userName with which the required user logs in.
-   * 
-   * @return The user object for the required user.
-   * 
-   * @throws NotFoundException If the given userName cannot be found.
+   * @return this API as an IAllegroPodApi.
    */
-  IUserV2 fetchUserByName(String userName) throws NotFoundException;
-
+  IAllegro2Api getAllegroPodApi();
+  
   /**
-   * Fetch information about one or more users given a user (login) name.
+   * Deserialize and decrypt the given object.
    * 
-   * @param userNames  The userName with which the required users log in.
+   * @param <T> Type of the required object payload.
    * 
-   * @return A list of responses and errors.
+   * @param storedApplicationObject An encrypted object.
+   * @param type                    Type of the required object payload.
+   * 
+   * @return The decrypted object.
+   * 
+   * @throws IllegalStateException If the decrypted payload is not an instance of the required type.
    */
-  IV2UserList fetchUsersByName(String... userNames);
-
+  <T extends IApplicationObjectPayload> T decryptObject(IStoredApplicationObject storedApplicationObject, Class<T> type);
+  
   /**
-   * Fetch information about streams (conversations or threads) the caller is a member of.
+   * Deserialize and decrypt the given object.
    * 
-   * @param fetchStreamsRequest Request parameters.
+   * @param encryptedApplicationPayload An encrypted object.
    * 
-   * @return A list of objects describing streams of which the caller is a member.
+   * @return The decrypted object.
    */
-  List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest);
-
+  
+  @Override
+  IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload);
   /**
-   * Fetch information about a user given an external user ID.
+   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
+   * the Markdown content and JSON entities and returns their PresentationML representation.
    * 
-   * @param userId  The external user ID of the required user.
+   * @param message   A LiveCurrentMessage with encrypted payload.
    * 
-   * @return The user object for the required user.
+   * @return          A ReceivedChatMessage with the decrypted payload.
    * 
-   * @throws NotFoundException If the given userName cannot be found.
+   * @deprecated Use decrypt(message).
    */
-  IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException;
+  @Deprecated
+  IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message);
 }

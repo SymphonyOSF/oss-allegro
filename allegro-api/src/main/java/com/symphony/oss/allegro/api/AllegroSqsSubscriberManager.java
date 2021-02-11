@@ -41,7 +41,6 @@ import com.symphony.oss.fugue.naming.Name;
 import com.symphony.oss.fugue.pubsub.AbstractPullSubscriberManager;
 import com.symphony.oss.fugue.pubsub.ISubscription;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 
 /**
  * Allegro implementation of SubscriberManager.
@@ -52,15 +51,12 @@ import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 public class AllegroSqsSubscriberManager extends AbstractPullSubscriberManager<IAbstractStoredApplicationObject, AllegroSqsSubscriberManager>
 implements IAllegroQueryManager
 {
-  private static final Logger       log_         = LoggerFactory.getLogger(AllegroSqsSubscriberManager.class);
+  private static final Logger        log_         = LoggerFactory.getLogger(AllegroSqsSubscriberManager.class);
 
   private List<AllegroSqsSubscriber> subscribers_ = new LinkedList<>();
-
-  private AllegroSqsFeedsContainer     feeds_;
+  private AllegroSqsFeedsContainer   feeds_;
   private ModelRegistry              modelRegistry_;
-
-  private ObjectHttpModelClient  objectApiClient_;
-  private CloseableHttpClient    apiHttpClient_;
+  private CloseableHttpClient        apiHttpClient_;
 
   private AllegroSqsSubscriberManager(Builder builder)
   {
@@ -68,7 +64,6 @@ implements IAllegroQueryManager
     
     feeds_         = builder.feeds_;
     modelRegistry_ = builder.modelRegistry_;
-    objectApiClient_ = builder.objectApiClient_;
     apiHttpClient_ = builder.apiHttpClient_;
 
     ClientConfiguration configuration = new ClientConfiguration()
@@ -97,17 +92,16 @@ implements IAllegroQueryManager
   public static class Builder extends AbstractPullSubscriberManager.Builder<Builder, IAbstractStoredApplicationObject, AllegroSqsSubscriberManager>
   {
     
-    private int                   subscriberThreadPoolSize_ = 1; // TODO: default to number of subscriptions
-    private int                   handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
-    private AllegroSqsFeedsContainer        feeds_;
-    private ModelRegistry              modelRegistry_;
+    private int                      subscriberThreadPoolSize_ = 1; // TODO: default to number of subscriptions
+    private int                      handlerThreadPoolSize_    = 1; // TODO: default to 9*subscriberThreadPoolSize_
+    private AllegroSqsFeedsContainer feeds_;
+    private ModelRegistry            modelRegistry_;
 
-    private URL proxyUrl_;
-    private String proxyUsername_;
-    private String proxyPassword_;
-    
-    private ObjectHttpModelClient  objectApiClient_;
-    private CloseableHttpClient    apiHttpClient_;
+    private URL                      proxyUrl_;
+    private String                   proxyUsername_;
+    private String                   proxyPassword_;
+
+    private CloseableHttpClient      apiHttpClient_;
 
     /**
      * Constructor.
@@ -223,20 +217,6 @@ implements IAllegroQueryManager
       
       return self();
     }
-    
-    /**
-     * Set the API client
-     * 
-     * @param objectApiClient The client needed to connect to API.
-     * 
-     * @return this (fluent method)
-     */
-    public Builder withApiClient(ObjectHttpModelClient objectApiClient)
-    {
-      objectApiClient_ = objectApiClient;
-      
-      return self();
-    }
 
     /**
      * Set the Http client
@@ -259,12 +239,12 @@ implements IAllegroQueryManager
       
       faultAccumulator.checkNotNull(feeds_, "credentials");
       faultAccumulator.checkNotNull(modelRegistry_, "modelRegistry");
-      faultAccumulator.checkNotNull(objectApiClient_, "objectApiClient");
       faultAccumulator.checkNotNull(apiHttpClient_, "apiHttpClient");
     }
     
     class LocalConfiguration extends Configuration
     {
+      @SuppressWarnings("serial")
       protected LocalConfiguration()
       {
         super(new HashMap<String, Object>() 
@@ -293,7 +273,7 @@ implements IAllegroQueryManager
     {
       log_.info("Subscribing to " + subscriptionName + "..."); 
       
-      AllegroSqsSubscriber subscriber = new AllegroSqsSubscriber(this, objectApiClient_, apiHttpClient_,subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
+      AllegroSqsSubscriber subscriber = new AllegroSqsSubscriber(this, apiHttpClient_,subscriptionName.toString(), getTraceFactory(), subscription.getConsumer(),
           getCounter(), createBusyCounter(subscriptionName), feeds_, modelRegistry_);
 
       subscribers_.add(subscriber); 

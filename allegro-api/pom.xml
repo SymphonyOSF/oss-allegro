@@ -21,16 +21,9 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.5.26-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
-    
-  <repositories>
-    <repository>
-        <id>local-maven-repo</id>
-        <url>file:///${project.basedir}/local-maven-repo</url>
-    </repository>
-  </repositories>
   
   <dependencies>
   
@@ -44,6 +37,12 @@
    </dependency>
   
   
+    <dependency>
+      <groupId>com.symphony.oss.allegro</groupId>
+      <artifactId>allegro2-api</artifactId>
+      <version>0.6.0-SNAPSHOT</version>
+    </dependency>
+    
     <dependency>
       <groupId>com.symphony.oss.commons</groupId>
       <artifactId>commons-core</artifactId>
@@ -213,26 +212,4 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <appendAssemblyId>false</appendAssemblyId>
-          <descriptors>
-            <descriptor>src/assembly/dependencies.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
-		</plugins>
-	</build>
 </project>

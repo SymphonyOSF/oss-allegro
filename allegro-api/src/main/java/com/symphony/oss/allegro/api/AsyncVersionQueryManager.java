@@ -45,7 +45,7 @@ public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
   private final CloseableHttpClient             httpClient_;
 
 
-  public AsyncVersionQueryManager(AllegroDecryptor allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
+  public AsyncVersionQueryManager(IAllegroDecryptor allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
     super(allegroApi, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);

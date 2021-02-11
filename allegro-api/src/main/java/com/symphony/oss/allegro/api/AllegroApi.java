@@ -16,120 +16,65 @@
 
 package com.symphony.oss.allegro.api;
 
-import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.ssl.SSLContextBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.symphonyoss.symphony.messageml.MessageMLContext;
-import org.symphonyoss.symphony.messageml.elements.Chime;
-import org.symphonyoss.symphony.messageml.elements.FormatEnum;
-import org.symphonyoss.symphony.messageml.elements.MessageML;
-import org.symphonyoss.symphony.messageml.exceptions.InvalidInputException;
-import org.symphonyoss.symphony.messageml.exceptions.ProcessingException;
-
-import com.fasterxml.jackson.core.JsonParser.Feature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.symphony.oss.allegro.api.request.FetchFeedMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchRecentMessagesRequest;
-import com.symphony.oss.allegro.api.request.FetchStreamsRequest;
 import com.symphony.oss.allegro.api.request.PartitionId;
-import com.symphony.oss.canon.runtime.EntityBuilder;
+import com.symphony.oss.allegro2.api.Allegro2Api;
+import com.symphony.oss.allegro2.api.AllegroConsumerManager;
+import com.symphony.oss.allegro2.api.ApplicationRecordBuilder;
+import com.symphony.oss.allegro2.api.EncryptablePayloadBuilder;
+import com.symphony.oss.allegro2.api.FetchFeedMessagesRequest;
+import com.symphony.oss.allegro2.api.FetchRecentMessagesRequest;
+import com.symphony.oss.allegro2.api.FetchStreamsRequest;
+import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.IEntity;
-import com.symphony.oss.canon.runtime.exception.BadRequestException;
+import com.symphony.oss.canon.runtime.IEntityFactory;
+import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
-import com.symphony.oss.canon.runtime.http.client.IResponseHandler;
-import com.symphony.oss.canon.runtime.http.client.IResponseHandlerContext;
-import com.symphony.oss.canon.runtime.http.client.ResponseHandlerAction;
-import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
-import com.symphony.oss.commons.dom.json.IJsonDomNode;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
-import com.symphony.oss.commons.dom.json.MutableJsonObject;
-import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
-import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
 import com.symphony.oss.fugue.trace.ITraceContext;
-import com.symphony.oss.fugue.trace.ITraceContextTransaction;
-import com.symphony.oss.model.chat.LiveCurrentMessageFactory;
-import com.symphony.oss.models.allegro.canon.EntityJson;
 import com.symphony.oss.models.allegro.canon.facade.AllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IChatMessage;
 import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.IReceivedMaestroMessage;
-import com.symphony.oss.models.allegro.canon.facade.IReceivedSocialMessage;
-import com.symphony.oss.models.allegro.canon.facade.ReceivedChatMessage;
-import com.symphony.oss.models.allegro.canon.facade.ReceivedMaestroMessage;
-import com.symphony.oss.models.allegro.canon.facade.ReceivedSocialMessage;
-import com.symphony.oss.models.chat.canon.ChatModel;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
-import com.symphony.oss.models.chat.canon.IMaestroMessage;
-import com.symphony.oss.models.chat.canon.facade.ISocialMessage;
 import com.symphony.oss.models.core.canon.HashType;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
 import com.symphony.oss.models.core.canon.facade.ThreadId;
-import com.symphony.oss.models.core.canon.facade.UserId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
-import com.symphony.oss.models.crypto.canon.CryptoModel;
 import com.symphony.oss.models.crypto.canon.EncryptedData;
-import com.symphony.oss.models.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.crypto.cipher.ICipherSuite;
-import com.symphony.oss.models.internal.km.canon.KmInternalHttpModelClient;
-import com.symphony.oss.models.internal.km.canon.KmInternalModel;
 import com.symphony.oss.models.internal.pod.canon.AckId;
 import com.symphony.oss.models.internal.pod.canon.FeedId;
-import com.symphony.oss.models.internal.pod.canon.IMessageEnvelope;
-import com.symphony.oss.models.internal.pod.canon.IPodInfo;
-import com.symphony.oss.models.internal.pod.canon.IThreadOfMessages;
-import com.symphony.oss.models.internal.pod.canon.PodInternalHttpModelClient;
-import com.symphony.oss.models.internal.pod.canon.PodInternalModel;
-import com.symphony.oss.models.internal.pod.canon.facade.IAccountInfo;
-import com.symphony.oss.models.object.canon.EncryptedApplicationPayload;
+import com.symphony.oss.models.object.ObjectModelRegistry;
 import com.symphony.oss.models.object.canon.EncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
 import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
+import com.symphony.oss.models.object.canon.facade.ApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
 import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
-import com.symphony.oss.models.pod.canon.IPodCertificate;
 import com.symphony.oss.models.pod.canon.IStreamAttributes;
-import com.symphony.oss.models.pod.canon.IStreamType;
 import com.symphony.oss.models.pod.canon.IUserV2;
 import com.symphony.oss.models.pod.canon.IV2UserList;
-import com.symphony.oss.models.pod.canon.PodHttpModelClient;
-import com.symphony.oss.models.pod.canon.PodModel;
-import com.symphony.oss.models.pod.canon.StreamFilter;
-import com.symphony.oss.models.pod.canon.StreamType;
-import com.symphony.oss.models.pod.canon.StreamTypeEnum;
 
 /**
  * Implementation of IAllegroApi, the main Allegro API class.
@@ -137,45 +82,10 @@ import com.symphony.oss.models.pod.canon.StreamTypeEnum;
  * @author Bruce Skingle
  *
  */
-public class AllegroApi extends AllegroBaseApi implements IAllegroApi
+public class AllegroApi extends AllegroBaseApi<IAllegro2Api> implements IAllegroApi
 {
-  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroApi.class);
+  private final IAllegro2Api allegro2Api_;
 
-  private static final String                   FORMAT_MESSAGEMLV2         = "com.symphony.messageml.v2";
-  private static final ObjectMapper             OBJECT_MAPPER              = new ObjectMapper();  // TODO: get rid of this
-  private static final int                      ENCRYPTION_ORDINAL         = 0;
-  private static final int                      MEIDA_ENCRYPTION_ORDINAL   = 2;
-  
-  private static final ObjectMapper             AUTO_CLOSE_MAPPER          = new ObjectMapper().configure(Feature.AUTO_CLOSE_SOURCE, false);
-
-  private final PodAndUserId                    userId_;
-  private final String                          userName_;
-  private final String                          clientType_;
-  private final ICipherSuite                    cipherSuite_;
-  private final IAuthHandler                    authHandler_;
-  private final PodHttpModelClient              podApiClient_;
-  private final PodInternalHttpModelClient      podInternalApiClient_;
-  private final KmInternalHttpModelClient       kmInternalClient_;
-  private final AllegroCryptoClient             cryptoClient_;
-  private final AllegroDatafeedClient           datafeedClient_;
-  private final IPodInfo                        podInfo_;
-  private final AllegroDataProvider             dataProvider_;
-  private final V4MessageTransformer            messageTramnsformer_;
-  private final EncryptionHandler               agentEncryptionHandler_;
-  private final CloseableHttpClient             podHttpClient_;
-  private final CloseableHttpClient             keyManagerHttpClient_;
-
-  private PodAndUserId                          internalUserId_;
-  private PodId                                 podId_;
-
-  private final Supplier<IAccountInfo>          accountInfoProvider_;
-  private final Supplier<X509Certificate>       podCertProvider_;
-
-  private LiveCurrentMessageFactory             liveCurrentMessageFactory_ = new LiveCurrentMessageFactory();
-  private ServiceTokenManager                   serviceTokenManager_;
-
-  private Map<Integer, IResponseHandler> responseHandlerMap_ = new HashMap<>();
-  
   /**
    * Constructor.
    * 
@@ -183,434 +93,191 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    */
   AllegroApi(AbstractBuilder<?,?> builder)
   {
-    super(builder);
+    super(builder.podApiBuilder_.build(), builder);
     
-    log_.info("AllegroApi constructor start with config " + builder.config_.getRedacted());
-    
-    podHttpClient_        = builder.getPodHttpClient();
-    keyManagerHttpClient_ = builder.getKeyManagerHttpClient();
-    
-    userName_ = builder.config_.getUserName();
-    
-    modelRegistry_
-        .withFactories(CryptoModel.FACTORIES)
-        .withFactories(ChatModel.FACTORIES)
-        .withFactories(PodModel.FACTORIES)
-        .withFactories(PodInternalModel.FACTORIES)
-        .withFactories(KmInternalModel.FACTORIES)
-        ;
-    
-    clientType_     = getClientVersion();
-    cipherSuite_    = builder.cipherSuite_;
-    
-
-    podApiClient_ = new PodHttpModelClient(
-        modelRegistry_,
-        builder.config_.getPodUrl(), "/pod", null, responseHandlerMap_);
-    
-    authHandler_    = createAuthHandler(builder); 
-    
-    log_.info("sbe auth....");
-    authHandler_.authenticate(true, false);
-    
-    responseHandlerMap_.put(401, new AuthResponseHandler());
-    
-    log_.info("fetch podInfo_....");
-    podInternalApiClient_ = new PodInternalHttpModelClient(
-        modelRegistry_,
-        builder.config_.getPodUrl(), null, null, responseHandlerMap_);
-    
-    accountInfoProvider_ = new Supplier<IAccountInfo>()
-    {
-      private IAccountInfo value_;
-
-      @Override
-      public synchronized IAccountInfo get()
-      {
-        if(value_ == null)
-        {
-          value_ = podInternalApiClient_.newWebcontrollerMaestroAccountGetHttpRequestBuilder()
-              .withClienttype(clientType_)
-              .build()
-              .execute(podHttpClient_);
-        }
-        return value_;
-      }
-    };
-    
-    podCertProvider_ =  new Supplier<X509Certificate>()
-    {
-      private X509Certificate            value_;
-
-      @Override
-      public synchronized X509Certificate get()
-      {
-        if(value_ == null)
-        {
-          log_.info("fetch podCert....");
-          IPodCertificate podCert = podApiClient_.newV1PodcertGetHttpRequestBuilder()
-              .build()
-              .execute(podHttpClient_);
-            
-          log_.info("fetch podCert....got " + podCert.getCertificate());
-          value_ = cipherSuite_.certificateFromPem(podCert.getCertificate());
-        }
-        return value_;
-      }
-    };
-
-    podInfo_ = getPodInfo();
-    
-    log_.info("keymanager auth....");
-    podId_ = PodId.newBuilder().build(podInfo_.getExternalPodId());
-    authHandler_.setKeyManagerUrl(podInfo_.getKeyManagerUrl());
-    authHandler_.authenticate(false, true);
-    
-    
-    log_.info("getAccountInfo....");
-    IAccountInfo accountInfo = accountInfoProvider_.get();
-    
-    internalUserId_ = PodAndUserId.newBuilder().build(accountInfo.getUserName());
-    userId_ = toExternalUserId(internalUserId_);
-    
-    kmInternalClient_ = new KmInternalHttpModelClient(
-        modelRegistry_,
-        podInfo_.getKeyManagerUrl(), null, null, responseHandlerMap_);
-    
-    dataProvider_ = new AllegroDataProvider(podHttpClient_, podApiClient_, podInfo_, authHandler_.getSessionToken());
-
-    cryptoClient_ = new AllegroCryptoClient(podHttpClient_, podInternalApiClient_,
-        keyManagerHttpClient_, kmInternalClient_,
-        podInfo_, internalUserId_,
-        accountInfoProvider_,
-        modelRegistry_);
-    
-    messageTramnsformer_= new V4MessageTransformer(clientType_);
-    
-    agentEncryptionHandler_ = new EncryptionHandler(cryptoClient_);
-    
-    log_.info("userId_ = " + userId_);
-    
-    serviceTokenManager_ = new ServiceTokenManager(podInternalApiClient_, podHttpClient_, authHandler_);
-    
-    datafeedClient_ = new AllegroDatafeedClient(serviceTokenManager_, modelRegistry_, podHttpClient_, builder.config_.getPodUrl(), responseHandlerMap_);
-    
-    log_.info("allegroApi constructor done.");
+    allegro2Api_ = modelRegistryProvider_;
   }
 
-  private class AuthResponseHandler implements IResponseHandler
+  /**
+   * The builder implementation.
+   * 
+   * This is implemented as an abstract class to allow for sub-classing in future.
+   * 
+   * Any sub-class of AllegroApi would need to implement its own Abstract sub-class of this class
+   * and then a concrete Builder class which is itself a sub-class of that.
+   * 
+   * @author Bruce Skingle
+   *
+   * @param <T> The type of the concrete Builder
+   * @param <B> The type of the built class, some subclass of AllegroApi
+   */
+  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
+  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
+  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
   {
-    @Override
-    public IResponseHandlerContext prepare()
+    Allegro2Api.Builder podApiBuilder_ = new Allegro2Api.Builder();
+    
+    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
     {
-      return new AuthResponseHandlerContext();
+      super(type, builder);
     }
-  }
-  
-  private class AuthResponseHandlerContext implements IResponseHandlerContext
-  {
-    String sessionToken = authHandler_.getSessionToken();
     
     @Override
-    public ResponseHandlerAction handle(CloseableHttpResponse response)
+    public T withConfiguration(Reader reader)
     {
-      return authHandler_.reauthenticate(sessionToken);
+      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
     }
     
-  }
-
-  private IAuthHandler createAuthHandler(AbstractBuilder<?, ?> builder)
-  {
-
-    if(builder.sessionTokenSupplier_ != null)
-      return new DummyAuthHandler(builder.sessionTokenSupplier_, builder.keyManagerTokenSupplier_, builder.cookieStore_, builder.config_.getPodUrl());
-    
-    if(builder.config_.getAuthCertFile() != null || builder.config_.getAuthCert() != null)
-      return new CertAuthHandler(builder);
-    
-    return new AuthHandler(builder, userName_);
-  }
-  
-
-
-  @Override
-  public void close()
-  {
-    super.close();
-    try
+    @Override
+    public T withFactories(IEntityFactory<?, ?, ?>... factories)
     {
-      podHttpClient_.close();
-      keyManagerHttpClient_.close();
-      authHandler_.close();
+      podApiBuilder_.withFactories(factories);
+      
+      return self();
     }
-    catch (IOException e)
-    {
-      log_.error("Unable to close HttpClient", e);
-    }
-  }
 
-  @Override
-  public PodAndUserId getUserId()
-  {
-    return userId_;
+    @Deprecated
+    public T withUserName(String serviceAccountName)
+    {
+      configBuilder_.withUserName(serviceAccountName);
+      builderSet_ = true;
+      
+      return self();
+    }
+    
+    /**
+     * Set a fixed session token.
+     * 
+     * @param sessionToken An externally provided session token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withSessionTokenSupplier instead.
+     */
+    @Deprecated
+    public T withSessionToken(String sessionToken)
+    {
+      podApiBuilder_.withSessionTokenSupplier(() -> sessionToken);
+      
+      return self();
+    }
+    
+    /**
+     * Set a fixed key manager token.
+     * 
+     * @param keymanagerToken An externally provided key manager token.
+     * 
+     * @return This (fluent method).
+     * 
+     * @deprecated Use withKeymanagerTokenSupplier instead.
+     */
+    @Deprecated
+    public T withKeymanagerToken(String keymanagerToken)
+    {
+      podApiBuilder_.withKeymanagerTokenSupplier(() -> keymanagerToken);
+      
+      return self();
+    }
+
+    @Deprecated
+    public T withPodUrl(URL podUrl)
+    {
+      configBuilder_.withPodUrl(podUrl);
+      builderSet_ = true;
+      
+      return self();
+    }
+
+    @Deprecated
+    public T withPodUrl(String podUrl)
+    {
+      try
+      {
+        configBuilder_.withPodUrl(new URL(podUrl));
+        builderSet_ = true;
+      }
+      catch (MalformedURLException e)
+      {
+        throw new IllegalArgumentException("Invalid podUrl", e);
+      }
+      
+      return self();
+    }
+
+    @Override
+    protected void validate(FaultAccumulator faultAccumulator)
+    {
+      super.validate(faultAccumulator);
+      
+      podApiBuilder_.withConfiguration(config_)
+        .withRsaCredential(rsaCredential_);
+    }
+
+    public T withSessionTokenSupplier(
+        Supplier<String> sessionTokenSupplier)
+    {
+      podApiBuilder_.withSessionTokenSupplier(sessionTokenSupplier);
+      
+      return self();
+    }
+
+    public T withKeymanagerTokenSupplier(
+        Supplier<String> keymanagerTokenSupplier)
+    {
+      podApiBuilder_.withKeymanagerTokenSupplier(keymanagerTokenSupplier);
+      
+      return self();
+    }
   }
   
   /**
-   * Convert the given internal or external user ID into an external user ID.
+   * Builder for AllegroApi.
    * 
-   * @param internalOrExternalUserId  An internal or external user ID
-   * 
-   * @return The external user ID for the given user ID.
+   * @author Bruce Skingle
+   *
    */
-  private PodAndUserId toExternalUserId(PodAndUserId internalOrExternalUserId)
+  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
   {
-    return PodAndUserId.newBuilder().build(UserId.replacePodId(internalOrExternalUserId.longValue(), podInfo_.getExternalPodId()));
-  }
-
-  private String getClientVersion()
-  {
-    String osName = System.getProperty("os.name");
-    String osVersion = System.getProperty("os.version");
-    String chatAppName = "allegro";
-    String chatAppVersion = getVersion();
-    return String.format("%s-%s-%s-%s", chatAppName, chatAppVersion, osName, osVersion);
-  }
-  
-  @Override
-  public String getKeyManagerToken()
-  {
-    return authHandler_.getKeyManagerToken();
-  }
-
-  @Override
-  public String getSessionToken()
-  {
-    return authHandler_.getSessionToken();
-  }
-  
-  @Override
-  public String getApiAuthorizationToken()
-  {
-    return serviceTokenManager_.getCommonJwt();
-  }
-
-  @Override
-  public PodId getPodId()
-  {
-    return podId_;
-  }
-
-  private String getVersion()
-  {
-    String version = getClass().getPackage().getImplementationVersion();
-    if (StringUtils.isEmpty(version) || "null".equals(version)) {
-      version = "Unknown";
+    /**
+     * Constructor.
+     */
+    public Builder()
+    {
+      super(Builder.class, new AllegroConfiguration.Builder());
     }
-    return version;
+
+    @Override
+    protected IAllegroApi construct()
+    {
+      return new AllegroApi(this);
+    }
   }
 
   @Override
-  public X509Certificate getPodCert()
+  public IAllegro2Api getAllegroPodApi()
   {
-    return podCertProvider_.get();
+    return allegro2Api_;
   }
 
   @Override
-  public void authenticate()
-  {
-    authHandler_.authenticate(true, true);
-  }
-
-  @Override
+  @Deprecated
   public IUserV2 getUserByName(String userName) throws NotFoundException
   {
     return fetchUserByName(userName);
   }
 
   @Override
-  public IUserV2 fetchUserByName(String userName) throws NotFoundException
-  {
-    if(userName.indexOf(',') != -1)
-      throw new BadRequestException("Only a single userName may be passed, try getUsersByName() instead.");
-    
-    IV2UserList result = podApiClient_.newV3UsersGetHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .withUsername(userName)
-        .withLocal(true)
-        .build()
-        .execute(podHttpClient_);
-    
-    if(result.getUsers().size()==1)
-      return result.getUsers().get(0);
-    
-    throw new NotFoundException("User not found " + result.getErrors());
-  }
-
-  @Override
+  @Deprecated
   public IV2UserList getUsersByName(String ...userNames)
   {
     return fetchUsersByName(userNames);
   }
 
   @Override
-  public IV2UserList fetchUsersByName(String ...userNames)
+  public void close()
   {
-    String userNamesList = String.join(",", userNames);
-    
-    return podApiClient_.newV3UsersGetHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .withUsername(userNamesList)
-        .withLocal(true)
-        .build()
-        .execute(podHttpClient_);
-  }
-  
-
-
-  @Override
-  public IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException
-  {
-    IV2UserList result = podApiClient_.newV3UsersGetHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .withUid(userId)
-        .withLocal(true)
-        .build()
-        .execute(podHttpClient_);
-    
-    if(result.getUsers().size()==1)
-      return result.getUsers().get(0);
-    
-    throw new NotFoundException("User not found " + result.getErrors());
-  }
-  
-  @Override
-  public IUserV2 getUserInfo()
-  {
-    return podApiClient_.newV2UserGetHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .withUid(userId_)
-        .build()
-        .execute(podHttpClient_);
-  }
-
-  private IPodInfo getPodInfo()
-  {
-    return podInternalApiClient_.newWebcontrollerPublicPodInfoGetHttpRequestBuilder()
-        .build()
-        .execute(podHttpClient_)
-        .getData();
-  }
-
-  @Override
-  public IUserV2 getSessioninfo()
-  {
-    return podApiClient_.newV2SessioninfoGetHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .build()
-        .execute(podHttpClient_);
-  }
-
-  @Override
-  public String getMessage(String messageId)
-  {
-    String urlSafeMessageId = Base64.encodeBase64URLSafeString(Base64.decodeBase64(messageId));
-    
-    ISocialMessage encryptedMessage = podInternalApiClient_.newWebcontrollerDataqueryRetrieveMessagePayloadGetHttpRequestBuilder()
-      .withMessageId(urlSafeMessageId)
-      .build()
-      .execute(podHttpClient_);
-    
-    return encryptedMessage.toString();
-  }
-
-  @Override
-  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
-  {
-    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchRecentMessages", request.getThreadId().toBase64String()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-      IThreadOfMessages thread = podInternalApiClient_.newDataqueryApiV3MessagesThreadGetHttpRequestBuilder()
-          .withId(request.getThreadId().toBase64UrlSafeString())
-          .withFrom(0L)
-          .withLimit(request.getMaxItems())
-          .withExcludeFields("tokenIds")
-          .build()
-          .execute(podHttpClient_);
-        
-      for(IMessageEnvelope envelope : thread.getEnvelopes())
-      {
-        ILiveCurrentMessage lcmessage = liveCurrentMessageFactory_.newLiveCurrentMessage(envelope.getMessage().getJsonObject().mutify(), modelRegistry_);
-        
-        try
-        {
-          request.getConsumerManager().consume(lcmessage, trace, this);
-        }
-        catch (RetryableConsumerException | FatalConsumerException e)
-        {
-          request.getConsumerManager().getUnprocessableMessageConsumer().consume(lcmessage, trace, "Failed to process message", e);
-        }
-      }
-    }
-  }
-
-  @Override
-  public List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest)
-  {
-    StreamFilter.Builder builder = new StreamFilter.Builder()
-      .withIncludeInactiveStreams(fetchStreamsRequest.isInactive())
-      ;
-    
-    if(!fetchStreamsRequest.getStreamTypes().isEmpty())
-    {
-      List<IStreamType> streamTypes = new LinkedList<>();
-      
-      for(StreamTypeEnum type : fetchStreamsRequest.getStreamTypes())
-        streamTypes.add(new StreamType.Builder().withType(type).build());
-      
-      builder.withStreamTypes(streamTypes);
-    }
-    
-    
-    List<IStreamAttributes> streams = podApiClient_.newV1StreamsListPostHttpRequestBuilder()
-        .withSessionToken(authHandler_.getSessionToken())
-        .withSkip(fetchStreamsRequest.getSkip())
-        .withLimit(fetchStreamsRequest.getLimit())
-        .withCanonPayload(builder.build())
-        .build()
-        .execute(podHttpClient_);
-
-    
-    return streams;
-  }
-  
-  @Override
-  public FeedId createMessageFeed()
-  {
-    return datafeedClient_.createFeed();
-  }
-  
-  @Override
-  public List<FeedId> listMessageFeeds()
-  {
-    return datafeedClient_.listFeeds();
-  }
-  
-  @Override
-  public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
-  {
-    try(ITraceContextTransaction traceTransaction = traceFactory_.createTransaction("FetchFeedMessagesRequest", request.getFeedId().toString()))
-    {
-      ITraceContext trace = traceTransaction.open();
-      
-      return datafeedClient_.fetchFeedEvents(request.getFeedId(), request.getAckId(), request.getConsumerManager(), this, trace);
-    }
-  }
-  
-  @Override
-  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
-  {
-    return new EncryptedApplicationPayloadBuilder();
+    super.close();
+    allegro2Api_.close();
   }
   
   @Override
@@ -631,184 +298,6 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     return new ApplicationObjectUpdater(existing);
   }
 
-  /**
-   * Base class of application objects which can be encrypted.
-   * 
-   * This is a type expected by AllegroCryptoClient.encrypt(EncryptablePayloadbuilder),
-   * I would have made this an interface but I want some methods to be non-public.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> The concrete type for fluent methods.
-   */
-  abstract class EncryptablePayloadbuilder<T extends EncryptablePayloadbuilder<T,B>, B extends IEntity> extends EntityBuilder<T, B>
-  {
-    protected IApplicationObjectPayload payload_;
-    
-    EncryptablePayloadbuilder(Class<T> type)
-    {
-      super(type);
-    }
-
-    /**
-     * 
-     * @return the unencrypted payload.
-     */
-    public IApplicationObjectPayload getPayload()
-    {
-      return payload_;
-    }
-
-    public abstract ThreadId getThreadId();
-
-    abstract T withEncryptedPayload(EncryptedData value);
-
-    abstract T withCipherSuiteId(CipherSuiteId value);
-
-    abstract T withRotationId(RotationId value);
-  }
-  
-  /**
-   * Super class for AppplicationObject builder and updater.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> The concrete type for fluent methods.
-   */
-  abstract class BaseEncryptedApplicationPayloadBuilder<T extends BaseEncryptedApplicationPayloadBuilder<T,B,P>, B extends IEncryptedApplicationPayload, P extends EncryptedApplicationPayload.AbstractEncryptedApplicationPayloadBuilder<?,?>> extends EncryptablePayloadbuilder<T, B>
-  {
-    protected final P  builder_;
-    
-    BaseEncryptedApplicationPayloadBuilder(Class<T> type, P builder)
-    {
-      super(type);
-      builder_ = builder;
-    }
-
-    @Override
-    public ThreadId getThreadId()
-    {
-      return builder_.getThreadId();
-    }
-
-    @Override
-    T withEncryptedPayload(
-        EncryptedData value)
-    {
-      builder_.withEncryptedPayload(value);
-      
-      return self();
-    }
-
-    @Override
-    T withCipherSuiteId(
-        CipherSuiteId value)
-    {
-      builder_.withCipherSuiteId(value);
-      
-      return self();
-    }
-
-    @Override
-    T withRotationId(RotationId value)
-    {
-      builder_.withRotationId(value);
-      
-      return self();
-    }
-
-    /**
-     * Set the object payload (which is to be encrypted).
-     * 
-     * @param payload The object payload (which is to be encrypted).
-     * 
-     * @return This (fluent method).
-     */
-    public T withPayload(IApplicationObjectPayload payload)
-    {
-      payload_ = payload;
-      
-      return self();
-    }
-    
-    @Override
-    public ImmutableJsonObject getJsonObject()
-    {
-      return builder_.getJsonObject();
-    }
-
-    @Override
-    public String getCanonType()
-    {
-      return builder_.getCanonType();
-    }
-
-    @Override
-    public Integer getCanonMajorVersion()
-    {
-      return builder_.getCanonMajorVersion();
-    }
-
-    @Override
-    public Integer getCanonMinorVersion()
-    {
-      return builder_.getCanonMinorVersion();
-    }
-
-    @Override
-    protected void populateAllFields(List<Object> result)
-    {
-      builder_.populateAllFields(result);
-    }
-    
-    @Override
-    protected void validate()
-    {
-      if(getThreadId() == null)
-        throw new IllegalStateException("ThreadId is required.");
-      
-      if(payload_ == null)
-        throw new IllegalStateException("Payload is required.");
-      
-      cryptoClient_.encrypt(this);
-      
-      super.validate();
-    }
-  }
-  
-  /**
-   * Builder for an EncryptedApplicationPayload.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class EncryptedApplicationPayloadBuilder extends BaseEncryptedApplicationPayloadBuilder<EncryptedApplicationPayloadBuilder, IEncryptedApplicationPayload, EncryptedApplicationPayload.Builder>
-  {
-    EncryptedApplicationPayloadBuilder()
-    {
-      super(EncryptedApplicationPayloadBuilder.class, new EncryptedApplicationPayload.Builder());
-    }
-
-    /**
-     * Set the id of the thread with whose content key this object will be encrypted.
-     * 
-     * @param threadId The id of the thread with whose content key this object will be encrypted.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationPayloadBuilder withThreadId(ThreadId threadId)
-    {
-      builder_.withThreadId(threadId);
-      
-      return self();
-    }
-
-    @Override
-    protected IEncryptedApplicationPayload construct()
-    {
-      return builder_.build();
-    }
-  }
   
   /**
    * Builder for an EncryptedApplicationPayload plus header.
@@ -820,7 +309,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     EncryptedApplicationPayloadAndHeaderBuilder()
     {
-      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder());
+      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder(), allegro2Api_);
     }
 
     /**
@@ -865,9 +354,10 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    *
    * @param <T> The concrete type for fluent methods.
    */
-  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadbuilder<T, IStoredApplicationObject>
+  abstract class BaseApplicationObjectBuilder<T extends BaseApplicationObjectBuilder<T>> extends EncryptablePayloadBuilder<T, IStoredApplicationObject>
   {
     protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
+    private IApplicationObjectPayload payload_;
     
     BaseApplicationObjectBuilder(Class<T> type)
     {
@@ -896,7 +386,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withEncryptedPayload(
+    protected T withEncryptedPayload(
         EncryptedData value)
     {
       builder_.withEncryptedPayload(value);
@@ -905,7 +395,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withCipherSuiteId(
+    protected T withCipherSuiteId(
         CipherSuiteId value)
     {
       builder_.withCipherSuiteId(value);
@@ -914,7 +404,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
-    T withRotationId(RotationId value)
+    protected T withRotationId(RotationId value)
     {
       builder_.withRotationId(value);
       
@@ -988,6 +478,15 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
 
     @Override
+    protected ImmutableByteArray getPayload()
+    {
+      if(payload_ == null)
+        return null;
+      
+      return payload_.serialize();
+    }
+
+    @Override
     protected void populateAllFields(List<Object> result)
     {
       builder_.populateAllFields(result);
@@ -1043,7 +542,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          cryptoClient_.encrypt(this);
+          allegro2Api_.encrypt(this);
         }
       }
       
@@ -1231,64 +730,23 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     }
   }
   
+
   @Override
-  public ChatMessage.Builder newChatMessageBuilder()
+  void consume(AbstractConsumerManager consumerManager, Object payload, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
   {
-    return new ChatMessage.Builder().withRegistry(modelRegistry_, dataProvider_);
+    consumerManager.consume(payload, trace, this);
   }
 
   @Override
-  public void sendMessage(IChatMessage chatMessage)
+  public PodAndUserId getUserId()
   {
-    MessageMLContext context = new MessageMLContext(dataProvider_);
-    
-    String version = null;
-    
-    try
-    {
-      context.parseMessageML(chatMessage.getPresentationML().getValue(), chatMessage.getEntityJson().toString(), version);
-      
-      boolean dlpEnforceExpressionFiltering = false;
-      
-      JsonNode socialMessage = messageTramnsformer_.createSocialMessage(context, chatMessage.getThreadId().toBase64String(), dlpEnforceExpressionFiltering);
-      
-      JsonNode encryptedSocialMessageNode = agentEncryptionHandler_.handleEncrypt(chatMessage.getThreadId(), socialMessage,
-          chatMessage.getPresentationML().getValue());
-      
-      IImmutableJsonDomNode encryptedSocialMessage = JacksonAdaptor.adapt(encryptedSocialMessageNode).immutify();
-      
-      podInternalApiClient_.newWebcontrollerIngestorV2MessageServicePostHttpRequestBuilder()
-        .withMessagepayload(encryptedSocialMessage.toString())
-        .build()
-        .execute(podHttpClient_);
-    }
-    catch (InvalidInputException | ProcessingException | IOException e)
-    {
-      throw new IllegalArgumentException(e);
-    }
+    return allegro2Api_.getUserId();
   }
 
-  private MutableJsonObject parseOneJsonObject(String json)
+  @Override
+  public String getApiAuthorizationToken()
   {
-    try
-    {
-      JsonNode tree = AUTO_CLOSE_MAPPER.readTree(new StringReader(json));
-      
-      IJsonDomNode adapted = JacksonAdaptor.adapt(tree);
-      
-      if(adapted instanceof MutableJsonObject)
-      {
-        return (MutableJsonObject) adapted;
-      }
-      else
-      {
-        throw new IllegalArgumentException("Expected a JSON Object but read a " + adapted.getClass().getName());
-      }
-    }
-    catch(IOException e)
-    {
-      throw new IllegalArgumentException("Failed to parse input", e);
-    }
+    return allegro2Api_.getApiAuthorizationToken();
   }
 
   @Override
@@ -1297,7 +755,25 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
     
-    return cryptoClient_.decrypt(storedApplicationObject);
+    ImmutableByteArray plainText = allegro2Api_.decrypt(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), 
+        storedApplicationObject.getEncryptedPayload());
+    
+    ModelRegistry objectModelRegistry = new ObjectModelRegistry(getModelRegistry(), storedApplicationObject);
+    
+    IEntity entity = objectModelRegistry.parseOne(plainText.getReader());
+    ApplicationObjectPayload payload;
+    
+    if(entity instanceof ApplicationObjectPayload)
+    {
+      payload = (ApplicationObjectPayload)entity;
+  
+    }
+    else
+    {
+      payload = new ApplicationObjectPayload(entity.getJsonObject(), objectModelRegistry);
+    }
+    
+    return payload;
   }
 
   @Override
@@ -1307,7 +783,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
     
-    IApplicationObjectPayload payload = cryptoClient_.decrypt(storedApplicationObject);
+    IApplicationObjectPayload payload = decryptObject(storedApplicationObject);
     
     if(type.isInstance(payload))
       return type.cast(payload);
@@ -1315,596 +791,166 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     throw new IllegalStateException("Retrieved object is of type " + payload.getClass() + " not " + type);
   }
 
-  /**
-   * Parse SocialMessage text. For MessageMLV2 messages, returns the PresentationML content. For legacy messages, parses
-   * the Markdown content and JSON entities and returns their PresentationML representation.
-   */
   @Override
+  public String getKeyManagerToken()
+  {
+    return allegro2Api_.getKeyManagerToken();
+  }
+
+  @Override
+  public String getSessionToken()
+  {
+    return allegro2Api_.getSessionToken();
+  }
+
+  @Override
+  public PodId getPodId()
+  {
+    return allegro2Api_.getPodId();
+  }
+
+  @Override
+  public X509Certificate getPodCert()
+  {
+    return allegro2Api_.getPodCert();
+  }
+
+  @Override
+  public void authenticate()
+  {
+    allegro2Api_.authenticate();
+  }
+
+  @Override
+  public IUserV2 fetchUserByName(String userName) throws NotFoundException
+  {
+    return allegro2Api_.fetchUserByName(userName);
+  }
+
+  @Override
+  public IV2UserList fetchUsersByName(String... userNames)
+  {
+    return allegro2Api_.fetchUsersByName(userNames);
+  }
+
+  @Override
+  public IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException
+  {
+    return allegro2Api_.fetchUserById(userId);
+  }
+
+  @Override
+  public IUserV2 getUserInfo()
+  {
+    return allegro2Api_.getUserInfo();
+  }
+
+  @Override
+  public IUserV2 getSessioninfo()
+  {
+    return allegro2Api_.getSessioninfo();
+  }
+
+  @Override
+  public String getMessage(String messageId)
+  {
+    return allegro2Api_.getMessage(messageId);
+  }
+
+  @Override
+  public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
+  {
+    allegro2Api_.fetchRecentMessagesFromPod(request);
+  }
+
+  @Override
+  public List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest)
+  {
+    return allegro2Api_.fetchStreams(fetchStreamsRequest);
+  }
+
+  @Override
+  public FeedId createMessageFeed()
+  {
+    return allegro2Api_.createMessageFeed();
+  }
+
+  @Override
+  public List<FeedId> listMessageFeeds()
+  {
+    return allegro2Api_.listMessageFeeds();
+  }
+
+  @Override
+  public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
+  {
+    return allegro2Api_.fetchFeedMessages(request);
+  }
+  
+  @Override
+  public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
+  {
+    return new EncryptedApplicationPayloadBuilder(this);
+  }
+
+  @Override
+  public ApplicationRecordBuilder newApplicationRecordBuilder()
+  {
+    return allegro2Api_.newApplicationRecordBuilder();
+  }
+
+  @Override
+  public ChatMessage.Builder newChatMessageBuilder()
+  {
+    return allegro2Api_.newChatMessageBuilder();
+  }
+
+  @Override
+  public AllegroConsumerManager.AbstractBuilder<?,?> newConsumerManagerBuilder()
+  {
+    return allegro2Api_.newConsumerManagerBuilder();
+  }
+
+  @Override
+  public void sendMessage(IChatMessage chatMessage)
+  {
+    allegro2Api_.sendMessage(chatMessage);
+  }
+
+  @Override
+  public IApplicationRecord decrypt(String jsonObject)
+  {
+    return allegro2Api_.decrypt(jsonObject);
+  }
+
+  @Override
+  public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
+  {
+    return allegro2Api_.decrypt(message);
+  }
+
+  @Override
+  @Deprecated
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
-    if(message instanceof ISocialMessage)
-      return decryptSocialMessage((ISocialMessage) message);
-    
-    if(message instanceof IMaestroMessage)
-    {
-      return buildMaestroMessage((IMaestroMessage) message);
-    }
-    
-    ReceivedChatMessage.Builder builder = new ReceivedChatMessage.Builder()
-        .withMessageId(message.getMessageId())
-        .withThreadId(message.getThreadId())
-        ;
-    
-    String text = message.getVersion() + " message";
-    
-    return builder.withPresentationML(text)
-        .withText(text)
-        .withMarkDown(text)
-        .build();
+    return allegro2Api_.decrypt(message);
   }
-  
-  private IReceivedMaestroMessage buildMaestroMessage(IMaestroMessage message)
-  {
-    ReceivedMaestroMessage.Builder builder = new ReceivedMaestroMessage.Builder()
-        .withMessageId(message.getMessageId())
-        .withThreadId(message.getThreadId())
-        ;
-    
-    String text = "";
-    
-    switch(message.getEvent())
-    {
-      case JOIN_ROOM:
-        text = getUsers(message) + " joined the chat.";
-        break;
-        
-      case LEAVE_ROOM:
-        text = getUsers(message) + " left the chat.";
-        break;
-        
-      default:
-        text = message.getVersion() + " " + message.getEvent() + " message";
-    }
-    
-    return builder.withPresentationML(text)
-        .withText(text)
-        .withMarkDown(text)
-        .withMaestroMessage(message)
-        .build();
-  }
-
-  private String getUsers(IMaestroMessage message)
-  {
-    int cnt = message.getAffectedUsers().size();
-    
-    if(cnt == 0)
-      return "An unknown user";
-    
-    if(cnt == 1)
-      return  message.getAffectedUsers().get(0).getPrettyName();
-    
-    StringBuilder b = new StringBuilder();
-    int i=0;
-    
-    while(i<cnt - 1)
-    {
-      if(i>0)
-        b.append(", ");
-      
-      b.append(message.getAffectedUsers().get(i++).getPrettyName());
-    }
-    
-    b.append(" and ");
-    b.append(message.getAffectedUsers().get(i).getPrettyName());
-    
-    return b.toString();
-  }
-
-  private IReceivedSocialMessage decryptSocialMessage(ISocialMessage message)
-  {
-    if(FORMAT_MESSAGEMLV2.equals(message.getFormat()))
-    {
-      String presentationML       = cryptoClient_.decrypt(message.getThreadId(), message.getPresentationML());
-      String encryptedEntityJson  = message.getEntityJSON();
-      String entityJsonString;
-      
-      if(encryptedEntityJson == null)
-      {
-        entityJsonString = "{}";
-      }
-      else
-      {
-        entityJsonString = cryptoClient_.decrypt(message.getThreadId(), encryptedEntityJson);
-        
-        
-      }
-      
-      String text = null;
-      String markDown = null;
-      
-      if(message.getText() != null)
-      {
-        markDown = cryptoClient_.decrypt(message.getThreadId(), message.getText());
-      }
-      
-      MessageML messageML;
-      try
-      {
-        MessageMLContext context = new MessageMLContext(dataProvider_);
-        
-        String version = null;
-        
-        context.parseMessageML(presentationML, entityJsonString, version);
-        
-        text = context.getText(false);
-        
-        if(markDown == null)
-          markDown = context.getMarkdown();
-        
-        messageML = context.getMessageML();
-      }
-      catch (InvalidInputException | ProcessingException | IOException e)
-      {
-        log_.error("Unable to decode text from messageML");
-        messageML = null;
-      }
-      
-      if(markDown == null)
-      {
-        // We are desperate now...
-        
-        markDown = presentationML.replaceAll("<[^>]*>", "");
-      }
-      
-      if(text == null)
-        text = markDown;
-      
-      ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
-          .withMessageId(message.getMessageId())
-          .withThreadId(message.getThreadId())
-          .withPresentationML(presentationML)
-          .withText(text)
-          .withMarkDown(markDown)
-          .withEntityJson(new EntityJson(parseOneJsonObject(entityJsonString), modelRegistry_))
-          .withMessageML(messageML)
-          .withSocialMessage(message)
-          ;
-      
-      return builder
-        .build()
-        ;
-    }
-    else
-    {
-      try
-      {
-        // TODO: re-factor messageML utils to allow us to get rid of this
-        JsonNode messageJson = OBJECT_MAPPER.readTree(message.toString());
-        
-        //If this check works, it also means the input is an ObjectNode
-        JsonNode textNode = messageJson.get("text");
-        if (textNode == null)
-        {
-          throw new IllegalArgumentException("Message text node was null.");
-        }
-        
-        String clearText = null;
-        String clearPresentationML = null;
-        String clearEntityJson = null;
-        String clearMedia = null;
-        String clearEntities = null;
-        
-        
-        ObjectNode decryptedNode = new ObjectNode(JsonNodeFactory.instance);
-
-        for(Iterator<Map.Entry<String, JsonNode>> it = messageJson.fields(); it.hasNext(); )
-        {
-          Map.Entry<String, JsonNode> field = it.next();
-          String nodeName = field.getKey();
-          JsonNode node = field.getValue();
-
-          switch (nodeName)
-          {
-            case "encryptedEntities":
-              //
-              // EncryptedEntities are encrypted with the content key.
-              //
-              clearEntities = cryptoClient_.decrypt(message.getThreadId(), node.asText());
-              JsonNode clearEntitiesJson = OBJECT_MAPPER.readTree(clearEntities);
-              decryptedNode.set("entities", clearEntitiesJson);
-              break;
-              
-            case "encryptedMedia":
-              clearMedia = cryptoClient_.decrypt(message.getThreadId(), node.asText());
-              JsonNode clearMediaJson = OBJECT_MAPPER.readTree(clearMedia);
-              decryptedNode.set("media", clearMediaJson);
-              break;
-              
-            case "text":
-              clearText = cryptoClient_.decrypt(message.getThreadId(), node.asText());
-              decryptedNode.put("text", clearText);
-              break;
-              
-            case "presentationML":
-              clearPresentationML = cryptoClient_.decrypt(message.getThreadId(), node.asText());
-              decryptedNode.put("presentationML", clearPresentationML);
-              break;
-              
-            case "entityJSON":
-              clearEntityJson = cryptoClient_.decrypt(message.getThreadId(), node.asText());
-              decryptedNode.put("entityJSON", clearEntityJson);
-              break;
-              
-            case "tokenIds":
-              break;
-              
-            case "msgFeatures":
-              int msgFeaturesInt = (node != null) ? node.asInt() : 0;
-              int newMsgFeatures = mediaEncryptionOff(encryptionOff(msgFeaturesInt));
-              decryptedNode.put("msgFeatures", newMsgFeatures);
-              break;
-              
-            default:
-              decryptedNode.set(nodeName, node);
-          }
-        }
-        
-        
-        JsonNode entities = messageJson.path("entities");
-        JsonNode media = messageJson.path("media");
-    
-        MessageMLContext context = new MessageMLContext(dataProvider_);
-        
-        
-        context.parseMarkdown(clearText, entities, media);
-
-        MessageML messageML = context.getMessageML();
-        
-        if (message.getIsChime())
-        {
-          Chime chime = new Chime(messageML, FormatEnum.PRESENTATIONML);
-          messageML.addChild(chime);
-        }
-        
-        String text;
-        try
-        {
-          text = context.getText(false);
-        }
-        catch (ProcessingException | IllegalStateException e)
-        {
-          text = clearText;
-        }
-
-        //return new ChatMessage(message.getThreadId(), context.getPresentationML(), context.getEntityJson().asText());
-        
-        ReceivedSocialMessage.Builder builder = new ReceivedSocialMessage.Builder()
-            .withMessageId(message.getMessageId())
-            .withThreadId(message.getThreadId())
-            .withPresentationML(context.getPresentationML())
-            .withMessageML(messageML)
-            .withText(text)
-            .withMarkDown(clearText)
-            .withSocialMessage(message)
-            ;
-            
-        if(context.getEntityJson().isObject())
-        {
-          ImmutableJsonObject obj = (ImmutableJsonObject)JacksonAdaptor.adapt(context.getEntityJson()).immutify();
-          
-          builder.withEntityJson(new EntityJson(obj, modelRegistry_));
-        }
-        else if(context.getEntityJson().isTextual())
-        {
-            String      encryptedEntityJson = context.getEntityJson().asText();
-            
-            if(encryptedEntityJson != null)
-            {
-              String jsonString = cryptoClient_.decrypt(message.getThreadId(), encryptedEntityJson);
-              
-              builder.withEntityJson(new EntityJson(parseOneJsonObject(jsonString), modelRegistry_));
-            }
-        }
-            
-        return builder
-          .build()
-          ;
-      }
-      catch(IOException e)
-      {
-        throw new CodingFault("In memory io", e);
-      }
-      catch (InvalidInputException e)
-      {
-        throw new IllegalArgumentException(e);
-      }
-    }
-  }
-
-
-  private int encryptionOff(int msgFeatures) {
-    int featureMask = 1 << ENCRYPTION_ORDINAL;
-    return msgFeatures & ~featureMask;
-  }
-
-  private int mediaEncryptionOff(int msgFeatures) {
-    int featureMask = 1 << MEIDA_ENCRYPTION_ORDINAL;
-    return msgFeatures & ~featureMask;
-  }
-  
 
   @Override
-  void consume(AbstractConsumerManager consumerManager, Object payload, ITraceContext trace) throws RetryableConsumerException, FatalConsumerException
+  public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
   {
-    consumerManager.consume(payload, trace, this);
+    allegro2Api_.encrypt(builder);
   }
 
-  /**
-   * The builder implementation.
-   * 
-   * This is implemented as an abstract class to allow for sub-classing in future.
-   * 
-   * Any sub-class of AllegroApi would need to implement its own Abstract sub-class of this class
-   * and then a concrete Builder class which is itself a sub-class of that.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> The type of the concrete Builder
-   * @param <B> The type of the built class, some subclass of AllegroApi
-   */
-  static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends IAllegroApi>
-  extends AllegroBaseApi.AbstractBuilder<IAllegroConfiguration,
-  AllegroConfiguration.AbstractAllegroConfigurationBuilder<?, IAllegroConfiguration>, T, B>
+  @Override
+  public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
   {
-    private ICipherSuite        cipherSuite_;
-    private Supplier<String>    sessionTokenSupplier_;
-    private Supplier<String>    keyManagerTokenSupplier_;
-
-    private CloseableHttpClient podHttpClient_;
-    private CloseableHttpClient keyManagerHttpClient_;
-    private CloseableHttpClient certSessionAuthHttpClient_;
-    private CloseableHttpClient certKeyAuthHttpClient_;
-    private CloseableHttpClient defaultCertAuthHttpClient_;
-
-    public AbstractBuilder(Class<T> type, AllegroConfiguration.Builder builder)
-    {
-      super(type, builder);
-    }
-    
-    @Override
-    public T withConfiguration(Reader reader)
-    {
-      return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
-    }
-
-    public synchronized CloseableHttpClient getPodHttpClient()
-    {
-      if(podHttpClient_ == null)
-      {
-        if(config_.getPodConnectionSettings() == null)
-        {
-          podHttpClient_ = getDefaultHttpClient();
-        }
-        else
-        {
-          podHttpClient_ = config_.getPodConnectionSettings().createHttpClient(cookieStore_);
-        }
-      }
-      
-      return podHttpClient_;
-    }
-    
-    public synchronized CloseableHttpClient getKeyManagerHttpClient()
-    {
-      if(keyManagerHttpClient_ == null)
-      {
-        if(config_.getKeyManagerConnectionSettings() == null)
-        {
-          keyManagerHttpClient_ = getDefaultHttpClient();
-        }
-        else
-        {
-          keyManagerHttpClient_ = config_.getKeyManagerConnectionSettings().createHttpClient(cookieStore_);
-        }
-      }
-      
-      return keyManagerHttpClient_;
-    }
-    
-    protected synchronized CloseableHttpClient getDefaultCertAuthHttpClient(SSLContextBuilder sslContextBuilder)
-    {
-      if(defaultCertAuthHttpClient_ == null)
-      {
-        if(config_.getDefaultConnectionSettings() == null)
-        {
-          defaultCertAuthHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_, sslContextBuilder);
-        }
-        else
-        {
-          defaultCertAuthHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
-        }
-      }
-      
-      return defaultCertAuthHttpClient_;
-    }
-    
-    public synchronized CloseableHttpClient getCertSessionAuthHttpClient(SSLContextBuilder sslContextBuilder)
-    {
-      if(certSessionAuthHttpClient_ == null)
-      {
-        if(config_.getCertSessionAuthConnectionSettings() == null)
-        {
-          certSessionAuthHttpClient_ = getDefaultCertAuthHttpClient(sslContextBuilder);
-        }
-        else
-        {
-          certSessionAuthHttpClient_ = config_.getCertSessionAuthConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
-        }
-      }
-      
-      return certSessionAuthHttpClient_;
-    }
-    
-    public synchronized CloseableHttpClient getCertKeyAuthHttpClient(SSLContextBuilder sslContextBuilder)
-    {
-      if(certKeyAuthHttpClient_ == null)
-      {
-        if(config_.getCertKeyAuthConnectionSettings() == null)
-        {
-          certKeyAuthHttpClient_ = getDefaultCertAuthHttpClient(sslContextBuilder);
-        }
-        else
-        {
-          certKeyAuthHttpClient_ = config_.getCertKeyAuthConnectionSettings().createHttpClient(cookieStore_, sslContextBuilder);
-        }
-      }
-      
-      return certKeyAuthHttpClient_;
-    }
-    
-    @Deprecated
-    public T withUserName(String serviceAccountName)
-    {
-      configBuilder_.withUserName(serviceAccountName);
-      builderSet_ = true;
-      
-      return self();
-    }
-    
-    /**
-     * Set a fixed session token.
-     * 
-     * @param sessionToken An externally provided session token.
-     * 
-     * @return This (fluent method).
-     * 
-     * @deprecated Use withSessionTokenSupplier instead.
-     */
-    @Deprecated
-    public T withSessionToken(String sessionToken)
-    {
-      sessionTokenSupplier_ = () -> sessionToken;
-      
-      return self();
-    }
-    
-    /**
-     * Set a fixed key manager token.
-     * 
-     * @param keymanagerToken An externally provided key manager token.
-     * 
-     * @return This (fluent method).
-     * 
-     * @deprecated Use withKeymanagerTokenSupplier instead.
-     */
-    @Deprecated
-    public T withKeymanagerToken(String keymanagerToken)
-    {
-      keyManagerTokenSupplier_ = () -> keymanagerToken;
-      
-      return self();
-    }
-    
-    public T withSessionTokenSupplier(Supplier<String> sessionTokenSupplier)
-    {
-      sessionTokenSupplier_ = sessionTokenSupplier;
-      
-      return self();
-    }
-    
-    public T withKeymanagerTokenSupplier(Supplier<String> keymanagerTokenSupplier)
-    {
-      keyManagerTokenSupplier_ = keymanagerTokenSupplier;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withPodUrl(URL podUrl)
-    {
-      configBuilder_.withPodUrl(podUrl);
-      builderSet_ = true;
-      
-      return self();
-    }
-
-    @Deprecated
-    public T withPodUrl(String podUrl)
-    {
-      try
-      {
-        configBuilder_.withPodUrl(new URL(podUrl));
-        builderSet_ = true;
-      }
-      catch (MalformedURLException e)
-      {
-        throw new IllegalArgumentException("Invalid podUrl", e);
-      }
-      
-      return self();
-    }
-
-    @Override
-    protected void validate(FaultAccumulator faultAccumulator)
-    {
-      super.validate(faultAccumulator);
-      
-      cipherSuite_ = config_.getCipherSuiteId() == null ? CipherSuite.getDefault() : CipherSuite.get(config_.getCipherSuiteId());
-            
-      if(sessionTokenSupplier_ != null || keyManagerTokenSupplier_!= null )
-      {
-        if(sessionTokenSupplier_ == null || keyManagerTokenSupplier_== null )
-          faultAccumulator.error("SessionToekn and KeymanagerToken must be specified together");
-      }
-      else
-      {
-
-        if(config_.getAuthCertFile() != null)
-        {
-          faultAccumulator.checkNotNull(config_.getAuthCertFilePassword(), "With Auth Cert File, Cert File Password");
-          faultAccumulator.checkNotNull(config_.getSessionAuthUrl(), "With Auth Cert File, Session Auth URL");
-          faultAccumulator.checkNotNull(config_.getKeyAuthUrl(), "With Auth Cert File, Key Auth URL");
-        }
-        else if(config_.getAuthCert() != null)
-        {
-          faultAccumulator.checkNotNull(config_.getAuthCertPrivateKey(), "With Auth Cert, Auth Cert Private Key");
-          faultAccumulator.checkNotNull(config_.getSessionAuthUrl(), "With Auth Cert, Session Auth URL");
-          faultAccumulator.checkNotNull(config_.getKeyAuthUrl(), "With Auth Cert, Key Auth URL");
-        }
-        else if(rsaCredential_ == null)
-        {
-          if(rsaCredential_ == null)
-            faultAccumulator.error("rsaCredential is required");
-          
-          faultAccumulator.checkNotNull(config_.getUserName(), "With RSA Credential, User Name");
-        }
-        
-        
-      }
-      faultAccumulator.checkNotNull(config_.getPodUrl(), "Pod URL");
-    }
+    return allegro2Api_.decrypt(threadId, rotationId, encryptedPayload);
   }
-  
-  /**
-   * Builder for AllegroApi.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public static class Builder extends AbstractBuilder<Builder, IAllegroApi>
-  {
-    /**
-     * Constructor.
-     */
-    public Builder()
-    {
-      super(Builder.class, new AllegroConfiguration.Builder());
-    }
 
-    @Override
-    protected IAllegroApi construct()
-    {
-      return new AllegroApi(this);
-    }
+  @Override
+  public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    return allegro2Api_.decrypt(encryptedApplicationRecord);
   }
 }

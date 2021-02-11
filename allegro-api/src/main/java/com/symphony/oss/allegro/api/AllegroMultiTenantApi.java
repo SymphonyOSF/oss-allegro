@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.allegro2.api.IAllegroModelRegistryProvider;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
@@ -35,13 +36,30 @@ import com.symphony.oss.commons.dom.json.jackson.JacksonAdaptor;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.models.allegro.canon.facade.AllegroMultiTenantConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroMultiTenantConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.CoreModel;
+import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
+import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
+import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
+
+class ModelRegistryProvider implements IAllegroModelRegistryProvider
+{
+  private final ModelRegistry modelRegistry_ = new ModelRegistry();
+
+  @Override
+  public ModelRegistry getModelRegistry()
+  {
+    return modelRegistry_;
+  }
+}
 
 /**
  * Implementation of IAllegroMultiTenantApi, the main Allegro Multi Tenant API class.
@@ -49,16 +67,16 @@ import com.symphony.s2.authc.canon.facade.PrincipalCredential;
  * @author Bruce Skingle
  *
  */
-public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
+public class AllegroMultiTenantApi extends AllegroBaseApi<ModelRegistryProvider> implements IAllegroMultiTenantApi
 {
-  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
+  private static final Logger     log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
 
   private final PodAndUserId      userId_;
   private final Rs512JwtGenerator jwtBuilder_;
   
   AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
   {
-    super(builder);
+    super(new ModelRegistryProvider(), builder);
     
     log_.info("AllegroMultiTenantApi constructor start with configuredUserId " + builder.configuredUserId_ + " and config " + builder.config_.getRedacted());
 
@@ -250,5 +268,23 @@ public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMul
   public String getApiAuthorizationToken()
   {
     return jwtBuilder_.createJwt();
+  }
+  
+  @Override
+  public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
+  {
+    return null;
+  }
+
+  @Override
+  public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
+  {
+    return null;
+  }
+
+  @Override
+  public IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload)
+  {
+    return null;
   }
 }
