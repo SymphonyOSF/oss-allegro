@@ -29,6 +29,8 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.symphony.oss.fugue.aws.sqs.SqsAction;
 import com.symphony.oss.fugue.aws.sqs.SqsMessageParser;
@@ -41,6 +43,8 @@ import com.symphony.oss.fugue.aws.sqs.SqsResponseMessage;
  */
 public class AllegroSqsRequestBuilder
 {
+  private static final Logger log_   = LoggerFactory.getLogger(AllegroSqsRequestBuilder.class);
+  
   private RequestBuilder req;
   private URIBuilder uri = new URIBuilder();
   
@@ -149,10 +153,15 @@ public class AllegroSqsRequestBuilder
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     try
     {
+      CloseableHttpResponse response = httpClient.execute(request);
+        
+      if(response.getStatusLine().getStatusCode() != 200)
+      {
+        log_.error("response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
+        throw new IllegalStateException("SQS response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
+      }
 
-      CloseableHttpResponse x = httpClient.execute(request);
-
-      InputStream in = x.getEntity().getContent();
+      InputStream in = response.getEntity().getContent();
       
  
       byte[] buf = new byte[1024];

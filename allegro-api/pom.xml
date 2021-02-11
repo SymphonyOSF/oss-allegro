@@ -26,6 +26,17 @@
   <artifactId>allegro-api</artifactId>
   
   <dependencies>
+  
+    
+  
+    <!--  version introduced by aws has security vulnerabilities -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-cbor</artifactId>
+      <version>${jackson.version}</version>
+   </dependency>
+  
+  
     <dependency>
       <groupId>com.symphony.oss.allegro</groupId>
       <artifactId>allegro2-api</artifactId>
