@@ -23,7 +23,6 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.immutable.ImmutableByteArray;
 import com.symphony.oss.models.allegro.canon.facade.ChatMessage;
@@ -48,7 +47,7 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public interface IAllegro2Api  extends IAllegro2Decryptor, AutoCloseable
+public interface IAllegro2Api  extends IAllegroModelRegistryProvider, IAllegro2Decryptor, AutoCloseable
 {
   @Override
   void close();
@@ -248,13 +247,6 @@ public interface IAllegro2Api  extends IAllegro2Decryptor, AutoCloseable
    * @throws NotFoundException If the given userName cannot be found.
    */
   IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException;
-
-  /**
-   * Return the ModelRegistry used by Allegro.
-   * 
-   * @return the ModelRegistry used by Allegro.
-   */
-  ModelRegistry getModelRegistry();
 
   /**
    * Return a new StoredRecordConsumerManager builder.

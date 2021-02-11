@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.symphony.oss.allegro2.api.IAllegroModelRegistryProvider;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.jjwt.Rs512JwtGenerator;
 import com.symphony.oss.commons.dom.json.IImmutableJsonDomNode;
@@ -49,22 +50,33 @@ import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.facade.IPrincipalCredential;
 import com.symphony.s2.authc.canon.facade.PrincipalCredential;
 
+class ModelRegistryProvider implements IAllegroModelRegistryProvider
+{
+  private final ModelRegistry modelRegistry_ = new ModelRegistry();
+
+  @Override
+  public ModelRegistry getModelRegistry()
+  {
+    return modelRegistry_;
+  }
+}
+
 /**
  * Implementation of IAllegroMultiTenantApi, the main Allegro Multi Tenant API class.
  * 
  * @author Bruce Skingle
  *
  */
-public class AllegroMultiTenantApi extends AllegroBaseApi implements IAllegroMultiTenantApi
+public class AllegroMultiTenantApi extends AllegroBaseApi<ModelRegistryProvider> implements IAllegroMultiTenantApi
 {
-  private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
+  private static final Logger     log_                       = LoggerFactory.getLogger(AllegroMultiTenantApi.class);
 
   private final PodAndUserId      userId_;
   private final Rs512JwtGenerator jwtBuilder_;
   
   AllegroMultiTenantApi(AbstractBuilder<?, ?> builder)
   {
-    super(builder);
+    super(new ModelRegistryProvider(), builder);
     
     log_.info("AllegroMultiTenantApi constructor start with configuredUserId " + builder.configuredUserId_ + " and config " + builder.config_.getRedacted());
 

@@ -34,6 +34,7 @@ import com.symphony.oss.allegro2.api.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro2.api.FetchStreamsRequest;
 import com.symphony.oss.allegro2.api.IAllegro2Api;
 import com.symphony.oss.canon.runtime.IEntity;
+import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
@@ -81,10 +82,10 @@ import com.symphony.oss.models.pod.canon.IV2UserList;
  * @author Bruce Skingle
  *
  */
-public class AllegroApi extends AllegroBaseApi implements IAllegroApi
+public class AllegroApi extends AllegroBaseApi<IAllegro2Api> implements IAllegroApi
 {
-  private final IAllegro2Api                  allegroPodApi_;
-  
+  private final IAllegro2Api allegro2Api_;
+
   /**
    * Constructor.
    * 
@@ -92,10 +93,9 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
    */
   AllegroApi(AbstractBuilder<?,?> builder)
   {
-    super(builder);
+    super(builder.podApiBuilder_.build(), builder);
     
-    allegroPodApi_ = builder.podApiBuilder_.build();
-    
+    allegro2Api_ = modelRegistryProvider_;
   }
 
   /**
@@ -128,6 +128,14 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
       return withConfiguration(allegroModelRegistry_.parseOne(reader, AllegroConfiguration.TYPE_ID, IAllegroConfiguration.class));
     }
     
+    @Override
+    public T withFactories(IEntityFactory<?, ?, ?>... factories)
+    {
+      podApiBuilder_.withFactories(factories);
+      
+      return self();
+    }
+
     @Deprecated
     public T withUserName(String serviceAccountName)
     {
@@ -248,7 +256,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public IAllegro2Api getAllegroPodApi()
   {
-    return allegroPodApi_;
+    return allegro2Api_;
   }
 
   @Override
@@ -269,7 +277,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   public void close()
   {
     super.close();
-    allegroPodApi_.close();
+    allegro2Api_.close();
   }
   
   @Override
@@ -301,7 +309,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   {
     EncryptedApplicationPayloadAndHeaderBuilder()
     {
-      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder(), allegroPodApi_);
+      super(EncryptedApplicationPayloadAndHeaderBuilder.class, new EncryptedApplicationPayloadAndHeader.Builder(), allegro2Api_);
     }
 
     /**
@@ -534,7 +542,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
         }
         else
         {
-          allegroPodApi_.encrypt(this);
+          allegro2Api_.encrypt(this);
         }
       }
       
@@ -732,33 +740,14 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public PodAndUserId getUserId()
   {
-    return allegroPodApi_.getUserId();
+    return allegro2Api_.getUserId();
   }
 
   @Override
   public String getApiAuthorizationToken()
   {
-    return allegroPodApi_.getApiAuthorizationToken();
+    return allegro2Api_.getApiAuthorizationToken();
   }
-
-  @Override
-  public ModelRegistry getModelRegistry()
-  {
-    return allegroPodApi_.getModelRegistry();
-  }
-
-//  @Override
-//  public IApplicationObjectPayload decryptObject(IEncryptedApplicationPayload storedApplicationObject)
-//  {
-//    return allegroPodApi_.decryptObject(storedApplicationObject);
-//  }
-
-//  @Override
-//  public <T extends IApplicationObjectPayload> T decryptObject(IEncryptedApplicationPayload storedApplicationObject,
-//      Class<T> type)
-//  {
-//    return allegroPodApi_.decryptObject(storedApplicationObject, type);
-//  }
 
   @Override
   public IApplicationObjectPayload decryptObject(IStoredApplicationObject storedApplicationObject)
@@ -766,7 +755,7 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
     if(storedApplicationObject.getEncryptedPayload() == null)
       return null;
     
-    ImmutableByteArray plainText = allegroPodApi_.decrypt(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), 
+    ImmutableByteArray plainText = allegro2Api_.decrypt(storedApplicationObject.getThreadId(), storedApplicationObject.getRotationId(), 
         storedApplicationObject.getEncryptedPayload());
     
     ModelRegistry objectModelRegistry = new ObjectModelRegistry(getModelRegistry(), storedApplicationObject);
@@ -805,97 +794,97 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public String getKeyManagerToken()
   {
-    return allegroPodApi_.getKeyManagerToken();
+    return allegro2Api_.getKeyManagerToken();
   }
 
   @Override
   public String getSessionToken()
   {
-    return allegroPodApi_.getSessionToken();
+    return allegro2Api_.getSessionToken();
   }
 
   @Override
   public PodId getPodId()
   {
-    return allegroPodApi_.getPodId();
+    return allegro2Api_.getPodId();
   }
 
   @Override
   public X509Certificate getPodCert()
   {
-    return allegroPodApi_.getPodCert();
+    return allegro2Api_.getPodCert();
   }
 
   @Override
   public void authenticate()
   {
-    allegroPodApi_.authenticate();
+    allegro2Api_.authenticate();
   }
 
   @Override
   public IUserV2 fetchUserByName(String userName) throws NotFoundException
   {
-    return allegroPodApi_.fetchUserByName(userName);
+    return allegro2Api_.fetchUserByName(userName);
   }
 
   @Override
   public IV2UserList fetchUsersByName(String... userNames)
   {
-    return allegroPodApi_.fetchUsersByName(userNames);
+    return allegro2Api_.fetchUsersByName(userNames);
   }
 
   @Override
   public IUserV2 fetchUserById(PodAndUserId userId) throws NotFoundException
   {
-    return allegroPodApi_.fetchUserById(userId);
+    return allegro2Api_.fetchUserById(userId);
   }
 
   @Override
   public IUserV2 getUserInfo()
   {
-    return allegroPodApi_.getUserInfo();
+    return allegro2Api_.getUserInfo();
   }
 
   @Override
   public IUserV2 getSessioninfo()
   {
-    return allegroPodApi_.getSessioninfo();
+    return allegro2Api_.getSessioninfo();
   }
 
   @Override
   public String getMessage(String messageId)
   {
-    return allegroPodApi_.getMessage(messageId);
+    return allegro2Api_.getMessage(messageId);
   }
 
   @Override
   public void fetchRecentMessagesFromPod(FetchRecentMessagesRequest request)
   {
-    allegroPodApi_.fetchRecentMessagesFromPod(request);
+    allegro2Api_.fetchRecentMessagesFromPod(request);
   }
 
   @Override
   public List<IStreamAttributes> fetchStreams(FetchStreamsRequest fetchStreamsRequest)
   {
-    return allegroPodApi_.fetchStreams(fetchStreamsRequest);
+    return allegro2Api_.fetchStreams(fetchStreamsRequest);
   }
 
   @Override
   public FeedId createMessageFeed()
   {
-    return allegroPodApi_.createMessageFeed();
+    return allegro2Api_.createMessageFeed();
   }
 
   @Override
   public List<FeedId> listMessageFeeds()
   {
-    return allegroPodApi_.listMessageFeeds();
+    return allegro2Api_.listMessageFeeds();
   }
 
   @Override
   public AckId fetchFeedMessages(FetchFeedMessagesRequest request)
   {
-    return allegroPodApi_.fetchFeedMessages(request);
+    return allegro2Api_.fetchFeedMessages(request);
   }
   
   @Override
@@ -907,61 +896,61 @@ public class AllegroApi extends AllegroBaseApi implements IAllegroApi
   @Override
   public ApplicationRecordBuilder newApplicationRecordBuilder()
   {
-    return allegroPodApi_.newApplicationRecordBuilder();
+    return allegro2Api_.newApplicationRecordBuilder();
   }
 
   @Override
   public ChatMessage.Builder newChatMessageBuilder()
   {
-    return allegroPodApi_.newChatMessageBuilder();
+    return allegro2Api_.newChatMessageBuilder();
   }
 
   @Override
   public AllegroConsumerManager.AbstractBuilder<?,?> newConsumerManagerBuilder()
   {
-    return allegroPodApi_.newConsumerManagerBuilder();
+    return allegro2Api_.newConsumerManagerBuilder();
   }
 
   @Override
   public void sendMessage(IChatMessage chatMessage)
   {
-    allegroPodApi_.sendMessage(chatMessage);
+    allegro2Api_.sendMessage(chatMessage);
   }
 
   @Override
   public IApplicationRecord decrypt(String jsonObject)
   {
-    return allegroPodApi_.decrypt(jsonObject);
+    return allegro2Api_.decrypt(jsonObject);
   }
 
   @Override
   public IReceivedChatMessage decrypt(ILiveCurrentMessage message)
   {
-    return allegroPodApi_.decrypt(message);
+    return allegro2Api_.decrypt(message);
   }
 
   @Override
   @Deprecated
   public IReceivedChatMessage decryptChatMessage(ILiveCurrentMessage message)
   {
-    return allegroPodApi_.decrypt(message);
+    return allegro2Api_.decrypt(message);
   }
 
   @Override
   public void encrypt(EncryptablePayloadBuilder<?, ?> builder)
   {
-    allegroPodApi_.encrypt(builder);
+    allegro2Api_.encrypt(builder);
   }
 
   @Override
   public ImmutableByteArray decrypt(ThreadId threadId, RotationId rotationId, EncryptedData encryptedPayload)
   {
-    return allegroPodApi_.decrypt(threadId, rotationId, encryptedPayload);
+    return allegro2Api_.decrypt(threadId, rotationId, encryptedPayload);
   }
 
   @Override
   public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
   {
-    return allegroPodApi_.decrypt(encryptedApplicationRecord);
+    return allegro2Api_.decrypt(encryptedApplicationRecord);
   }
 }

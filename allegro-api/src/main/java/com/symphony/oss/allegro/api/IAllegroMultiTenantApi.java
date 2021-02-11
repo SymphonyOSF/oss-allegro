@@ -23,9 +23,6 @@ import javax.annotation.Nullable;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import com.symphony.oss.allegro.api.AllegroBaseApi.ApplicationObjectDeleter;
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectBuilder;
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
