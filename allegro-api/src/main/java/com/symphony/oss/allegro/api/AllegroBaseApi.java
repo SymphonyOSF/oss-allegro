@@ -1146,6 +1146,10 @@ public abstract class AllegroBaseApi<R extends IAllegroModelRegistryProvider> im
                   .withPartitionHash(partitionHash)
                   .withAfter(after)
                   .withSortKeyPrefix(query.getSortKeyPrefix())
+                  .withSortKeyPrefixMinExclusive(query.getSortKeyMinExclusivePrefix())
+                  .withSortKeyPrefixMinInclusive(query.getSortKeyMinInclusivePrefix())
+                  .withSortKeyPrefixMaxExclusive(query.getSortKeyMaxExclusivePrefix())
+                  .withSortKeyPrefixMaxInclusive(query.getSortKeyMaxInclusivePrefix())
                   .withScanForwards(query.getScanForwards());
 
             pageRequest.withLimit(limit==null? pageLimit : Math.min(remainingItems, pageLimit));
