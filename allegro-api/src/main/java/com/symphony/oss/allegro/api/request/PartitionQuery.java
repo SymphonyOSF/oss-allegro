@@ -29,10 +29,8 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   private final boolean         scanForwards_;
   private final String          after_;
   private final String          sortKeyPrefix_;
-  private final String          sortKeyMinPrefixExcl_;
-  private final String          sortKeyMinPrefixIncl_;
-  private final String          sortKeyMaxPrefixExcl_;
-  private final String          sortKeyMaxPrefixIncl_;
+  private final String          sortKeyMin_;
+  private final String          sortKeyMax_;
   private final Integer         maxItems_;
   private final Integer         pageLimit_;
   
@@ -43,15 +41,13 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   {
     super(builder);
 
-    scanForwards_            = builder.scanForwards_;
-    after_                   = builder.after_;
-    sortKeyPrefix_           = builder.sortKeyPrefix_;
-    sortKeyMinPrefixExcl_    = builder.sortKeyMinPrefixExcl_;
-    sortKeyMinPrefixIncl_    = builder.sortKeyMinPrefixIncl_;
-    sortKeyMaxPrefixExcl_    = builder.sortKeyMaxPrefixExcl_;
-    sortKeyMaxPrefixIncl_    = builder.sortKeyMaxPrefixIncl_;
-    maxItems_                = builder.maxItems_;
-    pageLimit_               = builder.pageLimit_;
+    scanForwards_  = builder.scanForwards_;
+    after_         = builder.after_;
+    sortKeyPrefix_ = builder.sortKeyPrefix_;
+    sortKeyMin_    = builder.sortKeyMin_;
+    sortKeyMax_    = builder.sortKeyMax_;
+    maxItems_      = builder.maxItems_;
+    pageLimit_     = builder.pageLimit_;
   }
 
   /**
@@ -83,38 +79,20 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   
   /**
    * 
-   * @return The required min exclusive prefix for the sort key value of returned objects.
+   * @return The required min for the sort key value of returned objects.
    */
-  public String getSortKeyMinExclusivePrefix()
+  public String getSortKeyMin()
   {
-    return sortKeyMinPrefixExcl_;
+    return sortKeyMin_;
   }
   
   /**
    * 
-   * @return The required min inclusive prefix for the sort key value of returned objects.
+   * @return The required max for the sort key value of returned objects.
    */
-  public String getSortKeyMinInclusivePrefix()
+  public String getSortKeyMax()
   {
-    return sortKeyMinPrefixIncl_;
-  }
-  
-  /**
-   * 
-   * @return The required max exclusive prefix for the sort key value of returned objects.
-   */
-  public String getSortKeyMaxExclusivePrefix()
-  {
-    return sortKeyMaxPrefixExcl_;
-  }
-  
-  /**
-   * 
-   * @return The required max inclusive prefix for the sort key value of returned objects.
-   */
-  public String getSortKeyMaxInclusivePrefix()
-  {
-    return sortKeyMaxPrefixIncl_;
+    return sortKeyMax_;
   }
   
   /**
@@ -171,10 +149,8 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     protected boolean         scanForwards_ = true;
     protected String          after_;
     protected String          sortKeyPrefix_;
-    protected String          sortKeyMinPrefixExcl_;
-    protected String          sortKeyMinPrefixIncl_;
-    protected String          sortKeyMaxPrefixExcl_;
-    protected String          sortKeyMaxPrefixIncl_;
+    protected String          sortKeyMin_;
+    protected String          sortKeyMax_;
     protected Integer         maxItems_;
     protected Integer         pageLimit_;
     
@@ -228,55 +204,28 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     /**
      * Set the after of the partition.
      * 
-     * @param sortKeyMinPrefixExcl The required min exclusive prefix for sort key value of returned objects.
+     * @param sortKeyMin The required min for sort key value of returned objects.
      * 
      * @return This (fluent method)
      */
-    public T withSortKeyExclusiveMinimum(String sortKeyMinPrefixExcl)
+    public T withSortKeyMinimum(String sortKeyMin)
     {
-      sortKeyMinPrefixExcl_ = sortKeyMinPrefixExcl;
+      sortKeyMin_ = sortKeyMin;
       
       return self();
     }
     
-    /**
-     * Set the after of the partition.
-     * 
-     * @param sortKeyMinPrefixIncl The required min inclusive prefix for sort key value of returned objects.
-     * 
-     * @return This (fluent method)
-     */
-    public T withSortKeyInclusiveMinumum(String sortKeyMinPrefixIncl)
-    {
-      sortKeyMinPrefixIncl_ = sortKeyMinPrefixIncl;
-      
-      return self();
-    }
     
     /**
      * Set the after of the partition.
      * 
-     * @param sortKeyMaxPrefixExcl The required max exclusive prefix for sort key value of returned objects.
+     * @param sortKeyMax The required max for sort key value of returned objects.
      * 
      * @return This (fluent method)
      */
-    public T withSortKeyExclusiveMaximum(String sortKeyMaxPrefixExcl)
+    public T withSortKeyMaximum(String sortKeyMax)
     {
-      sortKeyMaxPrefixExcl_ = sortKeyMaxPrefixExcl;
-      
-      return self();
-    }
-    
-    /**
-     * Set the after of the partition.
-     * 
-     * @param sortKeyMaxPrefixIncl The required max inclusive prefix for sort key value of returned objects.
-     * 
-     * @return This (fluent method)
-     */
-    public T withSortKeyInclusiveMaximum(String sortKeyMaxPrefixIncl)
-    {
-      sortKeyMaxPrefixIncl_ = sortKeyMaxPrefixIncl;
+      sortKeyMax_ = sortKeyMax;
       
       return self();
     }
