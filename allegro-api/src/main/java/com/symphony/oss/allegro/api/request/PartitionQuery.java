@@ -265,6 +265,9 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
       
       if(maxItems_ != null && maxItems_ < 1)
         faultAccumulator.error("maxItems must be at least 1, or not set.");
+      
+      if ((sortKeyMin_ != null || sortKeyMax_ != null) && sortKeyPrefix_ != null)
+        faultAccumulator.error("Please specify only one between a sortKey range or a prefix.");
     }
   }
 }
