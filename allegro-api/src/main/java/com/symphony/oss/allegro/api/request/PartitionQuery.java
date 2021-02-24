@@ -29,6 +29,8 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   private final boolean         scanForwards_;
   private final String          after_;
   private final String          sortKeyPrefix_;
+  private final String          sortKeyMin_;
+  private final String          sortKeyMax_;
   private final Integer         maxItems_;
   private final Integer         pageLimit_;
   
@@ -39,11 +41,13 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   {
     super(builder);
 
-    scanForwards_     = builder.scanForwards_;
-    after_            = builder.after_;
-    sortKeyPrefix_    = builder.sortKeyPrefix_;
-    maxItems_         = builder.maxItems_;
-    pageLimit_         = builder.pageLimit_;
+    scanForwards_  = builder.scanForwards_;
+    after_         = builder.after_;
+    sortKeyPrefix_ = builder.sortKeyPrefix_;
+    sortKeyMin_    = builder.sortKeyMin_;
+    sortKeyMax_    = builder.sortKeyMax_;
+    maxItems_      = builder.maxItems_;
+    pageLimit_     = builder.pageLimit_;
   }
 
   /**
@@ -71,6 +75,24 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
   public String getSortKeyPrefix()
   {
     return sortKeyPrefix_;
+  }
+  
+  /**
+   * 
+   * @return The required min for the sort key value of returned objects.
+   */
+  public String getSortKeyMin()
+  {
+    return sortKeyMin_;
+  }
+  
+  /**
+   * 
+   * @return The required max for the sort key value of returned objects.
+   */
+  public String getSortKeyMax()
+  {
+    return sortKeyMax_;
   }
   
   /**
@@ -127,6 +149,8 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     protected boolean         scanForwards_ = true;
     protected String          after_;
     protected String          sortKeyPrefix_;
+    protected String          sortKeyMin_;
+    protected String          sortKeyMax_;
     protected Integer         maxItems_;
     protected Integer         pageLimit_;
     
@@ -178,6 +202,35 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
     }
     
     /**
+     * Set the after of the partition.
+     * 
+     * @param sortKeyMin The required min for sort key value of returned objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withSortKeyMinimum(String sortKeyMin)
+    {
+      sortKeyMin_ = sortKeyMin;
+      
+      return self();
+    }
+    
+    
+    /**
+     * Set the after of the partition.
+     * 
+     * @param sortKeyMax The required max for sort key value of returned objects.
+     * 
+     * @return This (fluent method)
+     */
+    public T withSortKeyMaximum(String sortKeyMax)
+    {
+      sortKeyMax_ = sortKeyMax;
+      
+      return self();
+    }
+    
+    /**
      * Set the maximum number of objects to return.
      * 
      * @param maxItems The maximum number of objects to return.
@@ -212,6 +265,9 @@ public class PartitionQuery extends NamedUserIdObjectOrHashRequest
       
       if(maxItems_ != null && maxItems_ < 1)
         faultAccumulator.error("maxItems must be at least 1, or not set.");
+      
+      if ((sortKeyMin_ != null || sortKeyMax_ != null) && sortKeyPrefix_ != null)
+        faultAccumulator.error("Please specify only one between a sortKey range or a prefix.");
     }
   }
 }
