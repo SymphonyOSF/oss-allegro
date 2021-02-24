@@ -155,11 +155,6 @@ public class AllegroSqsRequestBuilder
     {
       CloseableHttpResponse response = httpClient.execute(request);
         
-      if(response.getStatusLine().getStatusCode() != 200)
-      {
-        log_.error("response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
-        throw new IllegalStateException("SQS response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
-      }
 
       InputStream in = response.getEntity().getContent();
       
@@ -178,6 +173,13 @@ public class AllegroSqsRequestBuilder
         in.close();
       }
       buffer.flush();
+      
+
+      if(response.getStatusLine().getStatusCode() != 200)
+      {
+        log_.error("response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase() + "\n" + buffer.toString());
+        throw new IllegalStateException("SQS response " + response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
+      }
 
     }
     catch (IOException e)
