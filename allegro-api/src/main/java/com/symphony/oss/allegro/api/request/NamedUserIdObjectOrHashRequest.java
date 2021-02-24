@@ -19,7 +19,6 @@ package com.symphony.oss.allegro.api.request;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.hash.Hash;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
-import com.symphony.oss.models.object.canon.NamedUserIdObject;
 
 /**
  * Base object for a Request relating to an object identified by an INamedUserIdObject (e.g. a Partition or Feed.),

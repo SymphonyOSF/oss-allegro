@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.symphony.oss.allegro.api.AllegroBaseApi.EncryptedApplicationObjectUpdater;
 import com.google.common.collect.ImmutableSet;
+import com.symphony.oss.allegro.api.EncryptedApplicationObjectUpdater;
 import com.symphony.oss.allegro.api.IAllegroApi;
 import com.symphony.oss.allegro.api.IAllegroMultiTenantApi;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;

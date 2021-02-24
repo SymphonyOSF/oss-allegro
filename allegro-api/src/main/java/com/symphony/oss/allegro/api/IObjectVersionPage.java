@@ -38,6 +38,7 @@ public interface IObjectVersionPage extends IAbstractObjectPage<IAbstractStoredA
    * 
    * @return The next page of objects, or <code>null</code> if there is none.
    */
+  @Override
   @Nullable IObjectVersionPage fetchNextPage();
 
   /**
@@ -45,5 +46,6 @@ public interface IObjectVersionPage extends IAbstractObjectPage<IAbstractStoredA
    * 
    * @return The previous page of objects, or <code>null</code> if there is none.
    */
+  @Override
   @Nullable IObjectVersionPage fetchPrevPage();
 }

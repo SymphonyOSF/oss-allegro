@@ -39,6 +39,12 @@ public class AsyncVersionQueryListManager extends AbstractAsyncQueryListManager<
     super(builder);
   }
   
+  /**
+   * The concrete builder
+   * 
+   * @author Bruce Skingle
+   *
+   */
   public static class Builder extends AbstractBuilder<Builder, AsyncVersionQueryListManager>
   {
     /**

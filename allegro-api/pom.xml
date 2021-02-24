@@ -21,18 +21,28 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.5.1-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
-    
-  <repositories>
-    <repository>
-        <id>local-maven-repo</id>
-        <url>file:///${project.basedir}/local-maven-repo</url>
-    </repository>
-  </repositories>
   
   <dependencies>
+  
+    
+  
+    <!--  version introduced by aws has security vulnerabilities -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-cbor</artifactId>
+      <version>${jackson.version}</version>
+   </dependency>
+  
+  
+    <dependency>
+      <groupId>com.symphony.oss.allegro</groupId>
+      <artifactId>allegro2-api</artifactId>
+      <version>0.6.0-SNAPSHOT</version>
+    </dependency>
+    
     <dependency>
       <groupId>com.symphony.oss.commons</groupId>
       <artifactId>commons-core</artifactId>
@@ -126,6 +136,16 @@
        <artifactId>fugue-pubsub</artifactId>
        <version>${oss.fugue.version}</version>
      </dependency>
+     <dependency>
+       <groupId>com.symphony.oss.fugue</groupId>
+       <artifactId>fugue-aws</artifactId>
+       <version>${oss.fugue.version}</version>
+     </dependency>
+      <dependency>
+       <groupId>com.symphony.oss.fugue</groupId>
+       <artifactId>fugue-http</artifactId>
+       <version>${oss.fugue.version}</version>
+     </dependency>
     
     <dependency>
 	    <groupId>com.symphony</groupId>
@@ -138,12 +158,7 @@
       <artifactId>messageml</artifactId>
       <version>${messageml.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>io.jsonwebtoken</groupId>
-      <artifactId>jjwt-impl</artifactId>
-    </dependency>
-    
+        
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -172,6 +187,22 @@
     </dependency>
     
     <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-core</artifactId>
+      <version>${aws.java.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk-sqs</artifactId>
+      <version>${aws.java.sdk.version}</version>
+    </dependency>
+     
+    <dependency>
+      <groupId>io.jsonwebtoken</groupId>
+      <artifactId>jjwt-api</artifactId>
+    </dependency>
+    
+    <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
@@ -181,26 +212,4 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
   </dependencies>
-
-	<build>
-		<plugins>
-			<plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <appendAssemblyId>false</appendAssemblyId>
-          <descriptors>
-            <descriptor>src/assembly/dependencies.xml</descriptor>
-          </descriptors>
-        </configuration>
-      </plugin>
-		</plugins>
-	</build>
 </project>

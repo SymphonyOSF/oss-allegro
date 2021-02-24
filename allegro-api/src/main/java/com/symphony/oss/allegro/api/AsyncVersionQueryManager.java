@@ -31,6 +31,12 @@ import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObje
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 
+/**
+ * Class used to fetch asyncronously objects by base hash
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
 {
   private final VersionQuery                    query_;
@@ -39,7 +45,7 @@ public class AsyncVersionQueryManager extends AbstractAsyncQueryManager
   private final CloseableHttpClient             httpClient_;
 
 
-  public AsyncVersionQueryManager(AllegroDecryptor allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
+  public AsyncVersionQueryManager(IAllegroDecryptor allegroApi, VersionQuery query, AsyncConsumerManager consumerManager, ITraceContextTransactionFactory traceFactory,
       ObjectHttpModelClient objectApiClient, CloseableHttpClient httpClient, ThreadPoolExecutor handlerExecutor)
   {
     super(allegroApi, query.getMaxItems() == null ? 0 : query.getMaxItems(), consumerManager, handlerExecutor);

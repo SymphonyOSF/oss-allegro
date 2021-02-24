@@ -18,7 +18,16 @@
 
 package com.symphony.oss.allegro.api;
 
+/**
+ * A permission for a user which may be attached to a Partition or Feed.
+ * 
+ * @author Bruce Skingle
+ *
+ */
 public enum Permission
 {
-  Read, Write;
+  /** Can read objects */
+  Read, 
+  /** Can write objects */
+  Write;
 }

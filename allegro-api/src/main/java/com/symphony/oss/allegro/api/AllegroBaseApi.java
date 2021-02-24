@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.security.PrivateKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
@@ -48,30 +50,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.io.Files;
+import com.symphony.oss.allegro.api.AllegroSqsSubscriberManager.Builder;
+import com.symphony.oss.allegro.api.request.FeedId;
 import com.symphony.oss.allegro.api.request.FeedQuery;
 import com.symphony.oss.allegro.api.request.FetchEntitlementRequest;
 import com.symphony.oss.allegro.api.request.FetchFeedObjectsRequest;
 import com.symphony.oss.allegro.api.request.FetchObjectVersionsRequest;
 import com.symphony.oss.allegro.api.request.FetchPartitionObjectsRequest;
-import com.symphony.oss.allegro.api.request.PartitionId;
 import com.symphony.oss.allegro.api.request.PartitionQuery;
 import com.symphony.oss.allegro.api.request.UpsertFeedRequest;
 import com.symphony.oss.allegro.api.request.UpsertPartitionRequest;
 import com.symphony.oss.allegro.api.request.VersionQuery;
-import com.symphony.oss.canon.runtime.EntityBuilder;
+import com.symphony.oss.allegro2.api.IAllegroModelRegistryProvider;
+import com.symphony.oss.canon.runtime.IEntity;
 import com.symphony.oss.canon.runtime.IEntityFactory;
 import com.symphony.oss.canon.runtime.ModelRegistry;
 import com.symphony.oss.canon.runtime.exception.BadRequestException;
 import com.symphony.oss.canon.runtime.exception.NotFoundException;
 import com.symphony.oss.canon.runtime.exception.ServerErrorException;
-import com.symphony.oss.canon.runtime.http.IRequestAuthenticator;
 import com.symphony.oss.canon.runtime.http.client.IAuthenticationProvider;
 import com.symphony.oss.canon.runtime.jjwt.JwtBase;
-import com.symphony.oss.commons.dom.json.ImmutableJsonObject;
 import com.symphony.oss.commons.fault.CodingFault;
 import com.symphony.oss.commons.fault.FaultAccumulator;
 import com.symphony.oss.commons.fluent.BaseAbstractBuilder;
 import com.symphony.oss.commons.hash.Hash;
+import com.symphony.oss.fugue.aws.sqs.SqsAction;
+import com.symphony.oss.fugue.aws.sqs.SqsResponseMessage;
 import com.symphony.oss.fugue.pipeline.FatalConsumerException;
 import com.symphony.oss.fugue.pipeline.IThreadSafeErrorConsumer;
 import com.symphony.oss.fugue.pipeline.RetryableConsumerException;
@@ -84,52 +88,45 @@ import com.symphony.oss.models.allegro.canon.SslTrustStrategy;
 import com.symphony.oss.models.allegro.canon.facade.AllegroBaseConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
+import com.symphony.oss.models.allegro.canon.facade.IConnectionSettings;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
-import com.symphony.oss.models.core.canon.HashType;
 import com.symphony.oss.models.core.canon.ICursors;
 import com.symphony.oss.models.core.canon.IPagination;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
-import com.symphony.oss.models.core.canon.facade.ThreadId;
 import com.symphony.oss.models.crypto.canon.CipherSuiteId;
 import com.symphony.oss.models.crypto.canon.PemPrivateKey;
 import com.symphony.oss.models.crypto.cipher.CipherSuite;
-import com.symphony.oss.models.crypto.cipher.ICipherSuite;
+import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.DeletionType;
 import com.symphony.oss.models.object.canon.FeedRequest;
 import com.symphony.oss.models.object.canon.IAbstractStoredApplicationObject;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayload;
-import com.symphony.oss.models.object.canon.IEncryptedApplicationPayloadAndHeader;
 import com.symphony.oss.models.object.canon.IFeed;
+import com.symphony.oss.models.object.canon.IFeedsEndpoint;
 import com.symphony.oss.models.object.canon.IPageOfAbstractStoredApplicationObject;
 import com.symphony.oss.models.object.canon.IPageOfStoredApplicationObject;
+import com.symphony.oss.models.object.canon.IPageOfUserPermissions;
 import com.symphony.oss.models.object.canon.IUserPermissionsRequest;
 import com.symphony.oss.models.object.canon.ObjectHttpModelClient;
 import com.symphony.oss.models.object.canon.ObjectModel;
 import com.symphony.oss.models.object.canon.ObjectsObjectHashVersionsGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.PartitionsPartitionHashPageGetHttpRequestBuilder;
 import com.symphony.oss.models.object.canon.UserPermissionsRequest;
-import com.symphony.oss.models.object.canon.facade.DeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.FeedObjectDelete;
 import com.symphony.oss.models.object.canon.facade.FeedObjectExtend;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectHeader;
-import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IDeletedApplicationObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObject;
 import com.symphony.oss.models.object.canon.facade.IFeedObjectExtend;
 import com.symphony.oss.models.object.canon.facade.IPartition;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 import com.symphony.oss.models.object.canon.facade.SortKey;
-import com.symphony.oss.models.object.canon.facade.StoredApplicationObject;
 import com.symphony.s2.authc.canon.AuthcHttpModelClient;
 import com.symphony.s2.authc.canon.AuthcModel;
 import com.symphony.s2.authc.canon.IServiceInfo;
 import com.symphony.s2.authc.canon.ServiceId;
-import com.symphony.s2.authc.model.IAuthcContext;
 import com.symphony.s2.authc.model.IMultiTenantService;
 import com.symphony.s2.authc.model.MultiTenantService;
-import com.symphony.s2.authc.model.RemoteJwtAuthenticator;
 import com.symphony.s2.authz.canon.AuthzHttpModelClient;
 import com.symphony.s2.authz.canon.AuthzModel;
 import com.symphony.s2.authz.canon.EntitlementAction;
@@ -148,16 +145,20 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
 /**
  * Super class of AllegroMultiTenantApi and AllegroApi.
  * 
+ * @param <R> Concrete type of model registry provider. 
+ * 
  * @author Bruce Skingle
  *
  */
-public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegroMultiTenantApi
+public abstract class AllegroBaseApi<R extends IAllegroModelRegistryProvider> implements IAllegroMultiTenantApi
 {
   /** Distinguished value for API url which causes Allegro to access all services individually on the local host. */
   public static final URL ALL_SERVICES_LOCAL_URL;
   
   private static final Logger                   log_                       = LoggerFactory.getLogger(AllegroBaseApi.class);
-  private static final long                     FAILED_CONSUMER_RETRY_TIME    = TimeUnit.SECONDS.toSeconds(30);
+  private static final long                     FAILED_CONSUMER_RETRY_TIME = TimeUnit.SECONDS.toSeconds(30);
+  
+  private static Map<String, AllegroSqsFeedsContainer> feedsMap_  = new ConcurrentHashMap<>();
   
   static
   {
@@ -179,9 +180,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
     }
   };
 
-
+  final R                                    modelRegistryProvider_;
   final IAllegroBaseConfiguration            config_;
-  final ModelRegistry                        modelRegistry_;
   final CoreHttpModelClient                  coreApiClient_;
   final ObjectHttpModelClient                objectApiClient_;
   final AuthcHttpModelClient                 authcApiClient_;
@@ -193,15 +193,15 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   final CloseableHttpClient                  apiHttpClient_;
 
   private final Map<ServiceId, IServiceInfo> serviceMap_   = new HashMap<>();
-  private RemoteJwtAuthenticator             authenticator_;
 
   
-  AllegroBaseApi(AbstractBuilder<? extends IAllegroBaseConfiguration, ?, ?, ?> builder)
+  AllegroBaseApi(R modelRegistryProvider, AbstractBuilder<? extends IAllegroBaseConfiguration, ?, ?, ?> builder)
   {
-    config_       = builder.config_;
-    traceFactory_ = builder.traceFactory_;
+    modelRegistryProvider_  = modelRegistryProvider;
+    config_                 = builder.config_;
+    traceFactory_           = builder.traceFactory_;
     
-    modelRegistry_ = new ModelRegistry()
+    getModelRegistry()
         .withFactories(ObjectModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES)
         .withFactories(AuthzModel.FACTORIES)
@@ -209,25 +209,25 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         ;
     
     for(IEntityFactory<?, ?, ?> factory : builder.factories_)
-      modelRegistry_.withFactories(factory);
+      getModelRegistry().withFactories(factory);
 
 
     apiHttpClient_     = builder.getApiHttpClient();
     
     coreApiClient_  = new CoreHttpModelClient(
-        modelRegistry_,
+        getModelRegistry(),
         initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     objectApiClient_  = new ObjectHttpModelClient(
-        modelRegistry_,
+        getModelRegistry(),
         initUrl(builder.config_.getApiUrl(), MultiTenantService.OBJECT), null, jwtGenerator_, null);
     
     authcApiClient_  = new AuthcHttpModelClient(
-        modelRegistry_,
+        getModelRegistry(),
         initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHC), null, jwtGenerator_, null);
     
     authzApiClient_  = new AuthzHttpModelClient(
-        modelRegistry_,
+        getModelRegistry(),
         initUrl(builder.config_.getApiUrl(), MultiTenantService.AUTHZ), null, jwtGenerator_, null);
     
     entitlementValidator_ = new BaseEntitlementValidator(apiHttpClient_, authzApiClient_, this);
@@ -236,6 +236,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
 
   private String initUrl(URL url, MultiTenantService service)
   {
+    if(url == null)
+      return "https://api.symphony.com";
+    
     if(url.equals(ALL_SERVICES_LOCAL_URL))
       return "http://127.0.0.1:" + service.getHttpPort();
     
@@ -271,7 +274,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withFactories(AllegroModel.FACTORIES)
         .withFactories(AuthcModel.FACTORIES);
     protected C                               config_;
-    protected ICipherSuite                    cipherSuite_;
     protected PrivateKey                      rsaCredential_;
     private C                                 setConfig_;
     private CloseableHttpClient               defaultHttpClient_;
@@ -293,11 +295,11 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         if(config_.getDefaultConnectionSettings() == null)
         {
-          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cipherSuite_, cookieStore_);
+          defaultHttpClient_ = new ConnectionSettings.Builder().build().createHttpClient(cookieStore_);
         }
         else
         {
-          defaultHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          defaultHttpClient_ = config_.getDefaultConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -314,7 +316,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         }
         else
         {
-          apiHttpClient_ = config_.getApiConnectionSettings().createHttpClient(cipherSuite_, cookieStore_);
+          apiHttpClient_ = config_.getApiConnectionSettings().createHttpClient(cookieStore_);
         }
       }
       
@@ -531,8 +533,6 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         config_ = setConfig_;
       }
       
-      cipherSuite_ = config_.getCipherSuiteId() == null ? CipherSuite.getDefault() : CipherSuite.get(config_.getCipherSuiteId());
-      
       if(config_.getRsaPemCredential() == null)
       {
         if(config_.getRsaPemCredentialFile() == null)
@@ -549,7 +549,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           try
           {
             PemPrivateKey pemPrivateKey = PemPrivateKey.newBuilder().build(new String(Files.toByteArray(file)));
-            rsaCredential_ = cipherSuite_.privateKeyFromPem(pemPrivateKey);
+            rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(pemPrivateKey);
           }
           catch (IOException e)
           {
@@ -559,21 +559,21 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       }
       else
       {
-        rsaCredential_ = cipherSuite_.privateKeyFromPem(config_.getRsaPemCredential());
+        rsaCredential_ = CipherSuiteUtils.privateKeyFromPem(config_.getRsaPemCredential());
       }
     }
   }
 
   @Override
+  public ModelRegistry getModelRegistry()
+  {
+    return modelRegistryProvider_.getModelRegistry();
+  }
+  
+  @Override
   public IAllegroBaseConfiguration getConfiguration()
   {
     return config_;
-  }
-
-  @Override
-  public ModelRegistry getModelRegistry()
-  {
-    return modelRegistry_;
   }
 
   @Override
@@ -634,36 +634,244 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
   
   private IAllegroQueryManager fetchFeedObjects(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
-  {
-    IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
-    {
-      @Override
-      public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+  {  
+    List<FeedId> feedIds   = new ArrayList<>();
+    
+    for(FeedQuery q : request.getQueryList())
+      feedIds.add(new FeedId.Builder()
+          .withHash(q.getHash(getUserId()))
+          .build());
+    
+    AllegroSqsFeedsContainer feeds  = refreshFeeds(feedIds);
+    
+    if(feeds.isDirect()) {
+      
+      IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
       {
-        request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+        @Override
+        public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+        {
+          request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+        }
+
+        @Override
+        public void close()
+        {
+          request.getConsumerManager().getUnprocessableMessageConsumer().close();
+        }
+      };
+
+    Builder builder = new AllegroSqsSubscriberManager.Builder()
+        .withFeedsContainer(feeds)
+        .withTraceContextTransactionFactory(traceFactory_)
+        .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
+        .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
+        .withUnprocessableMessageConsumer(unprocessableConsumer)
+        .withSubscription(new AllegroSqsSubscription(request, feeds.getFeedIds(), this))
+        .withModelRegistry(getModelRegistry())
+        .withHttpClient(apiHttpClient_);
+    
+    
+    IConnectionSettings connSettings = getConfiguration().getApiConnectionSettings();
+
+    if (connSettings != null)
+    {
+      builder.withProxyUrl     (connSettings.getProxyUrl());
+      builder.withProxyUsername(connSettings.getProxyUsername()); 
+      builder.withProxyPassword(connSettings.getProxyPassword());
+    }
+        
+    return builder.build();  
+    }
+    else  
+      return fetchFeedObjectsFromServerAsync(request, consumerManager);
+
+  }
+  
+  private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
+  {
+
+    try (ITraceContextTransaction parentTraceTransaction = traceFactory_ .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
+    {
+      parentTraceTransaction.open();
+
+      List<FeedId> feedIds        = new ArrayList<>();
+      List<FeedQuery> queries = new ArrayList<>();
+      
+      for(FeedQuery q : request.getQueryList())
+      {
+        Hash hash = q.getHash(getUserId());
+        
+          feedIds.add(new FeedId.Builder()
+              .withHash(hash)
+              .build());
+          queries.add(q);     
       }
 
-      @Override
-      public void close()
+      AllegroSqsFeedsContainer feeds = refreshFeeds(feedIds);
+      
+      if(feeds.isDirect()) 
       {
-        request.getConsumerManager().getUnprocessableMessageConsumer().close();
+        try (ITraceContextTransaction subparentTraceTransaction = traceFactory_
+            .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
+        {
+          ITraceContext subParentTrace = parentTraceTransaction.open();
+
+          for (FeedQuery query : queries)
+          {
+            Hash feedHash = query.getHash(getUserId());
+            
+            try(ITraceContextTransaction traceTransaction = subParentTrace.createSubContext("FetchFeed", feedHash.toString()))
+            {
+              ITraceContext trace = traceTransaction.open();
+
+              List<SqsResponseMessage> messages = new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
+                  .withFeedHash(feedHash.toString())
+                  .withAction(SqsAction.RECEIVE)
+                  .withMaxNumberOfMessages(query.getMaxItems() != null ? query.getMaxItems() : 1)
+                  .withWaitTimeSeconds(0)          
+                .execute(apiHttpClient_);
+               
+              int ackCnt = 0;
+              
+              ArrayList<SqsResponseMessage> recv_messages = new ArrayList<>();
+              
+              for(SqsResponseMessage message : messages)
+              {
+                try
+                {
+                  IEntity entity = getModelRegistry().parseOne(new StringReader(message.getPayload()));
+
+                  if (entity instanceof IAbstractStoredApplicationObject)
+                  {
+                    IAbstractStoredApplicationObject object = (IAbstractStoredApplicationObject) entity;
+                    consume(consumerManager, object, trace);
+                    
+                    recv_messages.addAll(new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
+                        .withFeedHash(feedHash.toString())
+                        .withAction(SqsAction.DELETE)
+                        .withReceiptHandle(message.getReceiptHandle())
+                      .execute(apiHttpClient_));
+                    
+                    ackCnt++;
+
+                  }
+                  else
+                  {
+                    log_.error("Retrieved unexpected feed entity of type " + entity.getCanonType());
+                  }                 
+                }
+                catch(RetryableConsumerException e)
+                {
+                  long delay = e.getRetryTime() == null || e.getRetryTimeUnit() == null ? FAILED_CONSUMER_RETRY_TIME : e.getRetryTimeUnit().toSeconds(e.getRetryTime());
+                  
+                  log_.warn("Transient processing failure, will retry (forever)", e);
+
+                  recv_messages.addAll(new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
+                      .withFeedHash(feedHash.toString())
+                      .withAction(SqsAction.EXTEND)
+                      .withReceiptHandle(message.getReceiptHandle())
+                      .withVisibilityTimeout((int)delay)
+                    .execute(apiHttpClient_));
+                  
+                  ackCnt++;
+                }
+                catch (RuntimeException  e)
+                {
+                  log_.warn("Unexpected processing failure, will retry (forever)", e);
+
+                  recv_messages.addAll(new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
+                      .withFeedHash(feedHash.toString())
+                      .withAction(SqsAction.EXTEND)
+                      .withReceiptHandle(message.getReceiptHandle())
+                      .withVisibilityTimeout((int)FAILED_CONSUMER_RETRY_TIME)
+                    .execute(apiHttpClient_));
+                  
+                  ackCnt++;
+                }
+                catch (FatalConsumerException e)
+                {
+                  log_.error("Unprocessable message, aborted", e);
+        
+                  trace.trace("MESSAGE_IS_UNPROCESSABLE");
+                  
+                  recv_messages.addAll(new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
+                      .withFeedHash(feedHash.toString())
+                      .withAction(SqsAction.DELETE)
+                      .withReceiptHandle(message.getReceiptHandle())
+                    .execute(apiHttpClient_));
+                  
+                  ackCnt++;
+                  
+                  consumerManager.getUnprocessableMessageConsumer().consume(message.getPayload(), trace, "Unprocessable message, aborted", e);
+                }
+              }
+//            System.out.println("DELETING TOOK "+(System.currentTimeMillis() - start));
+              if(ackCnt>0)
+              {
+                // Delete (ACK) the consumed messages
+                messages = recv_messages;
+              }
+            }
+          }
       }
-    };
+    }
+    else
+      fetchFeedObjectsFromServerSync(request, consumerManager);
+    }
     
-    AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
-        .withHttpClient(apiHttpClient_)
-        .withObjectApiClient(objectApiClient_)
-        .withTraceContextTransactionFactory(traceFactory_)
-        .withUnprocessableMessageConsumer(unprocessableConsumer)
-        .withSubscription(new AllegroSubscription(request, this))
-        .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
-        .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
-      .build();
+    consumerManager.closeConsumers();
+  }
+  
+  private AllegroSqsFeedsContainer refreshFeeds(List<FeedId> feedIds) 
+  {     
+    StringBuilder sb = new StringBuilder();
     
-    return subscriberManager;
+    for(FeedId feed : feedIds) 
+      sb.append(feed.getHash(getUserId()));
+    
+    String key = sb.toString();
+
+    AllegroSqsFeedsContainer provider = feedsMap_.get(key);
+    if(provider == null)  
+       feedsMap_.put(key, provider = new AllegroSqsFeedsContainer(feedIds, getUserId(), this));
+    
+    provider.refresh();
+    
+    return provider;
   }
 
-  private void fetchFeedObjects(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
+ private IAllegroQueryManager fetchFeedObjectsFromServerAsync(FetchFeedObjectsRequest request, AsyncConsumerManager consumerManager)
+ {
+  IThreadSafeErrorConsumer<IAbstractStoredApplicationObject> unprocessableConsumer = new IThreadSafeErrorConsumer<IAbstractStoredApplicationObject>()
+  {
+    @Override
+    public void consume(IAbstractStoredApplicationObject item, ITraceContext trace, String message, Throwable cause)
+    {
+      request.getConsumerManager().getUnprocessableMessageConsumer().consume(item, trace, message, cause);
+    }
+
+    @Override
+    public void close()
+    {
+      request.getConsumerManager().getUnprocessableMessageConsumer().close();
+    }
+  };
+  
+  AllegroSubscriberManager subscriberManager = new AllegroSubscriberManager.Builder()
+      .withHttpClient(apiHttpClient_)
+      .withObjectApiClient(objectApiClient_)
+      .withTraceContextTransactionFactory(traceFactory_)
+      .withUnprocessableMessageConsumer(unprocessableConsumer)
+      .withSubscription(new AllegroSubscription(request, this))
+      .withSubscriberThreadPoolSize(consumerManager.getSubscriberThreadPoolSize())
+      .withHandlerThreadPoolSize(consumerManager.getHandlerThreadPoolSize())
+    .build();
+  
+  return subscriberManager;
+}
+
+  private void fetchFeedObjectsFromServerSync(FetchFeedObjectsRequest request, ConsumerManager consumerManager)
   {
     try (ITraceContextTransaction parentTraceTransaction = traceFactory_
         .createTransaction("fetchObjectVersionsSet", String.valueOf(request.hashCode())))
@@ -789,7 +997,32 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
         .withFeedId(request.getAndValidateId(getUserId()))
         .withPartitionSelections(request.getPartitionSelections(getUserId()))
         .withUserPermissions(userPermissions)
+        .withExpiryTime(request.getExpiryTime())
         .build())
+      .build()
+      .execute(apiHttpClient_)
+      ;
+  }
+
+  IFeedsEndpoint refreshFeeds(Collection<FeedId> feedIds)
+  { 
+    ArrayList<Hash> feedHashes = new ArrayList<>();
+    
+    for(FeedId id : feedIds)
+      feedHashes.add(id.getHash(getUserId()));
+    
+    return objectApiClient_.newFeedsEndpointPostHttpRequestBuilder()
+        .withCanonPayload(feedHashes)
+      .build()
+      .execute(apiHttpClient_)
+      ;
+  }
+  
+  @Override
+  public void deleteFeed(FeedId feedId)
+  {    
+     objectApiClient_.newFeedsFeedHashDeleteHttpRequestBuilder()
+        .withFeedHash(feedId.getHash(getUserId()))
       .build()
       .execute(apiHttpClient_)
       ;
@@ -891,6 +1124,7 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
       {
         Integer limit           = query.getMaxItems();
         int     remainingItems  = limit == null ? 0 : limit;
+        int     pageLimit       = query.getPageLimit() == null || query.getPageLimit()<=0 ? 2000 : query.getPageLimit();
         
         if (limit != null && remainingItems <= 0)
           break;
@@ -902,7 +1136,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
             partitionHash.toString()))
         {
           ITraceContext trace = traceTransaction.open();
-
+          trace.trace("Request started");
+          int itemsSize = 0;
+          
           do
           {
             PartitionsPartitionHashPageGetHttpRequestBuilder pageRequest = objectApiClient_
@@ -910,14 +1146,19 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                   .withPartitionHash(partitionHash)
                   .withAfter(after)
                   .withSortKeyPrefix(query.getSortKeyPrefix())
+                  .withSortKeyMin(query.getSortKeyMin())
+                  .withSortKeyMax(query.getSortKeyMax())
                   .withScanForwards(query.getScanForwards());
 
-            if (limit != null)
-              pageRequest.withLimit(remainingItems);
-
+            pageRequest.withLimit(limit==null? pageLimit : Math.min(remainingItems, pageLimit));
+            trace.trace("Excuting request");
             IPageOfStoredApplicationObject page = pageRequest
                 .build()
                 .execute(apiHttpClient_);
+            
+           itemsSize += page.getData() != null ? page.getData().size() : 0;
+           
+           trace.trace("Fetched items: "+itemsSize);
 
             for (IAbstractStoredApplicationObject item : page.getData())
             {
@@ -932,6 +1173,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
               }
               remainingItems--;
             }
+            
+            trace.trace("Consumed all items "+page.getData().size());
 
             after = null;
             IPagination pagination = page.getPagination();
@@ -944,7 +1187,8 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
                 after = cursors.getAfter();
             }
           } while (after != null && (limit == null || remainingItems > 0));
-        }
+          trace.trace("Request terminated");
+        }     
       }
     }
   }
@@ -986,482 +1230,38 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
           .build()
         .execute(apiHttpClient_);
   }
+  
+  @Override
+  public IPageOfUserPermissions fetchPartitionUsers(PartitionQuery query)
+  {
+    Hash          partitionHash   = query.getHash(getUserId());
+
+    return objectApiClient_
+        .newPartitionsPartitionHashUsersGetHttpRequestBuilder()
+         .withPartitionHash(partitionHash)
+         .build()
+        .execute(apiHttpClient_);
+
+  }
 
   @Override
   public EncryptedApplicationObjectBuilder newEncryptedApplicationObjectBuilder()
   {
-    return new EncryptedApplicationObjectBuilder();
+    return new EncryptedApplicationObjectBuilder(getUserId());
   }
   
   @Override
   public EncryptedApplicationObjectUpdater newEncryptedApplicationObjectUpdater(IStoredApplicationObject existingObject)
   {
-    return new EncryptedApplicationObjectUpdater(existingObject);
+    return new EncryptedApplicationObjectUpdater(getUserId(), existingObject);
   }
 
-  /**
-   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
-   * version is to be created.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDeleter, IDeletedApplicationObject>
-  {
-    private DeletedApplicationObject.Builder builder_;
-    
-    /**
-     * Constructor.
-     * 
-     * @param existingObject An existing Application Object for which is to be deleted. 
-     */
-    public ApplicationObjectDeleter(IApplicationObjectPayload existingObject)
-    {
-      this(existingObject.getStoredApplicationObject());
-    }
-    
-    /**
-     * Constructor.
-     * 
-     * @param existingObject An existing Application Object for which is to be deleted. 
-     */
-    public ApplicationObjectDeleter(IStoredApplicationObject existingObject)
-    {
-      super(ApplicationObjectDeleter.class, existingObject);
-      
-      IStoredApplicationObject existing = existingObject;
-      
-      builder_ = new DeletedApplicationObject.Builder()
-          .withPartitionHash(existing.getPartitionHash())
-          .withSortKey(existing.getSortKey())
-          .withOwner(getUserId())
-          .withPurgeDate(existing.getPurgeDate())
-          .withBaseHash(existing.getBaseHash())
-          .withPrevHash(existing.getAbsoluteHash())
-          .withPrevSortKey(existing.getSortKey())
-          ;
-    }
-
-    /**
-     * Set the deletion type.
-     * 
-     * @param value The deletion type.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withDeletionType(DeletionType value)
-    {
-      builder_.withDeletionType(value);
-      
-      return self();
-    }
-    
-    /**
-     * Set the purge date for this object.
-     * 
-     * This is meaningless in the case of a physical delete but makes sense for a Logical Delete.
-     * 
-     * @param purgeDate The date after which this object may be deleted by the system.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withPurgeDate(Instant purgeDate)
-    {
-      builder_.withPurgeDate(purgeDate);
-      
-      return self();
-    }
-
-    @Override
-    public ImmutableJsonObject getJsonObject()
-    {
-      return builder_.getJsonObject();
-    }
-
-    @Override
-    public String getCanonType()
-    {
-      return builder_.getCanonType();
-    }
-
-    @Override
-    public Integer getCanonMajorVersion()
-    {
-      return builder_.getCanonMajorVersion();
-    }
-
-    @Override
-    public Integer getCanonMinorVersion()
-    {
-      return builder_.getCanonMinorVersion();
-    }
-
-    @Override
-    protected void populateAllFields(List<Object> result)
-    {
-      builder_.populateAllFields(result);
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withSortKey(SortKey sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public ApplicationObjectDeleter withSortKey(String sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    @Override
-    protected void validate()
-    {
-      if(builder_.getHashType() == null)
-        builder_.withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
-      
-      if(builder_.getDeletionType() == null)
-        throw new IllegalStateException("DeletionType is required.");
-      
-      builder_.withOwner(getUserId());
-      
-      super.validate();
-    }
-
-    @Override
-    protected IDeletedApplicationObject construct()
-    {
-      return builder_.build();
-    }
-  }
+  
   
   @Override
   public ApplicationObjectDeleter newApplicationObjectDeleter(IStoredApplicationObject existingObject)
   {
-    return new ApplicationObjectDeleter(existingObject);
-  }
-
-  /**
-   * Super class for ApplicationObject builders which take an already encrypted payload.
-   * 
-   * @author Bruce Skingle
-   *
-   * @param <T> The concrete type for fluent methods.
-   */
-  abstract class BaseEncryptedApplicationObjectBuilder<T extends BaseEncryptedApplicationObjectBuilder<T>> extends EntityBuilder<T, IStoredApplicationObject>
-  {
-    protected final StoredApplicationObject.Builder  builder_ = new StoredApplicationObject.Builder();
-    
-    BaseEncryptedApplicationObjectBuilder(Class<T> type)
-    {
-      super(type);
-    }
-    
-    BaseEncryptedApplicationObjectBuilder(Class<T> type,
-        IStoredApplicationObject existing)
-    {
-      super(type);
-      
-      builder_.withPartitionHash(existing.getPartitionHash())
-        .withSortKey(existing.getSortKey())
-        .withOwner(getUserId())
-        .withPurgeDate(existing.getPurgeDate())
-        .withBaseHash(existing.getBaseHash())
-        .withPrevHash(existing.getAbsoluteHash())
-        .withPrevSortKey(existing.getSortKey())
-        ;
-    }
-
-    /**
-     * Set the unencrypted header for this object.
-     * 
-     * @param header The unencrypted header for this object.
-     * 
-     * @return This (fluent method).
-     */
-    public T withHeader(IApplicationObjectHeader header)
-    {
-      builder_.withHeader(header);
-      
-      return self();
-    }
-
-    /**
-     * Set the purge date for this object.
-     * 
-     * @param purgeDate The date after which this object may be deleted by the system.
-     * 
-     * @return This (fluent method).
-     */
-    public T withPurgeDate(Instant purgeDate)
-    {
-      builder_.withPurgeDate(purgeDate);
-      
-      return self();
-    }
-    
-    @Override
-    public ImmutableJsonObject getJsonObject()
-    {
-      return builder_.getJsonObject();
-    }
-
-    @Override
-    public String getCanonType()
-    {
-      return builder_.getCanonType();
-    }
-
-    @Override
-    public Integer getCanonMajorVersion()
-    {
-      return builder_.getCanonMajorVersion();
-    }
-
-    @Override
-    public Integer getCanonMinorVersion()
-    {
-      return builder_.getCanonMinorVersion();
-    }
-
-    @Override
-    protected void populateAllFields(List<Object> result)
-    {
-      builder_.populateAllFields(result);
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public T withSortKey(SortKey sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    /**
-     * Set the sort key for the object.
-     * 
-     * @param sortKey The sort key to be attached to this object within its partition.
-     * 
-     * @return This (fluent method).
-     */
-    public T withSortKey(String sortKey)
-    {
-      builder_.withSortKey(sortKey);
-      
-      return self();
-    }
-    
-    @Override
-    protected void validate()
-    {
-      if(builder_.getHashType() == null)
-        builder_.withHashType(HashType.newBuilder().build(Hash.getDefaultHashTypeId()));
-
-      builder_.withOwner(getUserId());
-      
-      super.validate();
-    }
-  }
-  
-  /**
-   * Builder for Application Objects.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class EncryptedApplicationObjectBuilder extends BaseEncryptedApplicationObjectBuilder<EncryptedApplicationObjectBuilder>
-  {
-    EncryptedApplicationObjectBuilder()
-    {
-      super(EncryptedApplicationObjectBuilder.class);
-    }
-
-    /**
-     * Set the id of the thread with whose content key this object will be encrypted.
-     * 
-     * @param threadId The id of the thread with whose content key this object will be encrypted.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withThreadId(ThreadId threadId)
-    {
-      builder_.withThreadId(threadId);
-      
-      return self();
-    }
-    
-    /**
-     * Set the partition key for the object from the given partition.
-     * 
-     * @param partitionHash The Hash of the partition.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withPartition(Hash partitionHash)
-    {
-      builder_.withPartitionHash(partitionHash);
-      
-      return self();
-    }
-    
-    /**
-     * Set the partition key for the object from the given partition.
-     * 
-     * @param partitionId The ID of the partition.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withPartition(PartitionId partitionId)
-    {
-      builder_.withPartitionHash(partitionId.getId(getUserId()).getHash());
-      
-      return self();
-    }
-    
-    /**
-     * Set the partition key for the object from the given partition.
-     * 
-     * @param partition A partition object.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withPartition(IPartition partition)
-    {
-      builder_.withPartitionHash(partition.getId().getHash());
-      
-      return self();
-    }
-    
-    /**
-     * Set the already encrypted object payload and header.
-     * 
-     * @param payload The encrypted object payload and header.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
-    {
-      withHeader(payload.getHeader());
-
-      return withEncryptedPayload(payload);
-    }
-    
-    /**
-     * Set the already encrypted object payload.
-     * 
-     * @param payload The encrypted object payload.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectBuilder withEncryptedPayload(IEncryptedApplicationPayload payload)
-    {
-      builder_.withEncryptedPayload(payload.getEncryptedPayload());
-      builder_.withRotationId(payload.getRotationId());
-      builder_.withCipherSuiteId(payload.getCipherSuiteId());
-      builder_.withThreadId(payload.getThreadId());
-      
-      return self();
-    }
-    
-    @Override
-    protected IStoredApplicationObject construct()
-    {
-      return builder_.build();
-    }
-  }
-  
-  /**
-   * Builder for application type FundamentalObjects which takes an existing ApplicationObject for which a new
-   * version is to be created.
-   * 
-   * @author Bruce Skingle
-   *
-   */
-  public class EncryptedApplicationObjectUpdater extends BaseEncryptedApplicationObjectBuilder<EncryptedApplicationObjectUpdater>
-  {
-    /**
-     * Constructor.
-     * 
-     * @param existing An existing Application Object for which a new version is to be created. 
-     */
-    public EncryptedApplicationObjectUpdater(IStoredApplicationObject existing)
-    {
-      super(EncryptedApplicationObjectUpdater.class, existing);
-      
-      builder_
-          .withPartitionHash(existing.getPartitionHash())
-          .withSortKey(existing.getSortKey())
-          .withOwner(getUserId())
-          .withThreadId(existing.getThreadId())
-          .withHeader(existing.getHeader())
-          .withPurgeDate(existing.getPurgeDate())
-          .withBaseHash(existing.getBaseHash())
-          .withPrevHash(existing.getAbsoluteHash())
-          .withPrevSortKey(existing.getSortKey())
-          ;
-    }
-    
-    /**
-     * Set the already encrypted object payload and header.
-     * 
-     * @param payload The encrypted object payload and header.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectUpdater withEncryptedPayloadAndHeader(IEncryptedApplicationPayloadAndHeader payload)
-    {
-      withHeader(payload.getHeader());
-
-      return withEncryptedPayload(payload);
-    }
-    
-    /**
-     * Set the already encrypted object payload.
-     * 
-     * @param payload The encrypted object payload.
-     * 
-     * @return This (fluent method).
-     */
-    public EncryptedApplicationObjectUpdater withEncryptedPayload(IEncryptedApplicationPayload payload)
-    {
-      if(!builder_.getThreadId().equals(payload.getThreadId()))
-        throw new IllegalArgumentException("The threadId of an object cannot be changed. The object being updated has thread ID " + builder_.getThreadId());
-      
-      builder_.withEncryptedPayload(payload.getEncryptedPayload());
-      builder_.withRotationId(payload.getRotationId());
-      builder_.withCipherSuiteId(payload.getCipherSuiteId());
-      
-      return self();
-    }
-
-    @Override
-    protected IStoredApplicationObject construct()
-    {
-      return builder_.build();
-    }
+    return new ApplicationObjectDeleter(getUserId(), existingObject);
   }
   
   @Override
@@ -1533,14 +1333,9 @@ public abstract class AllegroBaseApi extends AllegroDecryptor implements IAllegr
   }
 
   @Override
-  public IRequestAuthenticator<IAuthcContext> getAuthenticator()
+  public AuthcHttpModelClient getAuthcHttpModelClient()
   {
-    if(authenticator_ == null)
-    {
-      authenticator_ = new RemoteJwtAuthenticator(authcApiClient_, apiHttpClient_);
-    }
-    
-    return authenticator_;
+    return authcApiClient_;
   }
 
   @Override
