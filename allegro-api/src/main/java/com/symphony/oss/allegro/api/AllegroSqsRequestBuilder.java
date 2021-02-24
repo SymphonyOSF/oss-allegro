@@ -73,7 +73,7 @@ public class AllegroSqsRequestBuilder
   }
 
   /**
-   * @param MaxNumberOfMessages the Max number of messages to request (<=10)
+   * @param MaxNumberOfMessages the Max number of messages to request (less than or equal to 10)
    * @return self
    */
   public AllegroSqsRequestBuilder withMaxNumberOfMessages(Integer MaxNumberOfMessages)

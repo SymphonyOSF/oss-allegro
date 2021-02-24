@@ -48,6 +48,7 @@ public class ApplicationObjectDeleter extends EntityBuilder<ApplicationObjectDel
   /**
    * Constructor.
    * 
+   * @param ownerId The owning user of the object.
    * @param existingObject An existing Application Object for which is to be deleted. 
    */
   public ApplicationObjectDeleter(PodAndUserId ownerId, IApplicationObjectPayload existingObject)

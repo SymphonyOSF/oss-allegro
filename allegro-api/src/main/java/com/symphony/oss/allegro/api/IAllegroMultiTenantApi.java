@@ -64,10 +64,11 @@ import com.symphony.s2.authz.model.IServiceEntitlementSpecOrIdProvider;
  * The multi-tenant version of AllegroApi does not support any encryption or decryption capabilities and
  * does not require authentication to a pod. This is intended for use by multi-tenant services. For the
  * full API see {@link IAllegroApi}.
+ * </p>
  * <p>
  * Generally methods called {@code getXXX()} return something from the local client whereas methods
  * called {@code fetchXXX()} involve a network request to some server.
- * <p>
+ * </p>
  * @author Bruce Skingle
  */
 public interface IAllegroMultiTenantApi  extends IAllegroDecryptor, IMultiTenantServiceRegistry, Closeable

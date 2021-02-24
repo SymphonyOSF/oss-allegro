@@ -35,6 +35,7 @@ public class EncryptedApplicationObjectUpdater extends BaseEncryptedApplicationO
   /**
    * Constructor.
    * 
+   * @param ownerId The owning user of the object.
    * @param existing An existing Application Object for which a new version is to be created. 
    */
   public EncryptedApplicationObjectUpdater(PodAndUserId ownerId, IStoredApplicationObject existing)
