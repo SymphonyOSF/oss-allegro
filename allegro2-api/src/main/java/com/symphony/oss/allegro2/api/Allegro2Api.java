@@ -97,6 +97,7 @@ import com.symphony.oss.models.core.canon.facade.ApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -987,6 +988,12 @@ public class Allegro2Api implements IAllegro2Api
   }
   
   @Override
+  public EncryptedRecordBuilder newEncryptedRecordBuilder()
+  {
+    return new EncryptedRecordBuilder(this);
+  }
+  
+  @Override
   public ChatMessage.Builder newChatMessageBuilder()
   {
     return new ChatMessage.Builder().withRegistry(modelRegistry_, dataProvider_);
@@ -1099,6 +1106,22 @@ public class Allegro2Api implements IAllegro2Api
     }
     
     return builder.build();
+  }
+  
+
+  
+  @Override
+  public String decrypt(IEncryptedRecord encryptedRecord)
+  {
+    if(encryptedRecord.getEncryptedPayload() != null)
+    {
+      ImmutableByteArray plainText = decrypt(encryptedRecord.getThreadId(), encryptedRecord.getRotationId(), 
+          encryptedRecord.getEncryptedPayload());
+      
+      return plainText.toString();
+    }
+    
+    return null;
   }
 
   /**

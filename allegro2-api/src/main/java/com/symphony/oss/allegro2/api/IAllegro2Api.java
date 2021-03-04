@@ -180,6 +180,16 @@ public interface IAllegro2Api  extends IAllegroModelRegistryProvider, IAllegro2D
    * @return A new ApplicationRecordBuilder.
    */
   ApplicationRecordBuilder newApplicationRecordBuilder();
+  
+  /**
+   * Create a new EncryptedRecordBuilder.
+   * 
+   * This can be used to build an encrypted payload from an arbitrary string payload. For JSON payloads
+   * you should use newApplicationRecordBuilder() instead.
+   * 
+   * @return A new EncryptedRecordBuilder.
+   */
+  EncryptedRecordBuilder newEncryptedRecordBuilder();
 
   /**
    * Encrypt the given payload.

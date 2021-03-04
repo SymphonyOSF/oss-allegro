@@ -32,6 +32,7 @@ import com.symphony.oss.models.core.canon.facade.ApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.EncryptedApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 import com.symphony.oss.models.crypto.canon.CryptoModel;
 
 @SuppressWarnings("javadoc")
@@ -104,6 +105,12 @@ public class TestAllegroConsumerManager
               .build();
         }
         return null;
+      }
+
+      @Override
+      public String decrypt(IEncryptedRecord encryptedRecord)
+      {
+        throw new RuntimeException("Not implemented");
       }
     };
     

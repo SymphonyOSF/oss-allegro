@@ -22,6 +22,7 @@ import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 
 /**
  * Base class for AllegroApi implementations.
@@ -53,4 +54,13 @@ public interface IAllegro2Decryptor
    * @return The decrypted object.
    */
   IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord);
+  
+  /**
+   * Deserialize and decrypt the given object.
+   * 
+   * @param encryptedRecord An encrypted String data.
+   * 
+   * @return The decrypted clear text.
+   */
+  String decrypt(IEncryptedRecord encryptedRecord);
 }

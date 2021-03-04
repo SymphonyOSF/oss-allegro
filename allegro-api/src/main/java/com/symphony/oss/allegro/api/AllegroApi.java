@@ -29,6 +29,7 @@ import com.symphony.oss.allegro2.api.Allegro2Api;
 import com.symphony.oss.allegro2.api.AllegroConsumerManager;
 import com.symphony.oss.allegro2.api.ApplicationRecordBuilder;
 import com.symphony.oss.allegro2.api.EncryptablePayloadBuilder;
+import com.symphony.oss.allegro2.api.EncryptedRecordBuilder;
 import com.symphony.oss.allegro2.api.FetchFeedMessagesRequest;
 import com.symphony.oss.allegro2.api.FetchRecentMessagesRequest;
 import com.symphony.oss.allegro2.api.FetchStreamsRequest;
@@ -53,6 +54,7 @@ import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.HashType;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.core.canon.facade.PodId;
 import com.symphony.oss.models.core.canon.facade.RotationId;
@@ -891,6 +893,18 @@ public class AllegroApi extends AllegroBaseApi<IAllegro2Api> implements IAllegro
   public EncryptedApplicationPayloadBuilder newEncryptedApplicationPayloadBuilder()
   {
     return new EncryptedApplicationPayloadBuilder(this);
+  }
+
+  @Override
+  public String decrypt(IEncryptedRecord encryptedRecord)
+  {
+    return allegro2Api_.decrypt(encryptedRecord);
+  }
+
+  @Override
+  public EncryptedRecordBuilder newEncryptedRecordBuilder()
+  {
+    return allegro2Api_.newEncryptedRecordBuilder();
   }
 
   @Override

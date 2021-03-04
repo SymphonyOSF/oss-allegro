@@ -35,6 +35,7 @@ import com.symphony.oss.models.allegro.canon.facade.IReceivedChatMessage;
 import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 import com.symphony.oss.models.object.canon.facade.IApplicationObjectPayload;
 import com.symphony.oss.models.object.canon.facade.IStoredApplicationObject;
 
@@ -107,6 +108,12 @@ public class TestConsumerManager
 
     @Override
     public IApplicationRecord decrypt(IEncryptedApplicationRecord encryptedApplicationRecord)
+    {
+      throw new RuntimeException("Not implemented");
+    }
+
+    @Override
+    public String decrypt(IEncryptedRecord encryptedRecord)
     {
       throw new RuntimeException("Not implemented");
     }

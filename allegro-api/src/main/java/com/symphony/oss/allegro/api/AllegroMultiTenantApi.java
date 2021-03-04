@@ -41,6 +41,7 @@ import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.facade.IApplicationRecord;
 import com.symphony.oss.models.core.canon.facade.IEncryptedApplicationRecord;
+import com.symphony.oss.models.core.canon.facade.IEncryptedRecord;
 import com.symphony.oss.models.core.canon.facade.PodAndUserId;
 import com.symphony.oss.models.crypto.cipher.CipherSuiteUtils;
 import com.symphony.oss.models.object.canon.ObjectModel;
@@ -284,6 +285,12 @@ public class AllegroMultiTenantApi extends AllegroBaseApi<ModelRegistryProvider>
 
   @Override
   public IApplicationObjectPayload decryptObject(IStoredApplicationObject encryptedApplicationPayload)
+  {
+    return null;
+  }
+
+  @Override
+  public String decrypt(IEncryptedRecord encryptedRecord)
   {
     return null;
   }
