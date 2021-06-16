@@ -39,6 +39,7 @@ import com.symphony.oss.models.object.canon.PartitionSelection;
 public class UpsertFeedRequest extends NamedUserIdObjectRequest
 {
   private final ImmutableSet<PartitionSelectionRequest> partitionSelections_;
+  private final boolean                                 subscribeMessages_;
   private final ResourcePermissions                     permissions_;
   protected final long                                  expiryTime_;
  
@@ -51,6 +52,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
     super(builder);
     
     partitionSelections_  = ImmutableSet.copyOf(builder.partitionSelections_);
+    subscribeMessages_    = builder.subscribeMessages_;
     permissions_          = builder.permissions_;
     expiryTime_           = builder.expiryTime_;   
   }
@@ -74,6 +76,16 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
     }
     
     return partitionSelections;
+  }
+  
+  /**
+   * Return the subscribeMessages setting.
+   * 
+   * @return the subscribeMessages setting.
+   */
+  public boolean isSubscribeMessages()
+  {
+    return subscribeMessages_;
   }
   
   /**
@@ -128,6 +140,7 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
   public static abstract class AbstractBuilder<T extends AbstractBuilder<T,B>, B extends UpsertFeedRequest> extends NamedUserIdObjectRequest.AbstractBuilder<T,B>
   {
     protected Set<PartitionSelectionRequest>      partitionSelections_ = new HashSet<>();
+    protected boolean                             subscribeMessages_;
     protected ResourcePermissions                 permissions_;
     protected long                                expiryTime_ = TTL_UPPER_BOUND;
     
@@ -149,6 +162,20 @@ public class UpsertFeedRequest extends NamedUserIdObjectRequest
         partitionSelections_.add(new PartitionSelectionRequest.Builder()
             .withPartitionId(id)
             .build());
+      
+      return self();
+    }
+    
+    /**
+     * Set the subscribeMessages flag.
+     * 
+     * @param subscribeMessages true if messages to the creator should be subscribed for this feed.
+     * 
+     * @return This (fluent method)
+     */
+    public T withSubscribeMessages(boolean subscribeMessages)
+    {
+      subscribeMessages_ = subscribeMessages;
       
       return self();
     }

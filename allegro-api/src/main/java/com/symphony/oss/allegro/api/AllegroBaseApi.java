@@ -89,6 +89,7 @@ import com.symphony.oss.models.allegro.canon.facade.AllegroBaseConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.ConnectionSettings;
 import com.symphony.oss.models.allegro.canon.facade.IAllegroBaseConfiguration;
 import com.symphony.oss.models.allegro.canon.facade.IConnectionSettings;
+import com.symphony.oss.models.chat.canon.ILiveCurrentMessage;
 import com.symphony.oss.models.core.canon.CoreHttpModelClient;
 import com.symphony.oss.models.core.canon.CoreModel;
 import com.symphony.oss.models.core.canon.ICursors;
@@ -742,10 +743,9 @@ public abstract class AllegroBaseApi<R extends IAllegroModelRegistryProvider> im
                 {
                   IEntity entity = getModelRegistry().parseOne(new StringReader(message.getPayload()));
 
-                  if (entity instanceof IAbstractStoredApplicationObject)
+                  if ((entity instanceof IAbstractStoredApplicationObject) || (entity instanceof ILiveCurrentMessage))
                   {
-                    IAbstractStoredApplicationObject object = (IAbstractStoredApplicationObject) entity;
-                    consume(consumerManager, object, trace);
+                    consume(consumerManager, entity, trace);
                     
                     recv_messages.addAll(new AllegroSqsRequestBuilder(this, feeds.getEndpoint())
                         .withFeedHash(feedHash.toString())
@@ -996,6 +996,7 @@ public abstract class AllegroBaseApi<R extends IAllegroModelRegistryProvider> im
       .withCanonPayload(new com.symphony.oss.models.object.canon.UpsertFeedRequest.Builder()
         .withFeedId(request.getAndValidateId(getUserId()))
         .withPartitionSelections(request.getPartitionSelections(getUserId()))
+        .withSubscribeMessages(request.isSubscribeMessages())
         .withUserPermissions(userPermissions)
         .withExpiryTime(request.getExpiryTime())
         .build())
