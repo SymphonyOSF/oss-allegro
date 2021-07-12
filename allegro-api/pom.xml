@@ -21,7 +21,7 @@
   <parent>
     <groupId>com.symphony.oss.allegro</groupId>
     <artifactId>oss-allegro</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>0.6.3-SNAPSHOT</version>
   </parent>
   <artifactId>allegro-api</artifactId>
   
@@ -40,7 +40,7 @@
     <dependency>
       <groupId>com.symphony.oss.allegro</groupId>
       <artifactId>allegro2-api</artifactId>
-      <version>0.6.2-SNAPSHOT</version>
+      <version>0.6.3-SNAPSHOT</version>
     </dependency>
     
     <dependency>
