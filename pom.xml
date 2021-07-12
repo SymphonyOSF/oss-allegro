@@ -22,7 +22,7 @@
   <parent>
 		<groupId>com.symphony.oss</groupId>
 		<artifactId>oss-parent-pom</artifactId>
-		<version>0.4.7</version><!-- oss-parent-pom -->
+		<version>0.4.9-SNAPSHOT</version><!-- oss-parent-pom -->
   </parent>
 
   <groupId>com.symphony.oss.allegro</groupId>
@@ -68,10 +68,10 @@
     <maven.compiler.target>1.8</maven.compiler.target>  
     
     <oss.commons.version>0.3.0</oss.commons.version>
-    <oss.canon.version>0.4.0</oss.canon.version>
-    <oss.fugue.version>0.3.0</oss.fugue.version>
+    <oss.canon.version>0.4.2-SNAPSHOT</oss.canon.version>
+    <oss.fugue.version>0.3.2-SNAPSHOT</oss.fugue.version>
     <symphony.security.version>1.63.2</symphony.security.version>
-    <messageml.version>0.9.67</messageml.version>
+    <messageml.version>0.9.73</messageml.version>
     <oss.models.version>0.8.2-SNAPSHOT</oss.models.version>
   </properties>
   
@@ -80,6 +80,7 @@
     <module>allegro-ui</module>
     <module>allegro2-api</module>
     <module>allegro2-mongo-api</module>
+    <module>allegro-runtime-aws</module>
   </modules>
 
   <repositories>
